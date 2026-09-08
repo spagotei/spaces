@@ -61,6 +61,9 @@ jobs:
           printf 'password=%s\n' "$KEY_PASSWORD" >> keystore.properties
           printf 'storeFile=%s\n' "$RUNNER_TEMP/spaces-upload-keystore.jks" >> keystore.properties
 
+      - name: Make Gradle wrapper executable
+        run: chmod +x src-tauri/gen/android/gradlew
+
       - name: Build Spaces AAB
         run: npx tauri android build --aab
 
@@ -75,3 +78,4 @@ jobs:
           name: Spaces-Android-AAB
           path: src-tauri/gen/android/app/build/outputs/bundle/universalRelease/*.aab
           if-no-files-found: error
+
