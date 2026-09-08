@@ -78,14 +78,14 @@ export function SettingsView({ initialTab }: { initialTab?: SpaceSettingsTab }) 
 
   useEffect(() => {
     if (!workspace) return
-    setName(workspace.name)
-    setDescription(workspace.description)
-    setAccent(workspace.accentColor)
+    setName(currentWorkspace.name)
+    setDescription(currentWorkspace.description)
+    setAccent(currentWorkspace.accentColor)
     setAccentTwo(localStorage.getItem(`spaces.theme2.${workspace.id}`) || '#342044')
-    setBackground(workspace.background)
-    setAvatarUrl(workspace.avatarUrl)
-    setBannerUrl(workspace.bannerUrl)
-    setIconDecoration(workspace.iconDecoration === 'badge' ? 'ring' : (workspace.iconDecoration ?? 'ring'))
+    setBackground(currentWorkspace.background)
+    setAvatarUrl(currentWorkspace.avatarUrl)
+    setBannerUrl(currentWorkspace.bannerUrl)
+    setIconDecoration(currentWorkspace.iconDecoration === 'badge' ? 'ring' : (currentWorkspace.iconDecoration ?? 'ring'))
   }, [workspace])
 
   useEffect(() => {
@@ -95,6 +95,7 @@ export function SettingsView({ initialTab }: { initialTab?: SpaceSettingsTab }) 
   }, [canManageChannels, canManageSpace, tab])
 
   if (!workspace) return null
+  const currentWorkspace = workspace
 
   const workspaceNumber = getWorkspaceNumber(workspace, workspaces)
   const storedAccentTwo = localStorage.getItem(`spaces.theme2.${workspace.id}`) || '#342044'
@@ -110,15 +111,15 @@ export function SettingsView({ initialTab }: { initialTab?: SpaceSettingsTab }) 
   )
 
   function resetChanges() {
-    setName(workspace.name)
-    setDescription(workspace.description)
-    setAccent(workspace.accentColor)
+    setName(currentWorkspace.name)
+    setDescription(currentWorkspace.description)
+    setAccent(currentWorkspace.accentColor)
     setAccentTwo(storedAccentTwo)
-    setBackground(workspace.background)
-    setAvatarUrl(workspace.avatarUrl)
-    setBannerUrl(workspace.bannerUrl)
-    setIconDecoration(workspace.iconDecoration === 'badge' ? 'ring' : (workspace.iconDecoration ?? 'ring'))
-    window.dispatchEvent(new CustomEvent('spaces-background-preview', { detail: workspace.background }))
+    setBackground(currentWorkspace.background)
+    setAvatarUrl(currentWorkspace.avatarUrl)
+    setBannerUrl(currentWorkspace.bannerUrl)
+    setIconDecoration(currentWorkspace.iconDecoration === 'badge' ? 'ring' : (currentWorkspace.iconDecoration ?? 'ring'))
+    window.dispatchEvent(new CustomEvent('spaces-background-preview', { detail: currentWorkspace.background }))
   }
 
   async function uploadImage(event: ChangeEvent<HTMLInputElement>, kind: 'avatar' | 'banner') {
@@ -160,7 +161,7 @@ export function SettingsView({ initialTab }: { initialTab?: SpaceSettingsTab }) 
     if (!name.trim() || !canManageSpace) return
     setBusy(true)
     try {
-      localStorage.setItem(`spaces.theme2.${workspace.id}`, accentTwo)
+      localStorage.setItem(`spaces.theme2.${currentWorkspace.id}`, accentTwo)
       window.dispatchEvent(new CustomEvent('spaces-theme-updated'))
       await updateWorkspace({
         name: name.trim(),
@@ -189,7 +190,7 @@ export function SettingsView({ initialTab }: { initialTab?: SpaceSettingsTab }) 
       return
     }
     if (!await dialog.confirm({
-      title: `Leave ${workspace.name}?`,
+      title: `Leave ${currentWorkspace.name}?`,
       message: 'You will need a valid invite to rejoin later.',
       confirmText: 'Leave Space',
       danger: true,
