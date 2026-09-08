@@ -1,0 +1,190 @@
+/* Spaces 0.0.25 — quiet startup loading + Discord-style responsive shell */
+
+/* Startup is now a loading state only. No launch movie and no audio. */
+.startup-loading-screen {
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 10px;
+  background:
+    radial-gradient(circle at 50% 46%, color-mix(in srgb,var(--app-accent,#8b6ca8) 7%,transparent), transparent 30%),
+    #08090d;
+  color: #66616b;
+}
+
+.startup-loading-screen > span,
+.loading-stage > span {
+  margin-top: 1px;
+  color: #66616b !important;
+  font-size: 7px !important;
+  font-weight: 700;
+  letter-spacing: .08em;
+}
+
+/* Compact Spaces loader used at startup and while changing Spaces. */
+.spaces-loader {
+  width: 31px !important;
+  height: 22px !important;
+  display: inline-flex !important;
+  align-items: flex-end !important;
+  justify-content: center !important;
+  gap: 3px !important;
+}
+
+.spaces-loader i {
+  position: relative !important;
+  width: 6px !important;
+  overflow: hidden !important;
+  border: 1px solid rgba(255,255,255,.10) !important;
+  border-radius: 2px 2px 1px 1px !important;
+  background: rgba(255,255,255,.018) !important;
+  animation: none !important;
+}
+
+.spaces-loader i:nth-child(1) { height: 11px !important; }
+.spaces-loader i:nth-child(2) { height: 19px !important; }
+.spaces-loader i:nth-child(3) { height: 14px !important; }
+
+.spaces-loader i::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg,
+    color-mix(in srgb,var(--active-accent,var(--app-accent,#8b6ca8)) 40%,#e4d7ed),
+    var(--active-accent,var(--app-accent,#8b6ca8)) 58%,
+    color-mix(in srgb,var(--active-accent,var(--app-accent,#8b6ca8)) 78%,#291735));
+  transform: translateY(105%);
+  animation: spacesInlinePourV25 1.28s cubic-bezier(.2,.75,.2,1) infinite;
+}
+
+.spaces-loader i:nth-child(2)::before { animation-delay: .10s; }
+.spaces-loader i:nth-child(3)::before { animation-delay: .20s; }
+
+@keyframes spacesInlinePourV25 {
+  0% { transform: translateY(105%); opacity: .65; }
+  44% { transform: translateY(0); opacity: 1; }
+  67% { transform: translateY(0); opacity: .9; }
+  100% { transform: translateY(-108%); opacity: .25; }
+}
+
+/* Notifications always belong to the right edge. They overlay content instead
+   of forcing the conversation narrower, matching Discord's compact behavior. */
+.notification-center {
+  position: fixed !important;
+  z-index: 180 !important;
+  top: 44px !important;
+  right: 10px !important;
+  bottom: 10px !important;
+  left: auto !important;
+  width: min(390px, calc(100vw - 84px)) !important;
+  height: auto !important;
+  max-height: none !important;
+  border-radius: 16px !important;
+  transform-origin: right top !important;
+  box-shadow: -18px 20px 70px rgba(0,0,0,.55) !important;
+}
+
+.notification-center-list { min-height: 0 !important; }
+
+.incoming-notice {
+  position: fixed !important;
+  z-index: 175 !important;
+  top: 48px !important;
+  right: 10px !important;
+  bottom: auto !important;
+  left: auto !important;
+  width: min(360px, calc(100vw - 84px)) !important;
+  transform-origin: right top !important;
+}
+
+/* Discord-style priority: member list is first to disappear. */
+@media (max-width: 1180px) {
+  .member-rail { display: none !important; }
+  .member-rail-toggle { display: none !important; }
+  .spaces-app-shell.with-member-rail {
+    grid-template-columns: var(--server-rail) var(--channel-rail) minmax(0,1fr) !important;
+  }
+}
+
+/* Next priority: keep Space/server rail + current content, move channel list to
+   a drawer. This leaves chat/notes/DM content as the primary surface. */
+@media (max-width: 900px) and (min-width: 721px) {
+  .spaces-app-shell,
+  .spaces-app-shell.with-member-rail,
+  .spaces-app-shell.channel-nav-collapsed,
+  .spaces-app-shell.channel-nav-collapsed.with-member-rail {
+    grid-template-columns: var(--server-rail) minmax(0,1fr) !important;
+  }
+
+  .main-stage,
+  .spaces-app-shell.channel-nav-collapsed .main-stage {
+    grid-column: 2 !important;
+  }
+
+  .channel-sidebar,
+  .spaces-app-shell.channel-nav-collapsed .channel-sidebar {
+    position: fixed !important;
+    z-index: 180 !important;
+    left: var(--server-rail) !important;
+    top: 0 !important;
+    bottom: 0 !important;
+    width: min(330px, calc(100vw - var(--server-rail))) !important;
+    transform: translateX(-110%) !important;
+    box-shadow: 24px 0 70px rgba(0,0,0,.58) !important;
+  }
+
+  .channel-sidebar.mobile-open,
+  .spaces-app-shell.channel-nav-collapsed .channel-sidebar.mobile-open {
+    transform: none !important;
+  }
+
+  .desktop-nav-toggle { display: none !important; }
+  .mobile-menu-button { display: grid !important; }
+}
+
+/* Phone layout keeps the current page dominant. Notifications are a right-side
+   drawer instead of the old bottom sheet. */
+@media (max-width: 720px) {
+  .notification-center {
+    top: max(8px, env(safe-area-inset-top)) !important;
+    right: 8px !important;
+    bottom: calc(var(--mobile-homebar-height) + 12px + env(safe-area-inset-bottom)) !important;
+    left: auto !important;
+    width: min(390px, 88vw) !important;
+    max-height: none !important;
+    border-radius: 18px !important;
+    transform-origin: right center !important;
+    box-shadow: -18px 0 60px rgba(0,0,0,.58) !important;
+  }
+
+  .notification-center > header {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: rgba(16,16,21,.985) !important;
+  }
+
+  .incoming-notice {
+    top: max(8px, env(safe-area-inset-top)) !important;
+    right: 8px !important;
+    bottom: auto !important;
+    left: auto !important;
+    width: min(360px, calc(100vw - 16px)) !important;
+    border-radius: 16px !important;
+  }
+
+  /* Never show a dead member-list control once the mobile layout takes over. */
+  .member-rail-toggle { display: none !important; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spaces-loader i::before { animation-duration: 2.4s !important; }
+}
+
+html[data-motion='reduced'] .spaces-loader i::before {
+  animation-duration: 2.4s !important;
+}

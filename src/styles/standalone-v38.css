@@ -1,0 +1,59 @@
+/* Spaces 0.0.38 — thread-style subchannels, beta polish, note discussion cleanup */
+
+/* The whole row is the move surface. No instructional drag copy in the UI. */
+.nested-category-label-v36.press-draggable-v37:after{display:none!important;content:none!important}
+.press-draggable-v37{user-select:none;-webkit-user-select:none}
+
+/* Old nested-category visuals are retired. Categories are one clean level. */
+.sidebar-category-tree-v36.depth-1,
+.sidebar-category-tree-v36.depth-2{margin-left:0!important;border-left:0!important}
+.sidebar-category-tree-v36.depth-1>.nested-category-label-v36,
+.sidebar-category-tree-v36.depth-1>.sidebar-category-contents-v36{margin-left:0!important;border-left:0!important}
+
+/* Thread-style child channels live under an existing channel, not under a category. */
+.channel-thread-group-v38{min-width:0;display:grid}
+.channel-thread-group-v38>.channel-row{width:100%;min-width:0}
+.channel-thread-list-v38{display:grid;gap:1px;margin:1px 0 3px 18px;padding-left:8px;border-left:1px solid rgba(255,255,255,.055)}
+.channel-thread-child-v38{min-height:28px!important;padding-left:7px!important;color:#85808a!important;background:transparent!important}
+.channel-thread-child-v38:hover{color:#b9b3bd!important;background:rgba(255,255,255,.025)!important}
+.channel-thread-child-v38.active{color:#eeeaf1!important;background:color-mix(in srgb,var(--workspace-accent,#8b6ca8) 9%,rgba(255,255,255,.028))!important}
+.thread-branch-v38{width:16px;height:16px;display:grid;place-items:center;flex:0 0 16px;color:#65606a}
+.channel-thread-child-v38.active .thread-branch-v38{color:color-mix(in srgb,var(--workspace-accent,#8b6ca8) 74%,#ddd)}
+.channel-thread-toggle-v38{margin-left:auto;display:inline-flex;align-items:center;gap:3px;min-width:25px;height:20px;padding:0 4px;border-radius:6px;color:#5f5965;cursor:pointer;transition:background .12s ease,color .12s ease}
+.channel-thread-toggle-v38:hover{background:rgba(255,255,255,.04);color:#aaa3af}
+.channel-thread-toggle-v38 svg{transition:transform .14s ease}
+.channel-thread-toggle-v38.open svg{transform:rotate(90deg)}
+.channel-thread-toggle-v38 i{font-style:normal;font-size:7px;line-height:1;color:inherit}
+
+/* A channel with child threads still behaves like one normal channel row. */
+.channel-row .channel-thread-toggle-v38 + small{margin-left:3px}
+
+/* Note comments: neutral send control. It should never inherit danger/red button styling. */
+.comment-composer>button{
+  width:34px!important;height:34px!important;display:grid!important;place-items:center!important;
+  padding:0!important;border:1px solid rgba(255,255,255,.075)!important;border-radius:9px!important;
+  background:rgba(255,255,255,.025)!important;color:#aaa3af!important;
+  box-shadow:none!important;outline:0!important;cursor:pointer!important;
+  transition:border-color .14s ease,background .14s ease,color .14s ease,opacity .14s ease!important;
+}
+.comment-composer>button:hover:not(:disabled){
+  border-color:color-mix(in srgb,var(--workspace-accent,#8b6ca8) 30%,rgba(255,255,255,.08))!important;
+  background:color-mix(in srgb,var(--workspace-accent,#8b6ca8) 8%,rgba(255,255,255,.025))!important;
+  color:#e2dce7!important;
+}
+.comment-composer>button:disabled{opacity:.32!important;cursor:default!important;background:rgba(255,255,255,.015)!important;color:#665f69!important}
+.comment-composer>button:focus-visible{box-shadow:0 0 0 2px color-mix(in srgb,var(--workspace-accent,#8b6ca8) 26%,transparent)!important}
+
+/* Thread creator is a little tighter than the full channel builder. */
+.channel-create-main-v29>.field-label+ .field-label{margin-top:2px}
+
+/* Beta polish: avoid layout jitter around compact sidebar counts/toggles. */
+.sidebar-item.channel-row>span:nth-last-child(1){min-width:0}
+.sidebar-item.channel-row{overflow:hidden}
+.sidebar-item.channel-row>span:not(.channel-thread-toggle-v38):not(.channel-native-emoji-v29):not(.thread-branch-v38){overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+@media(max-width:720px){
+  .channel-thread-list-v38{margin-left:13px;padding-left:6px}
+  .channel-thread-child-v38{min-height:32px!important}
+  .channel-thread-toggle-v38{min-width:30px;height:26px;justify-content:center}
+}

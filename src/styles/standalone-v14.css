@@ -1,0 +1,118 @@
+/* Spaces 0.0.14 — home/S branding, Hub parity, Discord-style role assignment */
+
+/* ---------- titlebar + Home rail identity ---------- */
+.desktop-titlebar-brand .titlebar-letter{
+  display:grid!important;
+  place-items:center!important;
+  width:19px!important;
+  height:19px!important;
+  padding:0!important;
+  overflow:hidden!important;
+  border-radius:6px!important;
+  border:1px solid color-mix(in srgb,var(--app-accent,#8b6ca8) 34%,rgba(255,255,255,.07))!important;
+  background:linear-gradient(145deg,color-mix(in srgb,var(--app-accent,#8b6ca8) 13%,#111117),#0b0b10)!important;
+  color:#eee9f1!important;
+  font-size:10px!important;
+  font-weight:850!important;
+  line-height:1!important;
+  letter-spacing:-.04em!important;
+  box-shadow:inset 0 1px rgba(255,255,255,.04),0 0 12px color-mix(in srgb,var(--app-accent,#8b6ca8) 8%,transparent)!important;
+}
+.brand-home{
+  display:grid!important;
+  place-items:center!important;
+  width:42px!important;
+  height:42px!important;
+  padding:0!important;
+  border:1px solid rgba(255,255,255,.065)!important;
+  border-radius:15px!important;
+  background:linear-gradient(145deg,rgba(255,255,255,.035),rgba(255,255,255,.01))!important;
+  color:#aaa3af!important;
+  transition:background .16s ease,border-color .16s ease,color .16s ease,transform .16s ease!important;
+}
+.server-home:hover .brand-home,.server-home.active .brand-home{
+  border-color:color-mix(in srgb,var(--app-accent,#8b6ca8) 38%,rgba(255,255,255,.07))!important;
+  background:linear-gradient(145deg,color-mix(in srgb,var(--app-accent,#8b6ca8) 16%,#17131c),#0d0d12)!important;
+  color:#f2edf4!important;
+}
+.server-home:hover .brand-home{transform:translateY(-1px)}
+
+/* ---------- Space icon control: visible for every editable Space, including Hub ---------- */
+.space-icon-setting{min-height:84px!important}
+.space-icon-setting-control{display:flex;align-items:center;justify-content:flex-end;gap:12px;min-width:min(390px,48vw)}
+.space-icon-setting-control>.space-icon-decor{flex:0 0 auto}
+.space-icon-setting-control .settings-inline-actions{justify-content:flex-end}
+
+/* ---------- Roles: aligned, direct assignment, Discord-like two-pane editor ---------- */
+.roles-view-v14{grid-template-columns:286px minmax(0,1fr)!important}
+.roles-view-v14 .roles-list-panel{min-width:0;padding:14px!important;overflow:hidden}
+.roles-view-v14 .roles-list-panel>header{min-height:auto!important;padding:3px 4px 11px!important;border-bottom:0!important;align-items:flex-start!important}
+.roles-view-v14 .roles-list-panel>header h2{margin-top:4px!important;font-size:17px!important}
+.roles-view-v14 .create-role-button{margin:0 0 10px!important;min-height:48px;grid-template-columns:32px minmax(0,1fr)!important}
+.roles-view-v14 .role-hierarchy-v14{min-width:0;padding:0!important;gap:5px!important;overflow-y:auto;overflow-x:hidden}
+.roles-view-v14 .protected-role-row,.roles-view-v14 .custom-hierarchy-row{
+  box-sizing:border-box!important;
+  width:100%!important;
+  min-width:0!important;
+  min-height:52px!important;
+  grid-template-columns:20px 11px minmax(0,1fr) 18px!important;
+  gap:8px!important;
+  padding:7px 8px!important;
+  margin:0!important;
+  align-items:center!important;
+}
+.roles-view-v14 .protected-role-row>span:nth-child(3),.roles-view-v14 .custom-hierarchy-row>span:nth-child(3){min-width:0!important;overflow:hidden}
+.roles-view-v14 .protected-role-row strong,.roles-view-v14 .custom-hierarchy-row strong,
+.roles-view-v14 .protected-role-row small,.roles-view-v14 .custom-hierarchy-row small{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.roles-view-v14 .role-swatch{width:10px!important;height:10px!important;justify-self:center!important;margin:0!important}
+.roles-view-v14 .hierarchy-grip,.roles-view-v14 .hierarchy-rank{width:20px!important;height:20px!important;place-self:center!important}
+.roles-view-v14 .custom-hierarchy-row>svg,.roles-view-v14 .protected-role-row>svg{justify-self:center!important}
+.roles-view-v14 .role-editor-panel{padding-top:22px!important}
+.role-heading-v14{align-items:center!important;margin-bottom:10px!important}
+.role-editor-tabs{display:flex;align-items:center;gap:4px;margin:0 0 13px;padding:4px;border:1px solid rgba(255,255,255,.055);border-radius:12px;background:rgba(255,255,255,.012);width:max-content;max-width:100%}
+.role-editor-tabs button{min-height:34px;display:flex;align-items:center;gap:7px;padding:0 11px;border-radius:8px;background:transparent;color:#7f7984;font-size:8.5px;font-weight:700}
+.role-editor-tabs button:hover{color:#bbb4c0;background:rgba(255,255,255,.025)}
+.role-editor-tabs button.active{color:#ece7ef;background:color-mix(in srgb,var(--app-accent,#8b6ca8) 12%,rgba(255,255,255,.035));box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--app-accent,#8b6ca8) 20%,rgba(255,255,255,.04))}
+.role-editor-tabs button small{min-width:18px;height:18px;display:grid;place-items:center;padding:0 5px;border-radius:999px;background:rgba(255,255,255,.055);color:#aaa2ae;font-size:7px}
+.role-identity-card-v14{align-items:center!important}
+
+.role-member-manager{display:grid;gap:12px;max-width:920px}
+.role-member-manager-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;padding:17px 18px;border:1px solid rgba(255,255,255,.06);border-radius:14px;background:linear-gradient(145deg,rgba(255,255,255,.018),rgba(255,255,255,.008))}
+.role-member-manager-head>div{display:grid;gap:4px}
+.role-member-manager-head h2{margin:0;font-size:17px;letter-spacing:-.02em}
+.role-member-manager-head p{margin:0;color:#7a7480;font-size:8px;line-height:1.55}
+.role-member-count{flex:0 0 auto;display:inline-flex;align-items:center;gap:7px;min-height:28px;padding:0 9px;border:1px solid rgba(255,255,255,.06);border-radius:999px;background:rgba(255,255,255,.018);color:#aaa3af;font-size:7.5px;font-weight:750}
+.role-member-count i{width:7px;height:7px;border-radius:50%;box-shadow:0 0 10px currentColor}
+.role-member-search{height:38px;display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;gap:8px;padding:0 11px;border:1px solid rgba(255,255,255,.06);border-radius:11px;background:rgba(8,8,12,.56);color:#716b76}
+.role-member-search:focus-within{border-color:color-mix(in srgb,var(--app-accent,#8b6ca8) 35%,rgba(255,255,255,.06));box-shadow:0 0 0 3px color-mix(in srgb,var(--app-accent,#8b6ca8) 5%,transparent)}
+.role-member-search input{min-width:0;width:100%;border:0;outline:0;background:transparent;color:#ddd7e1;font:inherit;font-size:9px}
+.role-member-search input::placeholder{color:#59535e}
+.role-member-list{display:grid;gap:5px}
+.role-member-row{position:relative;min-height:58px;display:grid;grid-template-columns:38px minmax(0,1fr) 0 38px;align-items:center;gap:10px;padding:8px 10px;border:1px solid rgba(255,255,255,.05);border-radius:12px;background:rgba(255,255,255,.01);cursor:pointer;transition:border-color .15s ease,background .15s ease,transform .15s ease}
+.role-member-row:hover{border-color:rgba(255,255,255,.085);background:rgba(255,255,255,.02);transform:translateY(-1px)}
+.role-member-row.assigned{border-color:color-mix(in srgb,var(--app-accent,#8b6ca8) 22%,rgba(255,255,255,.055));background:color-mix(in srgb,var(--app-accent,#8b6ca8) 5%,rgba(255,255,255,.01))}
+.role-member-copy{min-width:0;display:grid;gap:3px}
+.role-member-copy strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#cbc5cf;font-size:9px}
+.role-member-copy small{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#6f6974;font-size:7px}
+.role-member-row>input{position:absolute;opacity:0;pointer-events:none}
+.role-assignment-toggle{width:34px;height:20px;justify-self:end;padding:2px;border:1px solid rgba(255,255,255,.08);border-radius:999px;background:#212228;transition:.16s ease}
+.role-assignment-toggle i{display:block;width:14px;height:14px;border-radius:50%;background:#747780;transition:transform .16s ease,background .16s ease}
+.role-member-row.assigned .role-assignment-toggle{border-color:color-mix(in srgb,var(--app-accent,#8b6ca8) 40%,rgba(255,255,255,.08));background:color-mix(in srgb,var(--app-accent,#8b6ca8) 28%,#17181d)}
+.role-member-row.assigned .role-assignment-toggle i{transform:translateX(14px);background:#eee9f2}
+
+@media(max-width:900px){
+  .roles-view-v14{display:block!important;overflow-y:auto!important}
+  .roles-view-v14 .roles-list-panel{max-height:310px!important;border-right:0!important;border-bottom:1px solid rgba(255,255,255,.055)!important}
+  .roles-view-v14 .role-hierarchy-v14{max-height:220px!important}
+  .roles-view-v14 .role-editor-panel{overflow:visible!important;padding:16px 12px 90px!important}
+  .space-icon-setting-control{min-width:0;width:100%;justify-content:flex-start;flex-wrap:wrap}
+}
+
+@media(max-width:620px){
+  .brand-home{width:36px!important;height:36px!important;border-radius:12px!important}
+  .brand-home svg{width:19px!important;height:19px!important}
+  .role-editor-tabs{width:100%}
+  .role-editor-tabs button{flex:1;justify-content:center;padding:0 7px}
+  .role-member-manager-head{flex-direction:column}
+  .role-member-row{grid-template-columns:38px minmax(0,1fr) 0 36px}
+}

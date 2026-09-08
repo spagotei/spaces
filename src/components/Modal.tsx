@@ -1,0 +1,44 @@
+import { useEffect, type ReactNode } from 'react'
+import { Icon } from './Icon'
+
+export function Modal({ title, subtitle, children, onClose, wide = false }: {
+  title: string
+  subtitle?: string
+  children: ReactNode
+  onClose: () => void
+  wide?: boolean
+}) {
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return
+      event.preventDefault()
+      event.stopPropagation()
+      onClose()
+    }
+    window.addEventListener('keydown', onKeyDown, true)
+    return () => window.removeEventListener('keydown', onKeyDown, true)
+  }, [onClose])
+
+  return (
+    <div
+      className="modal-backdrop modal-backdrop-v16 modal-backdrop-v28"
+      onPointerDown={event => event.stopPropagation()}
+      onPointerUp={event => event.stopPropagation()}
+      onClick={event => {
+        event.stopPropagation()
+        if (event.target === event.currentTarget) onClose()
+      }}
+    >
+      <section className={`modal modal-v16 ${wide ? 'modal-wide' : ''}`} role="dialog" aria-modal="true" aria-label={title} onClick={event => event.stopPropagation()} onPointerDown={event => event.stopPropagation()}>
+        <header className="modal-header">
+          <div>
+            <h2>{title}</h2>
+            {subtitle && <p>{subtitle}</p>}
+          </div>
+          <button className="icon-button" onClick={onClose} aria-label="Close"><Icon name="x" /></button>
+        </header>
+        <div className="modal-body">{children}</div>
+      </section>
+    </div>
+  )
+}

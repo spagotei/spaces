@@ -1,0 +1,109 @@
+/* Spaces 0.0.42 — full Space header banner + deliberate animated preview surfaces */
+
+/* The Space banner owns the entire upper-left Space header, including the settings button. */
+.space-header.has-space-banner-v42 {
+  position:relative!important;
+  isolation:isolate;
+  overflow:hidden!important;
+  background:rgba(7,8,13,.72)!important;
+}
+.space-header-full-banner-v42 {
+  position:absolute!important;
+  inset:0!important;
+  z-index:0!important;
+  border-radius:0!important;
+  pointer-events:none!important;
+}
+.space-header-full-banner-v42 > img {
+  width:100%!important;
+  height:100%!important;
+  object-fit:cover!important;
+  object-position:center!important;
+  filter:saturate(.96) brightness(.72) contrast(1.02);
+}
+.space-header.has-space-banner-v42::after {
+  content:"";
+  position:absolute;
+  inset:0;
+  z-index:1;
+  pointer-events:none;
+  background:
+    linear-gradient(90deg,rgba(6,7,12,.12) 0%,rgba(6,7,12,.30) 38%,rgba(6,7,12,.78) 100%),
+    linear-gradient(0deg,rgba(6,7,12,.54) 0%,rgba(6,7,12,.04) 72%);
+}
+.space-header.has-space-banner-v42 > .space-header-identity-v16,
+.space-header.has-space-banner-v42 > .icon-button,
+.space-header.has-space-banner-v42 > .space-header-copy,
+.space-header.has-space-banner-v42 > .private-chip {
+  position:relative!important;
+  z-index:2!important;
+}
+.space-header.has-space-banner-v42 > .space-header-identity-v16 {
+  align-self:stretch;
+  padding:0 2px!important;
+  border-radius:0!important;
+  overflow:visible!important;
+}
+.space-header.has-space-banner-v42 > .space-header-identity-v16:hover {
+  background:rgba(255,255,255,.025)!important;
+}
+.space-header.has-space-banner-v42 > .icon-button {
+  flex:0 0 auto;
+  background:rgba(8,9,14,.34)!important;
+  border-color:rgba(255,255,255,.075)!important;
+  backdrop-filter:blur(10px);
+}
+.space-header.has-space-banner-v42 > .icon-button:hover {
+  background:rgba(18,18,27,.58)!important;
+}
+.space-header.has-space-banner-v42 .space-icon-decor {
+  filter:drop-shadow(0 8px 18px rgba(0,0,0,.42));
+}
+.space-header.has-space-banner-v42 .space-header-copy strong {
+  text-shadow:0 2px 10px rgba(0,0,0,.58);
+}
+.space-header.has-space-banner-v42 .space-header-copy .eyebrow,
+.space-header.has-space-banner-v42 .space-header-copy small {
+  text-shadow:0 1px 8px rgba(0,0,0,.72);
+}
+
+/* Old v41 identity-only banner rules are retired now that the full header owns it. */
+.space-header-identity-v16.has-banner-v41::after,
+.space-header-identity-v16 > .space-header-banner-v41 { display:none!important; }
+
+/* Settings is the intentional animated preview for a Space banner. */
+.space-settings-v32-banner .space-settings-banner-media-v41 > img {
+  filter:saturate(1) brightness(.86)!important;
+}
+.space-settings-v32-banner:hover .space-settings-banner-media-v41 > img {
+  filter:saturate(1.04) brightness(.94)!important;
+}
+
+/* Everywhere else, banner artwork is a poster frame for lower background cost. */
+.space-card-banner-media-v41 > img,
+.space-overview-banner-media-v41 > img {
+  filter:brightness(.76) saturate(.88)!important;
+}
+.space-card:hover .space-card-banner-media-v41 > img,
+.space-overview-hero:hover .space-overview-banner-media-v41 > img {
+  filter:brightness(.82) saturate(.92)!important;
+}
+
+/* People is a first-class Space surface, not a permission-management page. */
+.sidebar-management .sidebar-item:first-of-type {
+  margin-top:2px;
+}
+
+@media (max-width:760px) {
+  .space-header.has-space-banner-v42 {
+    min-height:64px!important;
+  }
+  .space-header-full-banner-v42 > img {
+    object-position:center 42%!important;
+  }
+}
+
+@media (prefers-reduced-motion:reduce) {
+  .space-header-full-banner-v42 > img,
+  .space-settings-banner-media-v41 > img { animation:none!important;transition:none!important; }
+}

@@ -1,0 +1,145 @@
+/* v35: clean drag hierarchy + channel header repair + editable beta invite. */
+
+/* Channel/category dragging uses the whole row. No grip glyphs are needed. */
+.channel-sidebar .sidebar-section,
+.channel-sidebar .sidebar-section-label,
+.channel-sidebar .sidebar-category-label-v17 {
+  min-width: 0 !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+.channel-sidebar .sidebar-category-label-v17 {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 6px !important;
+  min-height: 28px !important;
+  padding: 0 6px 0 8px !important;
+  overflow: visible !important;
+}
+
+.channel-sidebar .sidebar-category-label-v17 > button:first-child {
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+  width: auto !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  gap: 5px !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+  text-align: left !important;
+  white-space: nowrap !important;
+}
+
+.channel-sidebar .sidebar-category-label-v17 > button:first-child > span {
+  display: block !important;
+  min-width: 0 !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+.channel-sidebar .sidebar-category-label-v17 > button:not(:first-child) {
+  flex: 0 0 auto !important;
+  width: 22px !important;
+  height: 22px !important;
+  display: grid !important;
+  place-items: center !important;
+  margin-left: 0 !important;
+  padding: 0 !important;
+}
+
+.channel-sidebar .sidebar-section-label[draggable="true"],
+.channel-sidebar .sidebar-item.channel-row[draggable="true"] {
+  cursor: grab !important;
+}
+
+.channel-sidebar .sidebar-section-label[draggable="true"]:active,
+.channel-sidebar .sidebar-item.channel-row[draggable="true"]:active {
+  cursor: grabbing !important;
+}
+
+/* Role order itself is the hierarchy. Drag the whole role row. */
+.roles-view-v14 .protected-role-row,
+.roles-view-v14 .custom-hierarchy-row {
+  grid-template-columns: 11px minmax(0, 1fr) 16px !important;
+  gap: 9px !important;
+}
+
+.roles-view-v14 .protected-role-row > span:nth-child(2),
+.roles-view-v14 .custom-hierarchy-row > span:nth-child(2) {
+  min-width: 0 !important;
+  overflow: hidden !important;
+}
+
+.roles-view-v14 .custom-hierarchy-row[draggable="true"] {
+  cursor: grab !important;
+}
+
+.roles-view-v14 .custom-hierarchy-row[draggable="true"]:active {
+  cursor: grabbing !important;
+}
+
+.roles-view-v14 .custom-hierarchy-row[draggable="false"] {
+  cursor: pointer !important;
+}
+
+.role-member-row.hierarchy-locked-v35 {
+  opacity: .56;
+  cursor: not-allowed;
+}
+
+.role-member-row.hierarchy-locked-v35 .role-assignment-toggle {
+  opacity: .45;
+}
+
+/* Editable beta invite copy in the platform access console. */
+.support-beta-message-editor-v35 {
+  display: grid !important;
+  gap: 10px !important;
+}
+
+.support-beta-message-head-v35 {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.support-beta-message-head-v35 > span {
+  color: #817a87;
+  font-size: 8px;
+}
+
+.support-beta-message-head-v35 code {
+  color: #b69bc8;
+  font: 700 8px/1 ui-monospace, SFMono-Regular, Consolas, monospace;
+}
+
+.support-beta-message-editor-v35 label {
+  display: grid;
+  gap: 6px;
+}
+
+.support-beta-message-editor-v35 label > span {
+  color: #8c8591;
+  font-size: 8px;
+  font-weight: 700;
+}
+
+.support-beta-message-editor-v35 .text-area {
+  min-height: 132px;
+  resize: vertical;
+  line-height: 1.5;
+}
+
+@media (max-width: 760px) {
+  .support-beta-message-head-v35 {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}

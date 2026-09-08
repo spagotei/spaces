@@ -1,0 +1,24 @@
+Spaces 0.0.21 static validation performed in artifact environment
+
+PASS: TypeScript/TSX transpile syntax — 46 source files, 0 failures
+PASS: Relative import scan — 0 missing relative imports
+PASS: standalone-v21.css brace balance — 0
+PASS: Packaged Worker `node --check`
+PASS: Migration 0016 SQLite smoke test
+      founder -> 00001
+      first normal user -> 00100
+      second existing user -> 00101
+      atomic counter initialized and UPDATE ... RETURNING allocation verified
+      support_staff_messages table created
+PASS: Old “Live Preview” text absent from frontend source
+PASS: Worker rejects custom invite code fields
+PASS: Worker health API version 6.2 present
+
+Not run in artifact environment:
+- The user's real `npm.cmd run typecheck`
+- The user's real Vite production build
+- Cloudflare remote migration/deploy
+- Tauri desktop build
+- Android build/device test
+
+Run VERIFY_0.0.21.ps1 on the user's project before release.

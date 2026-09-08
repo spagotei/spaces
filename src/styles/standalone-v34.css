@@ -1,0 +1,25 @@
+/* v34: invited access and first profile setup copy */
+.spaces-purple-lock-v34 {
+  display: inline-grid;
+  place-items: center;
+  color: color-mix(in srgb, var(--workspace-accent, #8b6ca8) 72%, #efe5f8);
+}
+
+.invite-login-note-v34 {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 9px;
+  padding: 10px 11px;
+  border: 1px solid color-mix(in srgb, var(--workspace-accent, #8b6ca8) 25%, rgba(255,255,255,.07));
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--workspace-accent, #8b6ca8) 7%, rgba(255,255,255,.012));
+}
+.invite-login-note-v34 p { margin: 0; color: #aaa3b0; font-size: 9px; line-height: 1.45; }
+
+.beta-profile-lock-note-v33 { display: flex; align-items: center; justify-content: center; gap: 6px; }
+.mini-lock { color: color-mix(in srgb, var(--workspace-accent, #8b6ca8) 72%, #f1e8f8); }
+.support-beta-invite-form-v33 .input-shell > svg { color: color-mix(in srgb, var(--workspace-accent, #8b6ca8) 72%, #efe5f8); }
+.support-beta-message-v33 h5 { margin: 8px 0 5px; color: #f2edf5; font-size: 13px; }
+.support-beta-message-v33 p { margin: 4px 0; }
+.support-beta-message-v33 small { display: block; margin-top: 8px; color: #827b88; line-height: 1.45; }

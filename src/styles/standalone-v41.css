@@ -1,0 +1,221 @@
+/* Spaces 0.0.41 — animated media restraint, unread contrast, drag motion and greeting polish */
+
+/* ---------- GIFs: still by default, animate only when invited ---------- */
+.avatar > span { position:relative;z-index:0; }
+.avatar > .animated-image-v41 {
+  position:absolute!important;
+  inset:0!important;
+  z-index:1!important;
+  width:100%!important;
+  height:100%!important;
+  object-fit:cover!important;
+  object-position:center!important;
+}
+.animated-image-v41.is-playing-v41 { animation:spacesGifWakeV41 .16s ease both; }
+@keyframes spacesGifWakeV41 { from{opacity:.72;filter:brightness(.92)} to{opacity:1;filter:none} }
+
+.animated-backdrop-v41 {
+  position:absolute;
+  inset:0;
+  display:block;
+  overflow:hidden;
+  border-radius:inherit;
+  z-index:0;
+}
+.animated-backdrop-v41 > img {
+  width:100%;height:100%;display:block;object-fit:cover;object-position:center;
+}
+
+/* ---------- Space header banner: artwork sits behind the framed icon ---------- */
+.space-header-identity-v16.space-header-menu-v18 {
+  position:relative!important;
+  isolation:isolate;
+  overflow:hidden;
+  border-radius:12px;
+}
+.space-header-identity-v16.has-banner-v41::after {
+  content:"";
+  position:absolute;
+  inset:0;
+  z-index:1;
+  pointer-events:none;
+  background:
+    linear-gradient(90deg,rgba(7,8,13,.18) 0%,rgba(7,8,13,.56) 55%,rgba(7,8,13,.90) 100%),
+    linear-gradient(0deg,rgba(7,8,13,.34),transparent 65%);
+}
+.space-header-banner-v41 { z-index:0; }
+.space-header-banner-v41 > img { filter:saturate(.88) brightness(.8); }
+.space-header-identity-v16.has-banner-v41:hover .space-header-banner-v41 > img { filter:saturate(1) brightness(.92); }
+.space-header-identity-v16 > .space-icon-decor,
+.space-header-identity-v16 > .space-header-copy,
+.space-header-identity-v16 > .space-header-menu-chevron-v18 { position:relative;z-index:2; }
+.space-header-identity-v16.has-banner-v41 > .space-icon-decor {
+  filter:drop-shadow(0 8px 18px rgba(0,0,0,.32));
+}
+
+.space-settings-v32-banner { position:relative!important;overflow:hidden!important;isolation:isolate; }
+.space-settings-banner-media-v41 { z-index:0; }
+.space-settings-v32-banner::after {
+  content:"";position:absolute;inset:0;z-index:1;pointer-events:none;
+  background:linear-gradient(90deg,rgba(7,7,10,.08),rgba(7,7,10,.42));
+}
+.space-settings-v32-banner > span { position:relative;z-index:2!important; }
+
+.profile-editor-banner,.member-profile-drawer-banner,.space-card-banner { position:relative!important;overflow:hidden!important;isolation:isolate; }
+.profile-editor-banner-media-v41,.member-profile-banner-media-v41,.space-card-banner-media-v41 { z-index:0; }
+.profile-editor-banner::after,.member-profile-drawer-banner::after {
+  content:"";position:absolute;inset:0;z-index:1;pointer-events:none;
+  background:linear-gradient(to bottom,rgba(7,7,10,.04),rgba(7,7,10,.78));
+}
+.profile-editor-banner > button,.member-profile-drawer-banner > button { position:relative;z-index:2; }
+.space-card-banner-media-v41 > img { filter:brightness(.74) saturate(.9); }
+.space-card:hover .space-card-banner-media-v41 > img { filter:brightness(.88) saturate(1); }
+
+/* ---------- Badge frame retired: unread count now owns that visual job ---------- */
+.space-icon-decor.icon-decor-badge::after { display:none!important;content:none!important; }
+.space-icon-decor.icon-decor-badge {
+  padding:2px!important;
+  box-shadow:0 0 0 1px color-mix(in srgb,var(--decor-accent) 74%,transparent)!important;
+}
+
+/* ---------- Per-Space unread counter: intentionally blue, not purple ---------- */
+.server-button { position:relative!important; }
+.server-unread-count-v41 {
+  position:absolute;
+  z-index:12;
+  right:-1px;
+  bottom:-2px;
+  display:grid;
+  place-items:center;
+  min-width:15px;
+  height:15px;
+  padding:0 4px;
+  border:2px solid #08090d;
+  border-radius:999px;
+  background:#214f79;
+  color:#f6f9fc;
+  box-shadow:0 4px 12px rgba(17,55,89,.36),0 0 0 1px rgba(97,158,211,.15);
+  font-size:7px;
+  line-height:1;
+  font-weight:850;
+  letter-spacing:-.025em;
+  animation:spacesUnreadPopV41 .22s cubic-bezier(.2,.9,.2,1.18) both;
+}
+.server-button.has-unread-v41:not(.active) .server-pill {
+  height:16px!important;
+  background:#315b83!important;
+  box-shadow:0 0 10px rgba(49,91,131,.18);
+}
+@keyframes spacesUnreadPopV41 { from{opacity:0;transform:scale(.55) translateY(3px)} to{opacity:1;transform:none} }
+.notification-button > i {
+  min-width:14px!important;
+  padding:0 3px!important;
+  background:#214f79!important;
+  border-color:#090a0e!important;
+  color:#f6f9fc!important;
+}
+
+/* ---------- Mention highlight follows the Space accent, but stays dark ---------- */
+.message.message-pinged {
+  background:linear-gradient(90deg,
+    color-mix(in srgb,var(--workspace-accent,#8b6ca8) 18%,rgba(7,14,23,.94)),
+    color-mix(in srgb,var(--workspace-accent,#8b6ca8) 7%,rgba(7,11,18,.60)) 70%,
+    transparent)!important;
+  box-shadow:inset 3px 0 color-mix(in srgb,var(--workspace-accent,#8b6ca8) 64%,#8db8dc)!important;
+}
+.message.message-pinged:hover {
+  background:linear-gradient(90deg,
+    color-mix(in srgb,var(--workspace-accent,#8b6ca8) 23%,rgba(7,14,23,.96)),
+    color-mix(in srgb,var(--workspace-accent,#8b6ca8) 10%,rgba(7,11,18,.68)) 72%,
+    transparent)!important;
+}
+
+/* ---------- Home greeting + descender-safe display names ---------- */
+.hero-greeting-v41 { animation:spacesGreetingInV41 .34s ease both; }
+.hero-name-v41 {
+  display:flex!important;
+  align-items:baseline;
+  max-width:100%;
+  min-width:0;
+  line-height:1.08!important;
+  padding-bottom:.10em!important;
+  margin-bottom:-.05em!important;
+  overflow:visible!important;
+}
+.hero-name-v41 > span:first-child {
+  display:block;
+  max-width:calc(100% - .38em);
+  min-width:0;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  padding-bottom:.10em;
+  margin-bottom:-.10em;
+}
+.hero-name-v41 > .hero-dot { flex:0 0 auto; }
+@keyframes spacesGreetingInV41 { from{opacity:0;transform:translateY(3px)} to{opacity:1;transform:none} }
+
+/* ---------- Discord-like direct drag motion ---------- */
+.press-draggable-v37 { cursor:grab!important; }
+html.spaces-press-dragging .press-draggable-v37 { cursor:grabbing!important; }
+.press-drag-source-v37,[data-press-drag-active="true"] {
+  opacity:.24!important;
+  transform:scale(.985)!important;
+  transition:opacity .12s ease,transform .12s ease!important;
+}
+.spaces-press-drag-ghost {
+  box-sizing:border-box!important;
+  opacity:.96!important;
+  transform-origin:top left!important;
+  border:1px solid color-mix(in srgb,var(--workspace-accent,#8b6ca8) 34%,rgba(255,255,255,.08))!important;
+  border-radius:10px!important;
+  background:rgba(20,19,26,.96)!important;
+  box-shadow:0 18px 46px rgba(0,0,0,.46),inset 0 1px rgba(255,255,255,.035)!important;
+  backdrop-filter:blur(16px)!important;
+  filter:saturate(.95)!important;
+}
+.custom-hierarchy-row,.channel-row,.sidebar-category-tree-v36 {
+  transition:transform .17s cubic-bezier(.2,.8,.2,1),background .14s ease,border-color .14s ease,opacity .14s ease!important;
+}
+.custom-hierarchy-row.drag-over-v33.drag-shift-up-v41 { transform:translateY(-8px)!important; }
+.custom-hierarchy-row.drag-over-v33.drag-shift-down-v41 { transform:translateY(8px)!important; }
+.channel-row.drag-over-v33 { transform:translateY(4px); }
+.drag-before-category-v36 { transform:translateY(3px); }
+
+@media (prefers-reduced-motion:reduce) {
+  .animated-image-v41,.server-unread-count-v41,.hero-greeting-v41,.custom-hierarchy-row,.channel-row,.sidebar-category-tree-v36 { animation:none!important;transition:none!important; }
+}
+
+.mobile-space-strip > button { position:relative; }
+.mobile-space-unread-v41,
+.sidebar-space-unread-v41 {
+  display:grid;place-items:center;
+  border-radius:999px;
+  background:#214f79;
+  color:#f7f9fc;
+  border:2px solid #090a0e;
+  font-weight:850;
+  letter-spacing:-.02em;
+}
+.mobile-space-unread-v41 {
+  position:absolute;right:-2px;bottom:-2px;z-index:7;
+  min-width:14px;height:14px;padding:0 3px;font-size:6.5px;
+}
+.sidebar-space-unread-v41 {
+  min-width:18px;height:18px;padding:0 5px;font-size:7px;margin-left:auto;
+  border-width:1px;
+}
+.sidebar-space-row.has-unread-v41 > div > strong { color:#eef5fb; }
+
+/* Overview banners follow the same GIF restraint as the Space rail/header. */
+.space-overview-banner { isolation:isolate; }
+.space-overview-banner-media-v41 { z-index:0; }
+.space-overview-banner-media-v41 > img {
+  filter:brightness(.78) saturate(.9);
+  transition:filter .18s ease,opacity .16s ease;
+}
+.space-overview-hero:hover .space-overview-banner-media-v41 > img {
+  filter:brightness(.9) saturate(1);
+}
+.space-overview-banner::after { z-index:1;pointer-events:none; }
+.space-overview-glow { z-index:2;pointer-events:none; }

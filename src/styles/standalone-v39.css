@@ -1,0 +1,33 @@
+/* v31.9 beta polish: Space Settings header/tabs should scroll with content. */
+.space-settings-v36 .space-settings-heading-v36,
+.space-settings-v36 .space-settings-tabs-v36 {
+  position: relative !important;
+  top: auto !important;
+  z-index: auto !important;
+}
+
+/* Once the settings tabs have scrolled away, keep the page content feeling natural. */
+.space-settings-v36 .space-settings-heading-v36 {
+  background: transparent !important;
+}
+
+.space-settings-v36 .space-settings-tabs-v36 {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+
+/* v40 — Space emoji lives inside Settings > Decorate */
+.space-settings-emoji-v40 { overflow: visible; }
+.space-settings-emoji-v40 .emoji-view-embedded { padding: 0; min-height: 0; overflow: visible; }
+.space-settings-emoji-v40 .settings-emoji-heading-v40 { margin: 0 0 18px; padding: 0; }
+.space-settings-emoji-v40 .settings-emoji-heading-v40 .emoji-count-chip { margin-left: auto; }
+.space-settings-emoji-v40 .default-emoji-section,
+.space-settings-emoji-v40 .emoji-create-card,
+.space-settings-emoji-v40 .emoji-grid { margin-left: 0; margin-right: 0; }
+.space-settings-emoji-v40 .default-emoji-section { border-radius: 14px; }
+.space-settings-emoji-v40 .custom-emoji-heading { margin-top: 22px; }
+@media (max-width: 760px) {
+  .space-settings-emoji-v40 .settings-emoji-heading-v40 { align-items: flex-start; gap: 10px; }
+  .space-settings-emoji-v40 .settings-emoji-heading-v40 .emoji-count-chip { margin-left: 0; }
+}

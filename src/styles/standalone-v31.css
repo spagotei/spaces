@@ -1,0 +1,143 @@
+/* Spaces v31 — staff hierarchy, support queue, TOTP QR */
+
+/* Role hierarchy should always remain directly interactive. */
+.roles-view-v14 .roles-list-panel { position: relative; z-index: 3; }
+.roles-view-v14 .role-hierarchy-v14,
+.roles-view-v14 .role-hierarchy-v14 > button { pointer-events: auto !important; }
+.roles-view-v14 .role-hierarchy-v14 > button { position: relative; z-index: 1; }
+.roles-view-v14 .role-hierarchy-v14 > button:focus-visible { outline: 1px solid color-mix(in srgb,var(--workspace-accent,#8b6ca8) 70%,white 10%); outline-offset: 2px; }
+.role-swatch.staff { background: #8d9b8f; }
+.protected-role-row.staff.active { box-shadow: inset 2px 0 color-mix(in srgb,#8d9b8f 74%,transparent); }
+.permission-line-clickable-v29 { cursor: pointer; }
+.permission-line-clickable-v29 .permission-toggle { cursor: pointer; }
+.permission-line-clickable-v29 .permission-toggle:disabled { cursor: not-allowed; }
+
+/* Space staff roster */
+.staff-view-v31 { padding: 24px 28px 48px; }
+.staff-heading-v31 { align-items: flex-start; }
+.staff-roster-card-v31,
+.staff-add-card-v31 {
+  border: 1px solid rgba(255,255,255,.075);
+  background: linear-gradient(180deg,rgba(255,255,255,.018),rgba(255,255,255,.008));
+  border-radius: 16px;
+  overflow: hidden;
+  margin-bottom: 14px;
+}
+.staff-roster-card-v31 > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 15px 16px;
+  border-bottom: 1px solid rgba(255,255,255,.055);
+}
+.staff-roster-card-v31 h2,.staff-add-card-v31 h2 { margin: 3px 0 0; font-size: 16px; }
+.staff-search-v31 {
+  min-width: 230px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 35px;
+  padding: 0 10px;
+  border: 1px solid rgba(255,255,255,.075);
+  border-radius: 9px;
+  background: rgba(0,0,0,.22);
+  color: #77717e;
+}
+.staff-search-v31 input { width: 100%; border: 0; outline: 0; background: transparent; color: #ded9e2; font: inherit; }
+.staff-roster-list-v31 { display: grid; }
+.staff-roster-row-v31 {
+  display: grid;
+  grid-template-columns: auto minmax(180px,1fr) minmax(160px,auto) auto;
+  gap: 12px;
+  align-items: center;
+  min-height: 64px;
+  padding: 10px 14px;
+  border-bottom: 1px solid rgba(255,255,255,.04);
+}
+.staff-roster-row-v31:last-child { border-bottom: 0; }
+.staff-roster-person-v31 { min-width: 0; display: grid; gap: 1px; }
+.staff-roster-person-v31 strong { font-size: 11px; color: #e3dde7; }
+.staff-roster-person-v31 span { font-size: 8px; color: #8a8490; }
+.staff-roster-person-v31 small { margin-top: 2px; font-size: 7px; color: #67616c; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.staff-access-pills-v31 { display: flex; gap: 5px; align-items: center; justify-content: flex-end; flex-wrap: wrap; }
+.staff-base-pill-v31,.staff-platform-pill-v31 {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 22px;
+  padding: 0 7px;
+  border: 1px solid rgba(255,255,255,.075);
+  border-radius: 999px;
+  background: rgba(255,255,255,.025);
+  color: #9c96a2;
+  font-size: 7px;
+  font-weight: 700;
+}
+.staff-base-pill-v31.role-owner { color: #c9afd8; border-color: rgba(180,154,208,.25); }
+.staff-base-pill-v31.role-admin { color: #a9bfd2; border-color: rgba(127,157,187,.25); }
+.staff-base-pill-v31.role-contributor { color: #a8b9aa; border-color: rgba(131,169,143,.25); }
+.staff-platform-pill-v31 { color: #d5b5df; }
+.staff-role-actions-v31 { display: flex; gap: 5px; }
+.staff-role-actions-v31 button {
+  min-height: 28px;
+  padding: 0 8px;
+  border: 1px solid rgba(255,255,255,.07);
+  border-radius: 8px;
+  background: rgba(255,255,255,.018);
+  color: #918a97;
+  font-size: 7.5px;
+  cursor: pointer;
+}
+.staff-role-actions-v31 button:hover,.staff-role-actions-v31 button.active { color: #e0d9e5; border-color: color-mix(in srgb,var(--workspace-accent,#8b6ca8) 36%,rgba(255,255,255,.07)); background: color-mix(in srgb,var(--workspace-accent,#8b6ca8) 10%,rgba(255,255,255,.018)); }
+.staff-role-actions-v31 button:disabled { opacity: .45; cursor: wait; }
+.staff-add-card-v31 { display: grid; grid-template-columns: minmax(220px,.75fr) minmax(0,1.25fr); gap: 18px; padding: 16px; }
+.staff-add-card-v31 > div:first-child p { max-width: 430px; margin: 5px 0 0; color: #77717d; font-size: 8px; line-height: 1.55; }
+.staff-candidate-list-v31 { display: grid; gap: 5px; }
+.staff-candidate-list-v31 > div { display: grid; grid-template-columns: auto minmax(120px,1fr) auto auto; gap: 8px; align-items: center; padding: 7px; border: 1px solid rgba(255,255,255,.05); border-radius: 10px; background: rgba(255,255,255,.012); }
+.staff-candidate-list-v31 > div > span { display: grid; }
+.staff-candidate-list-v31 strong { font-size: 9px; }
+.staff-candidate-list-v31 small { font-size: 7px; color: #706a75; }
+.staff-tool-grid-v31 { margin-top: 14px; }
+
+/* Platform Support queue marker. This launcher is only rendered for platform roles. */
+.support-console-launcher { position: relative; }
+.support-console-launcher.has-queue-v31 { border-color: rgba(211,72,86,.32) !important; background: linear-gradient(90deg,rgba(130,30,43,.11),rgba(255,255,255,.012)) !important; }
+.support-console-launcher > span:first-child { position: relative; }
+.support-queue-dot-v31 { position: absolute; right: -2px; top: -2px; width: 7px; height: 7px; border-radius: 50%; background: #e05261; box-shadow: 0 0 0 2px #111116,0 0 12px rgba(224,82,97,.5); }
+.support-queue-count-v31 { display: grid; place-items: center; min-width: 21px; height: 19px; padding: 0 5px; border-radius: 999px; background: #b63848; color: #fff; font-size: 7px; line-height: 1; }
+.support-inline-id-v31 { display: inline-flex; align-items: center; gap: 4px; padding: 0; border: 0; background: transparent; color: #8e8794; font: inherit; cursor: pointer; }
+.support-inline-id-v31:hover { color: #ded7e5; }
+.support-evidence-v31 { margin-top: 10px; display: grid; gap: 5px; }
+.support-evidence-v31 > article { padding: 8px 9px; border: 1px solid rgba(255,255,255,.05); border-radius: 9px; background: rgba(0,0,0,.16); }
+.support-evidence-v31 article header { display: flex; gap: 7px; align-items: center; }
+.support-evidence-v31 article header strong { font-size: 8px; }
+.support-evidence-v31 article header span,.support-evidence-v31 article header time { color: #756e7a; font-size: 7px; }
+.support-evidence-v31 article header time { margin-left: auto; }
+.support-evidence-v31 article p { margin: 5px 0 0 !important; color: #a39ca8 !important; font-size: 8px !important; line-height: 1.45 !important; }
+
+/* 2FA QR stays local. */
+.totp-qr-card-v31 { display: grid; grid-template-columns: 160px minmax(0,1fr); gap: 14px; align-items: center; padding: 13px; border: 1px solid rgba(255,255,255,.07); border-radius: 13px; background: rgba(255,255,255,.012); }
+.totp-qr-image-v31 { width: 160px; height: 160px; display: grid; place-items: center; overflow: hidden; border-radius: 11px; background: #f5f1f8; }
+.totp-qr-image-v31 img { width: 100%; height: 100%; object-fit: contain; display: block; }
+.totp-qr-image-v31 > span { color: #36313b; display: grid; place-items: center; gap: 6px; font-size: 8px; }
+.totp-qr-card-v31 > div:last-child { display: grid; gap: 5px; }
+.totp-qr-card-v31 > div:last-child strong { font-size: 11px; color: #ded7e5; }
+.totp-qr-card-v31 > div:last-child span { max-width: 420px; color: #827b88; font-size: 8px; line-height: 1.55; }
+
+@media (max-width: 1050px) {
+  .staff-roster-row-v31 { grid-template-columns: auto minmax(150px,1fr) auto; }
+  .staff-access-pills-v31 { display: none; }
+  .staff-add-card-v31 { grid-template-columns: 1fr; }
+}
+@media (max-width: 760px) {
+  .staff-view-v31 { padding: 14px 10px 90px; }
+  .staff-roster-card-v31 > header { align-items: stretch; flex-direction: column; }
+  .staff-search-v31 { min-width: 0; width: 100%; }
+  .staff-roster-row-v31 { grid-template-columns: auto minmax(0,1fr); }
+  .staff-role-actions-v31 { grid-column: 1/-1; padding-left: 50px; flex-wrap: wrap; }
+  .staff-candidate-list-v31 > div { grid-template-columns: auto minmax(0,1fr); }
+  .staff-candidate-list-v31 .secondary-button { grid-column: auto; }
+  .totp-qr-card-v31 { grid-template-columns: 1fr; }
+  .totp-qr-image-v31 { width: min(220px,100%); height: auto; aspect-ratio: 1; justify-self: center; }
+}

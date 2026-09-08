@@ -1,0 +1,10 @@
+Spaces 0.0.22
+- Canonical API moved from scrounge-spaces-api.spagotei.workers.dev to spaces.spagotei.workers.dev.
+- Tauri updater endpoint is rewritten to the Spaces Worker.
+- Root .env overrides are rewritten away from the old Worker URL.
+- Backend Wrangler config is switched to Worker name spaces.
+- APP_NAME/service health branding changed to Spaces.
+- Frontend API errors/comments no longer refer to Scrounge Spaces.
+- Updater publisher verification is switched to the Spaces endpoint when hard-coded.
+- Existing D1 data remains shared during the hostname cutover to prevent split-brain/data loss.
+- Old scrounge-spaces-api Worker remains untouched only for backwards-compatible 0.0.21 -> 0.0.22 updates.

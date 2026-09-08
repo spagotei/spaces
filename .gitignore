@@ -1,0 +1,44 @@
+node_modules/
+dist/
+.env.local
+.DS_Store
+*.log
+src-tauri/target/
+
+# ============================================================
+# PRIVATE / SECRET FILES - NEVER COMMIT
+# ============================================================
+
+.env
+.env.*
+env.*
+download
+
+*.jks
+*.keystore
+keystore.properties
+
+*.pem
+*.key
+*.p12
+*.pfx
+
+credentials.json
+credentials*.json
+client_secret.json
+client_secret*.json
+service-account.json
+service-account*.json
+
+# Local Android configuration
+src-tauri/gen/android/local.properties
+
+# Build junk
+node_modules/
+dist/
+src-tauri/target/
+src-tauri/gen/android/.gradle/
+src-tauri/gen/android/.idea/
+src-tauri/gen/android/app/build/
+src-tauri/gen/android/build/
+

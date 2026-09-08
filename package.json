@@ -1,0 +1,44 @@
+{
+  "name": "spaces-standalone",
+  "private": true,
+  "version": "0.0.23",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview",
+    "desktop": "tauri dev",
+    "desktop:build": "tauri build",
+    "lint": "eslint .",
+    "typecheck": "tsc -b",
+    "dev:host": "vite --host 0.0.0.0",
+    "check": "npm run typecheck && npm run lint && npm run build",
+    "android:init": "tauri android init",
+    "android": "tauri android dev",
+    "android:build": "tauri android build",
+    "tauri": "tauri",
+    "updater:setup": "node scripts/setup-updater.mjs",
+    "release:prepare": "node scripts/prepare-release.mjs"
+  },
+  "dependencies": {
+    "@tauri-apps/api": "^2.8.0",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1",
+    "@tauri-apps/plugin-updater": "^2.0.0",
+    "@tauri-apps/plugin-process": "^2.0.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.35.0",
+    "@tauri-apps/cli": "^2.10.1",
+    "@types/react": "^19.1.12",
+    "@types/react-dom": "^19.1.9",
+    "@vitejs/plugin-react": "^6.1.1",
+    "eslint": "^9.35.0",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "eslint-plugin-react-refresh": "^0.4.20",
+    "globals": "^16.3.0",
+    "typescript": "~5.9.2",
+    "typescript-eslint": "^8.43.0",
+    "vite": "^8.2.2"
+  }
+}

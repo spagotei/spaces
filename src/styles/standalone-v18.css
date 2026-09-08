@@ -1,0 +1,242 @@
+/* Spaces 0.0.18 — UI motion polish, dedicated Space icon editor, native context-menu cleanup */
+
+/* ---------- App-like surface: images should not behave like webpage assets ---------- */
+.spaces-app-shell img{
+  -webkit-user-drag:none;
+  user-select:none;
+}
+
+/* ---------- Space header becomes the Space actions menu ---------- */
+.space-header-menu-v18{
+  min-width:0!important;
+  grid-template-columns:36px minmax(0,1fr) 18px!important;
+  border-radius:11px!important;
+  padding:5px 7px!important;
+  transition:background .18s ease,border-color .18s ease,transform .18s var(--ease-spring)!important;
+}
+.space-header-menu-v18:hover{
+  background:color-mix(in srgb,var(--workspace-accent,#8b6ca8) 7%,rgba(255,255,255,.018))!important;
+  border-color:color-mix(in srgb,var(--workspace-accent,#8b6ca8) 16%,transparent)!important;
+  transform:translateY(-1px);
+}
+.space-header-menu-v18:active{transform:translateY(0) scale(.992)}
+.space-header-menu-v18 .space-icon-decor{transition:transform .24s var(--ease-spring),filter .24s ease}
+.space-header-menu-v18:hover .space-icon-decor{transform:scale(1.045);filter:brightness(1.05)}
+.space-header-menu-chevron-v18{
+  width:18px;height:18px;display:grid;place-items:center;
+  color:#655e69;transition:transform .18s var(--ease-spring),color .18s ease;
+}
+.space-header-menu-v18:hover .space-header-menu-chevron-v18{transform:translateX(2px);color:#aaa2ae}
+
+/* ---------- People: no giant dead zone; bubbles stay anchored but breathe ---------- */
+.members-view-v18{
+  display:grid!important;
+  grid-template-rows:max-content max-content!important;
+  align-content:start!important;
+  align-items:start!important;
+  gap:12px!important;
+}
+.members-view-v18 .people-heading-v17{margin-bottom:0!important}
+.members-view-v18 .people-bubble-grid{
+  align-self:start!important;
+  margin:0!important;
+  padding:3px 2px 22px!important;
+  gap:10px 9px!important;
+}
+.members-view-v18 .people-bubble:nth-child(3n+2),
+.members-view-v18 .people-bubble:nth-child(4n){margin:0!important}
+.members-view-v18 .people-bubble{
+  min-height:64px!important;
+  box-shadow:inset 0 1px rgba(255,255,255,.018),0 8px 24px rgba(0,0,0,.06)!important;
+  transition:transform .2s var(--ease-spring),border-color .2s ease,background .2s ease,box-shadow .2s ease!important;
+}
+.members-view-v18 .people-bubble::after{
+  content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;z-index:0;
+  background:linear-gradient(115deg,transparent 12%,rgba(255,255,255,.032) 42%,transparent 64%);
+  transform:translateX(-120%);opacity:.35;
+  transition:transform .55s ease;
+}
+.members-view-v18 .people-bubble:hover::after{transform:translateX(120%)}
+.members-view-v18 .people-bubble:hover{
+  transform:translateY(-2px) scale(1.006)!important;
+  border-color:color-mix(in srgb,var(--people-role-color,#8b6ca8) 34%,rgba(255,255,255,.06))!important;
+  background:color-mix(in srgb,var(--people-role-color,#8b6ca8) 4%,rgba(255,255,255,.022))!important;
+  box-shadow:0 12px 30px rgba(0,0,0,.16),inset 0 1px rgba(255,255,255,.026)!important;
+}
+.members-view-v18 .people-bubble-avatar{
+  animation:peopleAvatarFloatV18 var(--people-float-duration,5s) ease-in-out var(--people-float-delay,0s) infinite!important;
+  transform-origin:center;
+}
+.members-view-v18 .people-bubble-copy{
+  animation:peopleNameFloatV18 calc(var(--people-float-duration,5s) + .65s) ease-in-out calc(var(--people-float-delay,0s) - .18s) infinite;
+  will-change:transform;
+}
+.members-view-v18 .people-bubble>svg{animation:peopleChevronBreatheV18 4.8s ease-in-out var(--people-float-delay,0s) infinite}
+.members-view-v18 .people-bubble:hover .people-bubble-avatar,
+.members-view-v18 .people-bubble:hover .people-bubble-copy,
+.members-view-v18 .people-bubble:hover>svg{animation-play-state:paused}
+@keyframes peopleAvatarFloatV18{
+  0%,100%{transform:translate3d(0,0,0) scale(1)}
+  50%{transform:translate3d(var(--people-float-x,0),calc(var(--people-float-distance,2px) * -1),0) scale(1.012)}
+}
+@keyframes peopleNameFloatV18{
+  0%,100%{transform:translate3d(0,0,0)}
+  50%{transform:translate3d(calc(var(--people-float-x,0) * -.55),-1.15px,0)}
+}
+@keyframes peopleChevronBreatheV18{0%,100%{opacity:.55;transform:translateX(0)}50%{opacity:.86;transform:translateX(1px)}}
+
+/* ---------- Settings: dedicated, centered Space picture editor ---------- */
+.settings-view{scroll-behavior:smooth}
+.settings-view>.content-heading,
+.settings-view>.settings-section,
+.settings-view>.space-profile-editor,
+.settings-view>.settings-card{
+  animation:settingsSectionInV18 .34s var(--ease-spring) both;
+}
+.settings-view>.settings-section:nth-of-type(1){animation-delay:.025s}
+.settings-view>.space-profile-editor{animation-delay:.055s}
+.settings-view>.settings-card{animation-delay:.08s}
+.settings-view>.settings-section:nth-of-type(2){animation-delay:.105s}
+.settings-view>.settings-section:nth-of-type(3){animation-delay:.13s}
+@keyframes settingsSectionInV18{from{opacity:0;transform:translateY(8px) scale(.996)}to{opacity:1;transform:none}}
+
+.space-icon-section-v18{
+  position:relative;
+  overflow:hidden;
+  padding:16px!important;
+  border:1px solid rgba(255,255,255,.06);
+  border-radius:18px;
+  background:
+    radial-gradient(circle at 13% 18%,color-mix(in srgb,var(--space-profile-accent,#8b6ca8) 10%,transparent),transparent 34%),
+    linear-gradient(145deg,rgba(255,255,255,.018),rgba(255,255,255,.007));
+  box-shadow:0 16px 40px rgba(0,0,0,.08),inset 0 1px rgba(255,255,255,.018);
+}
+.space-icon-section-v18::after{
+  content:"";position:absolute;inset:0;pointer-events:none;
+  background:linear-gradient(115deg,transparent 18%,rgba(255,255,255,.02) 45%,transparent 70%);
+  transform:translateX(-105%);animation:spaceIconSheenV18 8s ease-in-out 1.2s infinite;
+}
+@keyframes spaceIconSheenV18{0%,72%,100%{transform:translateX(-105%)}86%{transform:translateX(105%)}}
+.space-icon-editor-v18{
+  position:relative;z-index:1;
+  display:grid;grid-template-columns:minmax(170px,220px) minmax(0,1fr);
+  gap:20px;align-items:stretch;
+  min-height:200px;
+}
+.space-icon-preview-shell-v18{
+  display:grid;place-items:center;align-content:center;gap:13px;
+  min-height:190px;padding:18px;
+  border:1px solid rgba(255,255,255,.05);border-radius:16px;
+  background:rgba(4,4,7,.22);
+}
+.space-icon-preview-shell-v18>span{
+  color:#615b66;font-size:6.5px;font-weight:800;letter-spacing:.18em;
+}
+.space-icon-preview-v18{
+  position:relative;width:126px;height:126px;display:grid;place-items:center;
+  padding:0;border:0;border-radius:38px;background:transparent;color:inherit;
+  cursor:pointer;
+  transition:transform .22s var(--ease-spring),filter .22s ease;
+  animation:spaceIconFloatV18 5.6s ease-in-out infinite;
+}
+.space-icon-preview-v18:disabled{cursor:default}
+.space-icon-preview-v18 .space-icon-decor{display:grid;place-items:center!important;transform-origin:center;filter:drop-shadow(0 14px 28px rgba(0,0,0,.28))}
+.space-icon-preview-v18:hover:not(:disabled){transform:translateY(-3px) scale(1.025);filter:brightness(1.05);animation-play-state:paused}
+@keyframes spaceIconFloatV18{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
+.space-icon-edit-badge-v18{
+  position:absolute!important;right:8px!important;bottom:9px!important;
+  width:30px!important;height:30px!important;display:grid!important;place-items:center!important;
+  border:3px solid #101015!important;border-radius:11px!important;
+  background:color-mix(in srgb,var(--space-profile-accent,#8b6ca8) 72%,#18151d)!important;
+  color:#fff!important;box-shadow:0 8px 18px rgba(0,0,0,.28)!important;
+}
+.space-icon-controls-v18{min-width:0;display:grid;align-content:center;gap:14px;padding:8px 8px 8px 2px}
+.space-icon-controls-v18>div:first-child{display:grid;gap:4px}
+.space-icon-controls-v18>div:first-child strong{color:#ded7e1;font-size:11px}
+.space-icon-controls-v18>div:first-child p{max-width:560px;margin:0;color:#756f7a;font-size:8px;line-height:1.55}
+.space-icon-actions-v18{justify-content:flex-start!important;max-width:none!important}
+.space-icon-frame-v18{display:grid;gap:8px;padding-top:12px;border-top:1px solid rgba(255,255,255,.045)}
+.space-icon-frame-v18>span{color:#746d79;font-size:7px;font-weight:760;letter-spacing:.07em;text-transform:uppercase}
+.space-icon-frame-v18 .icon-decoration-picker{justify-content:flex-start!important;gap:7px!important}
+.space-icon-frame-v18 .icon-decoration-picker>button{min-width:68px!important;padding:8px 8px!important;border-radius:12px!important}
+.space-icon-frame-v18 .icon-decoration-picker>button:hover:not(:disabled){transform:translateY(-2px) scale(1.01)!important}
+.space-icon-frame-v18 .icon-decoration-picker small{font-size:7px!important}
+
+/* Space profile is now a banner/profile preview rather than another icon editor. */
+.space-profile-editor-v18{border-radius:18px!important;overflow:hidden!important;background:rgba(255,255,255,.012)!important}
+.space-profile-editor-v18 .space-profile-banner{height:128px!important;transition:filter .22s ease,transform .22s ease}
+.space-profile-editor-v18:hover .space-profile-banner{filter:brightness(1.04)}
+.space-profile-body-v18{
+  grid-template-columns:minmax(0,1fr) auto!important;
+  align-items:center!important;
+  gap:14px!important;
+  padding:14px 18px 16px!important;
+}
+.space-profile-body-v18 .space-profile-copy-v16{min-width:0!important}
+.space-profile-body-v18 .space-profile-copy-v16 h2{margin-top:4px!important}
+
+/* Appearance cards are purely backgrounds now, with a calmer animated selection. */
+.appearance-grid-v18{align-items:stretch!important}
+.appearance-grid-v18 .background-card{min-height:84px!important;isolation:isolate}
+.appearance-grid-v18 .background-card::after{
+  content:"";position:absolute;z-index:0;inset:-30% auto -30% -60%;width:42%;pointer-events:none;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.07),transparent);
+  transform:skewX(-18deg);opacity:0;transition:left .5s ease,opacity .2s ease;
+}
+.appearance-grid-v18 .background-card:hover::after{left:125%;opacity:.45}
+.appearance-grid-v18 .background-card:hover:not(:disabled){transform:translateY(-2px) scale(1.008)!important}
+.appearance-grid-v18 .background-card.active{box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--workspace-accent,#8b6ca8) 48%,transparent),0 10px 28px color-mix(in srgb,var(--workspace-accent,#8b6ca8) 8%,transparent)!important}
+.appearance-grid-v18 .background-card.active i{animation:appearanceCheckV18 .28s var(--ease-spring) both}
+@keyframes appearanceCheckV18{from{transform:scale(.65);opacity:.3}to{transform:scale(1);opacity:1}}
+
+/* ---------- General micro-motion polish ---------- */
+.sidebar-item,.server-button,.server-home,.topbar-icon,.desktop-nav-toggle,.support-console-launcher,.account-identity{
+  transition:transform .18s var(--ease-spring),background .18s ease,border-color .18s ease,box-shadow .18s ease,color .18s ease!important;
+}
+.sidebar-item:hover{transform:translateX(2px)}
+.server-button:hover .server-avatar-shell{transform:translateY(-1px) scale(1.035)}
+.server-avatar-shell{transition:transform .2s var(--ease-spring),filter .2s ease}
+.topbar-icon:hover,.desktop-nav-toggle:hover{transform:translateY(-1px) scale(1.035)}
+.support-console-launcher:hover{transform:translateY(-1px)}
+.account-identity:hover{transform:translateY(-1px)}
+
+/* ---------- Responsive ---------- */
+@media(max-width:860px){
+  .space-icon-editor-v18{grid-template-columns:160px minmax(0,1fr);gap:14px}
+  .space-icon-preview-shell-v18{min-height:170px;padding:12px}
+  .space-icon-preview-v18{width:112px;height:112px}
+}
+@media(max-width:700px){
+  .members-view-v18{grid-template-rows:max-content max-content!important;gap:10px!important}
+  .members-view-v18 .people-bubble-grid{display:grid!important;grid-template-columns:1fr!important;padding:1px 0 14px!important}
+  .members-view-v18 .people-bubble{width:100%!important;min-width:0!important;margin:0!important;border-radius:16px!important}
+  .space-icon-section-v18{padding:13px!important}
+  .space-icon-editor-v18{grid-template-columns:1fr;gap:12px}
+  .space-icon-preview-shell-v18{min-height:158px}
+  .space-icon-controls-v18{padding:2px 0 0}
+  .space-icon-frame-v18 .icon-decoration-picker{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;width:100%!important}
+  .space-icon-frame-v18 .icon-decoration-picker>button{min-width:0!important;width:100%!important}
+  .space-profile-body-v18{grid-template-columns:1fr!important;align-items:start!important;padding:12px!important}
+  .space-profile-body-v18 .space-code-chip{justify-self:start}
+  .appearance-grid-v18{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+}
+@media(max-width:420px){
+  .space-icon-frame-v18 .icon-decoration-picker{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+  .space-icon-preview-v18{width:106px;height:106px}
+}
+
+@media(prefers-reduced-motion:reduce){
+  .settings-view>.content-heading,.settings-view>.settings-section,.settings-view>.space-profile-editor,.settings-view>.settings-card,
+  .space-icon-section-v18::after,.space-icon-preview-v18,.members-view-v18 .people-bubble-avatar,.members-view-v18 .people-bubble-copy,.members-view-v18 .people-bubble>svg{
+    animation:none!important;
+  }
+}
+html[data-motion='reduced'] .settings-view>.content-heading,
+html[data-motion='reduced'] .settings-view>.settings-section,
+html[data-motion='reduced'] .settings-view>.space-profile-editor,
+html[data-motion='reduced'] .settings-view>.settings-card,
+html[data-motion='reduced'] .space-icon-section-v18::after,
+html[data-motion='reduced'] .space-icon-preview-v18,
+html[data-motion='reduced'] .members-view-v18 .people-bubble-avatar,
+html[data-motion='reduced'] .members-view-v18 .people-bubble-copy,
+html[data-motion='reduced'] .members-view-v18 .people-bubble>svg{animation:none!important}

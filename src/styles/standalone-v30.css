@@ -1,0 +1,184 @@
+/* Spaces v30 — targeted visual repair after v29.
+   No feature/permission logic changes in this file. */
+
+/* ---------- Sidebar category headers ----------
+   v29 allowed the collapse button to shrink to almost zero width, leaving only
+   the first letter of INFORMATION / CONVERSATIONS / NOTES / SPACE visible. */
+.channel-sidebar .sidebar-section,
+.channel-sidebar .sidebar-section-label,
+.channel-sidebar .sidebar-category-label-v17 {
+  min-width:0 !important;
+  width:100% !important;
+  box-sizing:border-box !important;
+}
+
+.channel-sidebar .sidebar-category-label-v17 {
+  display:flex !important;
+  align-items:center !important;
+  justify-content:flex-start !important;
+  gap:6px !important;
+  padding-right:5px !important;
+  overflow:visible !important;
+}
+
+.channel-sidebar .sidebar-category-label-v17 > button:first-child {
+  display:flex !important;
+  align-items:center !important;
+  gap:5px !important;
+  flex:1 1 auto !important;
+  width:auto !important;
+  min-width:0 !important;
+  max-width:none !important;
+  overflow:visible !important;
+  white-space:nowrap !important;
+  text-align:left !important;
+}
+
+.channel-sidebar .sidebar-category-label-v17 > button:first-child > span {
+  display:block !important;
+  flex:1 1 auto !important;
+  width:auto !important;
+  min-width:0 !important;
+  max-width:none !important;
+  overflow:hidden !important;
+  text-overflow:ellipsis !important;
+  white-space:nowrap !important;
+}
+
+/* Plus / menu actions stay at the far right and never steal the label width. */
+.channel-sidebar .sidebar-category-label-v17 > button:not(:first-child),
+.channel-sidebar .sidebar-category-label-v17 > svg:not(:first-child) {
+  flex:0 0 auto !important;
+  margin-left:auto !important;
+}
+.channel-sidebar .sidebar-category-label-v17 > button:not(:first-child) + button,
+.channel-sidebar .sidebar-category-label-v17 > button:not(:first-child) + svg {
+  margin-left:0 !important;
+}
+
+/* Keep category copy visually consistent without the odd decorative E/V glyphs. */
+.channel-sidebar .sidebar-section-label,
+.channel-sidebar .sidebar-category-label-v17,
+.channel-sidebar .sidebar-category-label-v17 button,
+.channel-sidebar .sidebar-category-label-v17 span {
+  font-family:"Segoe UI Variable Text","Segoe UI",Arial,sans-serif !important;
+  font-style:normal !important;
+  font-variant:normal !important;
+  font-variant-ligatures:none !important;
+  font-feature-settings:"liga" 0,"clig" 0,"calt" 0 !important;
+}
+
+/* ---------- Home welcome + notifications ----------
+   The notification card must remain a real child of the welcome card; it may
+   resize/stack, but it must never hang outside of the hero. */
+.home-view .hero-panel {
+  display:grid !important;
+  grid-template-columns:minmax(0,1fr) clamp(270px,28vw,320px) !important;
+  align-items:stretch !important;
+  gap:18px !important;
+  min-height:220px !important;
+  height:auto !important;
+  max-height:none !important;
+  overflow:hidden !important;
+  box-sizing:border-box !important;
+}
+.home-view .hero-copy {
+  min-width:0 !important;
+  align-self:center !important;
+  overflow:hidden !important;
+}
+.home-view .hero-copy h1 {
+  max-width:100% !important;
+  overflow:hidden !important;
+  text-overflow:ellipsis !important;
+}
+.home-view .hero-missed {
+  position:relative !important;
+  display:flex !important;
+  flex-direction:column !important;
+  justify-content:center !important;
+  align-self:stretch !important;
+  justify-self:end !important;
+  width:100% !important;
+  max-width:320px !important;
+  min-width:0 !important;
+  min-height:0 !important;
+  height:auto !important;
+  max-height:none !important;
+  overflow:hidden !important;
+  box-sizing:border-box !important;
+  margin:0 !important;
+}
+.home-view .hero-missed p {
+  white-space:normal !important;
+  overflow:hidden !important;
+  overflow-wrap:anywhere !important;
+  display:-webkit-box !important;
+  -webkit-line-clamp:3 !important;
+  -webkit-box-orient:vertical !important;
+}
+.home-view .hero-missed-head {
+  min-width:0 !important;
+}
+.home-view .hero-missed-head > span,
+.home-view .hero-missed-head > strong {
+  min-width:0 !important;
+}
+
+/* Medium desktop: keep the notification card beside the welcome copy until
+   there genuinely isn't room. */
+@media (max-width:1080px) and (min-width:821px) {
+  .home-view .hero-panel {
+    grid-template-columns:minmax(0,1fr) minmax(245px,285px) !important;
+    gap:13px !important;
+    padding:22px !important;
+  }
+  .home-view .hero-missed { max-width:285px !important; }
+  .home-view .hero-copy h1 { font-size:clamp(40px,5.6vw,58px) !important; }
+}
+
+/* Compact/tablet: notification card remains INSIDE the welcome container and
+   stacks below the welcome content rather than disappearing or overflowing. */
+@media (max-width:820px) {
+  .home-view .hero-panel {
+    grid-template-columns:minmax(0,1fr) !important;
+    gap:12px !important;
+  }
+  .home-view .hero-copy { overflow:visible !important; }
+  .home-view .hero-copy h1 {
+    white-space:normal !important;
+    text-overflow:clip !important;
+  }
+  .home-view .hero-missed {
+    justify-self:stretch !important;
+    width:100% !important;
+    max-width:none !important;
+    min-height:96px !important;
+  }
+}
+
+@media (max-width:560px) {
+  .home-view .hero-panel { padding:16px !important; gap:10px !important; }
+  .home-view .hero-copy h1 { font-size:36px !important; }
+  .home-view .hero-missed { min-height:104px !important; }
+}
+
+/* ---------- Settings containment ----------
+   Keep v29's visibility repair, but don't allow a section to visually spill
+   across the next section. */
+.settings-view-v28 > .settings-surface-v28 {
+  overflow:hidden !important;
+}
+.settings-surface-v28 .space-profile-grid-v28,
+.settings-surface-v28 .space-frame-row-v28,
+.settings-surface-v28 .setting-row-v28,
+.settings-surface-v28 .background-grid-v28,
+.settings-surface-v28 .settings-tools-grid-v28,
+.settings-surface-v28 .channel-acl-list-v28,
+.settings-surface-v28 .protected-space-v28,
+.settings-surface-v28 .danger-actions {
+  position:relative !important;
+  width:auto !important;
+  max-width:none !important;
+  box-sizing:border-box !important;
+}

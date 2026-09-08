@@ -1,0 +1,76 @@
+SPACES 0.0.17 — SUPPORT, CHANNELS & PEOPLE
+==========================================
+
+SUPPORT CONSOLE
+---------------
+- Support Console is platform-role gated: Founder, Staff and Support only.
+- Rebuilt the small panel into a full operational console.
+- Added queue views for:
+  - player reports
+  - Space reports
+  - bug reports
+  - official Support DM history
+- Existing player report system is now actionable from the console.
+- Staff can review/dismiss reports and take account action within platform hierarchy.
+- Added platform Ban / Unban controls.
+- Added official Support DMs with subject + message and audit history.
+- Added Space Restrict / Unrestrict actions. Restricted Spaces become read-only for normal members while still viewable.
+- Added permanent Space deletion for authorized Support roles with typed Space-name confirmation.
+- Founder/Staff/Support hierarchy is enforced by the Worker, not just hidden in the UI.
+- Spaces - Hub cannot be reported, restricted or deleted.
+
+REPORTING
+---------
+- Any signed-in member can right-click/hold a Space in their rail and choose Report Space.
+- Account Settings -> Content & Safety now includes Report a Spaces bug.
+- Existing member profile Report action continues to feed Player reports.
+- Support cases are persisted in D1 and survive app restarts/deploys.
+
+CHANNELS
+--------
+- Added Pin channel / Unpin channel to channel context menus.
+- Pinned channels appear directly below Overview for fast access.
+- Channel groups can now collapse independently per Space:
+  - Pinned
+  - Information
+  - Conversations
+  - Notes
+  - Staff Channels
+  - Space tools
+- Collapse state and pinned channels persist in local app preferences.
+
+SPACE SETTINGS
+--------------
+- Space picture is now the FIRST card in the Appearance/background grid.
+- It opens the existing image crop editor and saves through normal Space identity settings.
+- Works for regular Spaces and Spaces - Hub when Founder has management access.
+
+PEOPLE
+------
+- Search now sits directly under "Everyone in this Space, at a glance" instead of leaving empty header space.
+- Member bubbles stay in their layout positions.
+- Avatars/glows get a subtle independent floating animation so the People page feels alive without cards drifting around.
+- Existing click-to-open floating member profile remains.
+
+ACCOUNT PRESENCE
+----------------
+- Bottom-left account menu now visibly overlays the current presence on the profile picture.
+- Current state is also labeled in the account header where there was unused space.
+- Online, Idle, Do Not Disturb and Invisible continue using the same saved presence state.
+
+BACKEND / DATABASE
+------------------
+- New required migration: 0015_support_cases_space_restrictions.sql
+- New D1 tables:
+  - support_cases
+  - support_messages
+  - space_restrictions
+- Worker API health version bumped to 6.0.
+- Added support-case, Support DM and Space restriction health flags.
+- Deployment helper intentionally uses `wrangler d1 execute --file` because this account previously hit Cloudflare code 7403 through `d1 migrations apply` while direct execution worked.
+
+RESPONSIVE
+----------
+- Full Support Console adapts to desktop, tablet and phone.
+- Mobile Support Console becomes a full-screen operations sheet.
+- People header/search and action layouts are responsive.

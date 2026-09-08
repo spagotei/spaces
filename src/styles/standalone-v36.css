@@ -1,0 +1,72 @@
+/* Spaces 0.0.36 — compact Support Console, nested channel organization, role assignment, settings tabs */
+
+/* ---------- Support Console: keep it below native titlebar and slightly tighter ---------- */
+.support-console-v17{
+  top:44px!important;
+  bottom:22px!important;
+  left:max(82px,5vw)!important;
+  right:28px!important;
+  border-radius:18px!important;
+}
+.support-console-header-v17{min-height:62px!important;padding:9px 12px!important}
+.support-console-layout-v17{grid-template-columns:168px minmax(0,1fr)!important}
+.support-console-nav-v17{padding:9px 8px!important;gap:3px!important}
+.support-console-nav-v17>button,.support-console-nav-bottom>button{min-height:34px!important;padding:5px 7px!important}
+.support-console-nav-stats{padding:7px 8px 10px!important}.support-console-nav-stats strong{font-size:20px!important}
+.support-console-toolbar-v17{padding:9px 11px!important;min-height:52px}
+.support-console-toolbar-v17>label{min-height:32px!important}
+.support-console-main-v17{background:rgba(5,5,8,.36)}
+
+/* ---------- Nested categories and reliable drag targets ---------- */
+.sidebar-category-tree-v36{position:relative;margin:0!important;padding:0!important}
+.nested-category-label-v36{position:relative;padding-left:calc(8px + (var(--category-depth,0) * 13px))!important;min-height:28px!important}
+.nested-category-label-v36>button:first-child{min-width:0!important;flex:1 1 auto!important;justify-content:flex-start!important;gap:6px!important;overflow:hidden}
+.nested-category-label-v36>button:first-child span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sidebar-category-actions-v36{display:flex;align-items:center;gap:1px;flex:0 0 auto}
+.sidebar-category-actions-v36>button{width:24px;height:24px;display:grid;place-items:center;border:0;border-radius:7px;background:transparent;color:#625d68;cursor:pointer}
+.sidebar-category-actions-v36>button:hover{background:rgba(255,255,255,.045);color:#bdb5c4}
+.sidebar-category-contents-v36{display:grid;min-width:0}
+.sidebar-category-tree-v36.depth-1>.nested-category-label-v36{margin-left:8px;border-left:1px solid rgba(255,255,255,.055)}
+.sidebar-category-tree-v36.depth-1>.sidebar-category-contents-v36{margin-left:11px;border-left:1px solid rgba(255,255,255,.035)}
+.drag-over-category-v36>.nested-category-label-v36{background:color-mix(in srgb,var(--workspace-accent,#8b6ca8) 12%,rgba(255,255,255,.02))!important;box-shadow:inset 2px 0 0 color-mix(in srgb,var(--workspace-accent,#8b6ca8) 72%,#fff)}
+.drag-before-category-v36:before{content:"";position:absolute;z-index:4;left:10px;right:8px;top:-1px;height:2px;border-radius:999px;background:color-mix(in srgb,var(--workspace-accent,#8b6ca8) 72%,#fff);box-shadow:0 0 12px color-mix(in srgb,var(--workspace-accent,#8b6ca8) 24%,transparent)}
+.sidebar-category-tree-v36 .channel-row{min-width:0}
+
+/* ---------- Roles: make rows clearly selectable and members manageable ---------- */
+.roles-view-v14 .hierarchy-stack button{user-select:none}
+.custom-hierarchy-row,.protected-role-row{cursor:pointer!important;pointer-events:auto!important}
+.custom-hierarchy-row[draggable="true"]{cursor:grab!important}.custom-hierarchy-row[draggable="true"]:active{cursor:grabbing!important}
+.base-role-tabs-v36{margin:0 0 12px!important}
+.base-role-member-manager-v36{margin-top:4px}
+.base-role-member-row-v36{grid-template-columns:38px minmax(0,1fr) auto!important}
+.base-role-current-v36{display:inline-flex;align-items:center;gap:5px;padding:5px 8px;border-radius:999px;background:rgba(255,255,255,.035);color:#8f8795;font-size:8px;font-weight:700}
+.role-member-row .secondary-button.compact{min-width:76px;justify-content:center}
+
+/* ---------- Space Settings tabs ---------- */
+.space-settings-v36{padding-top:18px!important}
+.space-settings-heading-v36{position:sticky;top:0;z-index:8;padding-top:2px;padding-bottom:10px;background:linear-gradient(180deg,rgba(8,8,12,.98) 70%,rgba(8,8,12,0))}
+.space-settings-tabs-v36{position:sticky;top:76px;z-index:7;display:flex;align-items:center;gap:5px;padding:7px;margin:0 0 14px;border:1px solid rgba(255,255,255,.055);border-radius:13px;background:rgba(11,11,16,.94);backdrop-filter:blur(16px);overflow-x:auto}
+.space-settings-tabs-v36>button{flex:0 0 auto;min-height:32px;display:flex;align-items:center;gap:7px;padding:0 10px;border:1px solid transparent;border-radius:9px;background:transparent;color:#77717d;font:inherit;font-size:8.5px;font-weight:700;cursor:pointer}
+.space-settings-tabs-v36>button:hover{background:rgba(255,255,255,.025);color:#bcb5c2}.space-settings-tabs-v36>button.active{border-color:color-mix(in srgb,var(--workspace-accent,#8b6ca8) 28%,rgba(255,255,255,.05));background:color-mix(in srgb,var(--workspace-accent,#8b6ca8) 12%,rgba(255,255,255,.02));color:#e0d9e3}
+.space-settings-tabs-v36>button small{padding:2px 5px;border-radius:999px;background:rgba(255,255,255,.04);font-size:6.5px;color:#938b99}
+.space-settings-colors-v36{padding:14px}
+.space-settings-toggle-row-v36{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:14px;padding:13px 4px;border-top:1px solid rgba(255,255,255,.045)}
+.space-settings-toggle-row-v36:first-of-type{border-top:0}.space-settings-toggle-row-v36>div{display:grid;gap:3px}.space-settings-toggle-row-v36 strong{font-size:9px;color:#c7c0cb}.space-settings-toggle-row-v36 span{font-size:7px;color:#716b76;line-height:1.45}
+.settings-status-v36{padding:5px 8px;border-radius:999px;background:rgba(255,255,255,.035);font-weight:800!important;color:#928b97!important}
+.space-settings-v32-channels>button.muted-v36{opacity:.62}
+.space-access-summary-v36{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.space-access-summary-v36 article{display:grid;grid-template-columns:28px minmax(0,1fr);align-items:center;gap:8px;padding:11px;border:1px solid rgba(255,255,255,.05);border-radius:11px;background:rgba(255,255,255,.012);color:#8f8797}.space-access-summary-v36 article>div{display:grid;gap:2px}.space-access-summary-v36 strong{color:#bfb8c4;font-size:8.5px}.space-access-summary-v36 span{color:#6c6670;font-size:6.8px;line-height:1.45}
+
+/* ---------- Personal notification settings ---------- */
+.notification-ping-grid-v36>.personal-setting-row,.notification-ping-grid-v36>.setting-row{margin:0!important;border-radius:0!important;border-left:0!important;border-right:0!important;border-bottom:0!important}
+.notification-ping-grid-v36>.section-heading{padding-bottom:7px}
+
+@media(max-width:1100px){
+  .support-console-v17{left:72px!important;right:12px!important;bottom:12px!important}
+  .support-console-layout-v17{grid-template-columns:148px minmax(0,1fr)!important}
+  .space-access-summary-v36{grid-template-columns:1fr}
+}
+@media(max-width:720px){
+  .support-console-v17{inset:0!important;border-radius:0!important}
+  .space-settings-v36{padding-top:8px!important}.space-settings-heading-v36{position:relative}.space-settings-tabs-v36{top:0!important}
+  .space-settings-tabs-v36>button span{display:none}.space-settings-tabs-v36>button{width:36px;justify-content:center;padding:0}
+}
