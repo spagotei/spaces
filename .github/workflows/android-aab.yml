@@ -1,0 +1,81 @@
+name: Build Spaces Android AAB
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build signed Android AAB
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Spaces
+        uses: actions/checkout@v7
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-linux-android,armv7-linux-androideabi,i686-linux-android,x86_64-linux-android
+
+      - name: Install Android SDK and NDK
+        shell: bash
+        run: |
+          yes | sdkmanager --licenses > /dev/null || true
+
+          sdkmanager \
+            "platform-tools" \
+            "platforms;android-36" \
+            "build-tools;36.0.0" \
+            "ndk;28.2.13676358"
+
+          echo "NDK_HOME=$ANDROID_HOME/ndk/28.2.13676358" >> "$GITHUB_ENV"
+          echo "ANDROID_NDK_HOME=$ANDROID_HOME/ndk/28.2.13676358" >> "$GITHUB_ENV"
+
+      - name: Install npm dependencies
+        run: npm ci
+
+      - name: Configure Android signing
+        shell: bash
+        env:
+          KEY_BASE64: ${{ secrets.ANDROID_KEY_BASE64 }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          printf '%s' "$KEY_BASE64" | base64 --decode > "$RUNNER_TEMP/spaces-upload-keystore.jks"
+
+          cd src-tauri/gen/android
+
+          printf 'keyAlias=%s\n' "$KEY_ALIAS" > keystore.properties
+          printf 'password=%s\n' "$KEY_PASSWORD" >> keystore.properties
+          printf 'storeFile=%s\n' "$RUNNER_TEMP/spaces-upload-keystore.jks" >> keystore.properties
+
+      - name: Build Spaces AAB
+        run: npx tauri android build --aab
+
+      - name: Verify AAB
+        shell: bash
+        run: |
+          echo "Generated Android App Bundle:"
+          ls -lh src-tauri/gen/android/app/build/outputs/bundle/universalRelease/*.aab
+
+      - name: Upload Spaces AAB
+        uses: actions/upload-artifact@v7
+        with:
+          name: Spaces-Android-AAB
+          path: src-tauri/gen/android/app/build/outputs/bundle/universalRelease/*.aab
+          if-no-files-found: error
