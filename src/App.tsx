@@ -1,4 +1,4 @@
-﻿import { useState } from 'react'
+import { useState } from 'react'
 import { DesktopTitlebar, isTauriDesktopRuntime } from './components/DesktopTitlebar'
 import { CustomCursor } from './components/CustomCursor'
 import { WelcomeToSpaces } from './components/WelcomeToSpaces'
@@ -54,7 +54,7 @@ function StartupLoadingScreen() {
   return (
     <div className="startup-loading-screen" aria-label="Opening Spaces">
       <div className="spaces-loader" aria-hidden="true"><i /><i /><i /></div>
-      <span>Opening Spacesâ€¦</span>
+      <span>Opening Spaces…</span>
     </div>
   )
 }

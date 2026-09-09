@@ -1,4 +1,4 @@
-﻿import { Icon } from './Icon'
+import { Icon } from './Icon'
 import { SpacesLogo } from './SpacesLogo'
 
 export function WelcomeToSpaces({ onContinue }: { onContinue: () => void }) {
