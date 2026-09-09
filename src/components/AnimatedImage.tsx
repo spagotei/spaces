@@ -1,8 +1,9 @@
-import { useEffect, useMemo, useState, type CSSProperties, type ImgHTMLAttributes } from 'react'
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type ImgHTMLAttributes } from 'react'
 import { isGifDataUrl } from '../utils/image'
 
 const posterCache = new Map<string, string>()
 const posterPromises = new Map<string, Promise<string | null>>()
+const transparentPixel = 'data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs='
 
 function looksLikeGif(src: string | null | undefined) {
   if (!src) return false
@@ -45,6 +46,19 @@ async function buildGifPoster(src: string): Promise<string | null> {
 }
 
 export type AnimatedImageMode = 'hover' | 'always' | 'still'
+type SpacePlaybackContext = 'normal' | 'active-space' | 'inactive-space'
+
+function spacePlaybackContext(element: HTMLElement | null): SpacePlaybackContext {
+  if (!element) return 'normal'
+
+  const railButton = element.closest('.server-button, .mobile-space-strip > button')
+  if (railButton) return railButton.classList.contains('active') ? 'active-space' : 'inactive-space'
+
+  // The Space header only renders artwork for the currently opened Space.
+  if (element.closest('.space-header')) return 'active-space'
+
+  return 'normal'
+}
 
 type AnimatedImageProps = Omit<ImgHTMLAttributes<HTMLImageElement>, 'src'> & {
   src: string
@@ -54,8 +68,10 @@ type AnimatedImageProps = Omit<ImgHTMLAttributes<HTMLImageElement>, 'src'> & {
 
 export function AnimatedImage({ src, mode = 'hover', forcePlay = false, className = '', onPointerEnter, onPointerLeave, onFocus, onBlur, style, ...rest }: AnimatedImageProps) {
   const animated = useMemo(() => looksLikeGif(src), [src])
+  const imageRef = useRef<HTMLImageElement>(null)
   const [poster, setPoster] = useState<string | null>(() => posterCache.get(src) ?? null)
   const [hovered, setHovered] = useState(false)
+  const [spaceContext, setSpaceContext] = useState<SpacePlaybackContext>('normal')
 
   useEffect(() => {
     let cancelled = false
@@ -67,13 +83,38 @@ export function AnimatedImage({ src, mode = 'hover', forcePlay = false, classNam
     return () => { cancelled = true }
   }, [animated, mode, src])
 
-  const playing = animated && (mode === 'always' || forcePlay || (mode === 'hover' && hovered))
-  const displaySource = animated && !playing ? poster : src
-  if (!displaySource) return null
+  useEffect(() => {
+    const image = imageRef.current
+    if (!image) return
+
+    const sync = () => setSpaceContext(spacePlaybackContext(image))
+    sync()
+
+    const host = image.closest('.server-button, .mobile-space-strip > button, .space-header')
+    if (!host) return
+
+    const observer = new MutationObserver(sync)
+    observer.observe(host, { attributes: true, attributeFilter: ['class'] })
+    return () => observer.disconnect()
+  }, [src])
+
+  const activeSpacePlayback = spaceContext === 'active-space'
+  const normalHoverPlayback = spaceContext === 'normal' && hovered
+  const playing = animated && (
+    mode === 'always' ||
+    forcePlay ||
+    (mode === 'hover' && (activeSpacePlayback || normalHoverPlayback))
+  )
+
+  // Keep the <img> mounted even before a poster exists so it can detect whether
+  // its Space is active. The transparent pixel lets the Avatar initials remain
+  // visible until the static first-frame poster is ready.
+  const displaySource = animated && !playing ? (poster ?? transparentPixel) : src
 
   return (
     <img
       {...rest}
+      ref={imageRef}
       src={displaySource}
       className={`animated-image-v41 ${animated ? 'is-gif-v41' : ''} ${playing ? 'is-playing-v41' : 'is-still-v41'} ${className}`.trim()}
       style={style as CSSProperties}
