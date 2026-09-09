@@ -1,4 +1,4 @@
-import { Icon } from './Icon'
+﻿import { Icon } from './Icon'
 import { SpacesLogo } from './SpacesLogo'
 
 export function WelcomeToSpaces({ onContinue }: { onContinue: () => void }) {
@@ -15,8 +15,8 @@ export function WelcomeToSpaces({ onContinue }: { onContinue: () => void }) {
           <div><Icon name="settings" size={16}/><span><strong>Your Space</strong><small>Choose the structure, permissions, and appearance that fit your group.</small></span></div>
         </div>
         <button className="primary-button welcome-spaces-continue" onClick={onContinue}>Enter Spaces <Icon name="chevron" size={14}/></button>
-        <small className="welcome-once-copy">Shown once on this device.</small>
       </section>
     </div>
   )
 }
+
