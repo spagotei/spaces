@@ -111,7 +111,7 @@ function durationMinutesFromInput(value: string): number | null {
 
 export function SupportOperationsV48({ mode }: { mode: 'accounts' | 'restrictions' | 'team' }) {
   const dialog = useAppDialog()
-  const { apiUrl, session, profile, searchSupportUsers, pushToast } = useSpaces()
+  const { apiUrl, session, searchSupportUsers, pushToast } = useSpaces()
   const access = useSupportV48Access()
   const [query, setQuery] = useState('')
   const [users, setUsers] = useState<WorkspaceSupportUser[]>([])
