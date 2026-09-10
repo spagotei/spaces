@@ -1,0 +1,136 @@
+/* Spaces v50 — profile artwork layering + true top-level channel permissions modal. */
+
+/* ---------- Profile preview ----------
+   The banner uses a ::after overlay at z-index:1. Keep the identity/avatar above it
+   so an uploaded PFP is never visually covered where it overlaps the banner. */
+.profile-editor-preview {
+  position: relative !important;
+  isolation: isolate !important;
+}
+
+.profile-editor-banner {
+  z-index: 1 !important;
+}
+
+.profile-editor-identity {
+  position: relative !important;
+  z-index: 3 !important;
+  overflow: visible !important;
+  isolation: isolate !important;
+}
+
+.profile-avatar-edit {
+  position: relative !important;
+  z-index: 5 !important;
+  overflow: visible !important;
+  flex: 0 0 auto !important;
+}
+
+.profile-avatar-edit .avatar {
+  position: relative !important;
+  z-index: 2 !important;
+  overflow: hidden !important;
+  isolation: isolate !important;
+}
+
+.profile-avatar-edit .avatar > img,
+.profile-avatar-edit .avatar > .animated-image-v41 {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  max-width: none !important;
+  max-height: none !important;
+  object-fit: cover !important;
+  object-position: center !important;
+  clip-path: none !important;
+  mask: none !important;
+  -webkit-mask: none !important;
+}
+
+/* Keep the edit affordance above the actual photo without masking the photo itself. */
+.profile-avatar-edit > span {
+  z-index: 6 !important;
+}
+
+/* ---------- Channel permissions ----------
+   ChannelPermissionsEditor is portaled to document.body in v50.
+   These rules guarantee a full-viewport layer above every Space/sidebar rail. */
+body > .modal-backdrop:has(.channel-acl-v47) {
+  position: fixed !important;
+  z-index: 1200 !important;
+  inset: 0 !important;
+  width: 100vw !important;
+  height: 100dvh !important;
+  display: grid !important;
+  place-items: center !important;
+  padding: clamp(12px, 2vw, 28px) !important;
+  background: rgba(3,3,6,.72) !important;
+  backdrop-filter: blur(9px) !important;
+  overflow: hidden !important;
+}
+
+body > .modal-backdrop:has(.channel-acl-v47) > .modal {
+  position: relative !important;
+  inset: auto !important;
+  z-index: 1201 !important;
+  width: min(1040px, calc(100vw - 40px)) !important;
+  max-width: 1040px !important;
+  height: min(700px, calc(100dvh - 40px)) !important;
+  max-height: calc(100dvh - 40px) !important;
+  margin: 0 !important;
+  overflow: hidden !important;
+  border-radius: 18px !important;
+}
+
+body > .modal-backdrop:has(.channel-acl-v47) > .modal .modal-body {
+  min-width: 0 !important;
+  min-height: 0 !important;
+  height: calc(100% - 52px) !important;
+  overflow: hidden !important;
+}
+
+body > .modal-backdrop:has(.channel-acl-v47) .channel-acl-v47 {
+  width: 100% !important;
+  height: 100% !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+}
+
+/* Phones/tablets: still top-level, but use the full available viewport. */
+@media (max-width: 900px) {
+  .profile-editor-identity {
+    z-index: 3 !important;
+  }
+
+  body > .modal-backdrop:has(.channel-acl-v47) {
+    padding: 6px !important;
+  }
+
+  body > .modal-backdrop:has(.channel-acl-v47) > .modal {
+    width: calc(100vw - 12px) !important;
+    height: calc(100dvh - 12px) !important;
+    max-width: none !important;
+    max-height: calc(100dvh - 12px) !important;
+    border-radius: 14px !important;
+  }
+}
+
+@media (max-width: 700px) {
+  body > .modal-backdrop:has(.channel-acl-v47) {
+    padding: 0 !important;
+  }
+
+  body > .modal-backdrop:has(.channel-acl-v47) > .modal {
+    width: 100vw !important;
+    height: 100dvh !important;
+    max-height: 100dvh !important;
+    border-radius: 0 !important;
+    border-left: 0 !important;
+    border-right: 0 !important;
+  }
+
+  body > .modal-backdrop:has(.channel-acl-v47) > .modal .modal-header {
+    padding-top: max(12px, env(safe-area-inset-top)) !important;
+  }
+}

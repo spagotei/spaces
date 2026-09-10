@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { Icon } from './Icon'
 import { Modal } from './Modal'
 import { useSpaces } from '../state/SpacesContext'
@@ -230,9 +231,10 @@ export function ChannelPermissionsEditor({
 
   if (embedded) return <div className="channel-acl-embedded-v47">{content}</div>
 
-  return (
+  return createPortal(
     <Modal title={`#${channel.name} Permissions`} onClose={onClose} wide>
       {content}
-    </Modal>
+    </Modal>,
+    document.body,
   )
 }
