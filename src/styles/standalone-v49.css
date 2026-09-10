@@ -1,0 +1,259 @@
+/* Spaces v49 — unified Settings polish.
+   Restores the card language used by Security across every Settings tab,
+   centers the desktop Settings frame, and preserves the mobile tab rail. */
+
+.modal:has(.personal-settings-shell) .modal-header {
+  position: relative !important;
+  justify-content: center !important;
+  background: rgba(255,255,255,.014) !important;
+}
+.modal:has(.personal-settings-shell) .modal-header > div {
+  position: absolute !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  pointer-events: none;
+}
+.modal:has(.personal-settings-shell) .modal-header > .icon-button { margin-left: auto !important; }
+
+.personal-settings-content {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,.10) transparent;
+}
+.personal-settings-content::-webkit-scrollbar { width: 7px; }
+.personal-settings-content::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: rgba(255,255,255,.09);
+}
+
+.settings-page-heading {
+  margin-bottom: 14px !important;
+  padding-bottom: 13px !important;
+}
+.settings-page-heading h2 {
+  font-size: 22px !important;
+  letter-spacing: -.035em !important;
+}
+
+/* v47 flattened these; bring back the Security-style card system. */
+.personal-settings-content > .settings-card,
+.personal-settings-content > .moderation-card,
+.personal-settings-content > .profile-media-manager-v20,
+.personal-settings-content > .space-notification-controls,
+.personal-settings-content > .sessions-section,
+.personal-settings-content .settings-card {
+  margin: 10px 0 !important;
+  padding: 14px !important;
+  border: 1px solid rgba(255,255,255,.065) !important;
+  border-radius: 13px !important;
+  background: linear-gradient(145deg, rgba(255,255,255,.026), rgba(255,255,255,.012)) !important;
+  box-shadow: inset 0 1px rgba(255,255,255,.018) !important;
+}
+
+.personal-settings-content > .setting-row,
+.personal-settings-content > .personal-setting-row {
+  min-height: 62px !important;
+  margin: 8px 0 !important;
+  padding: 11px 13px !important;
+  border: 1px solid rgba(255,255,255,.06) !important;
+  border-radius: 12px !important;
+  background: rgba(255,255,255,.022) !important;
+  box-shadow: inset 0 1px rgba(255,255,255,.014) !important;
+}
+
+.personal-settings-content .settings-card .setting-row,
+.personal-settings-content .settings-card .personal-setting-row,
+.personal-settings-content .moderation-card .setting-row,
+.personal-settings-content .moderation-card .personal-setting-row {
+  min-height: 56px !important;
+  margin: 6px 0 !important;
+  padding: 10px 11px !important;
+  border: 1px solid rgba(255,255,255,.052) !important;
+  border-radius: 10px !important;
+  background: rgba(0,0,0,.12) !important;
+}
+
+.personal-setting-row > div > strong,
+.setting-row > div > strong {
+  font-size: 12px !important;
+  font-weight: 650 !important;
+  color: #d8d4dc !important;
+}
+
+.choice-pills {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  flex-wrap: wrap !important;
+  gap: 6px !important;
+}
+.choice-pills > button {
+  min-height: 31px !important;
+  padding: 0 11px !important;
+  border: 1px solid rgba(255,255,255,.065) !important;
+  border-radius: 9px !important;
+  background: rgba(255,255,255,.025) !important;
+  color: #8f8995 !important;
+  font-size: 10px !important;
+}
+.choice-pills > button:hover {
+  color: #cbc5d0 !important;
+  background: rgba(255,255,255,.045) !important;
+}
+.choice-pills > button.active {
+  color: #f2edf5 !important;
+  border-color: color-mix(in srgb, var(--active-accent) 42%, rgba(255,255,255,.07)) !important;
+  background: color-mix(in srgb, var(--active-accent) 16%, rgba(255,255,255,.025)) !important;
+}
+
+.personal-accent-picker {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  flex-wrap: wrap !important;
+  gap: 8px !important;
+}
+.personal-accent-picker > input[type='color'] {
+  width: 38px !important;
+  height: 30px !important;
+  padding: 3px !important;
+  border: 1px solid rgba(255,255,255,.08) !important;
+  border-radius: 9px !important;
+  background: rgba(255,255,255,.025) !important;
+}
+.personal-accent-picker code { color: #77717d !important; font-size: 9px !important; }
+
+.accent-swatches { display: flex !important; gap: 5px !important; }
+.accent-swatches > button {
+  width: 24px !important;
+  height: 24px !important;
+  border-radius: 8px !important;
+  border: 2px solid transparent !important;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.12) !important;
+}
+.accent-swatches > button.active {
+  border-color: #e9e2ec !important;
+  box-shadow: 0 0 0 2px rgba(0,0,0,.8), 0 0 0 3px color-mix(in srgb,var(--active-accent) 58%,transparent) !important;
+}
+
+.settings-reset { margin-top: 10px !important; }
+
+.security-overview-v16 { gap: 8px !important; margin-bottom: 10px !important; }
+.security-overview-v16 > article {
+  min-height: 58px !important;
+  border-radius: 11px !important;
+  background: linear-gradient(145deg, rgba(255,255,255,.027), rgba(255,255,255,.014)) !important;
+  border-color: rgba(255,255,255,.065) !important;
+}
+.security-feature-heading { align-items: center !important; }
+.security-orb {
+  border: 1px solid rgba(255,255,255,.045) !important;
+  background: rgba(255,255,255,.025) !important;
+}
+
+.developer-own-id-v23 {
+  margin-top: 8px !important;
+  border-radius: 11px !important;
+  background: rgba(0,0,0,.14) !important;
+}
+.profile-media-row-v20 {
+  min-height: 66px !important;
+  padding: 10px 11px !important;
+  margin: 6px 0 !important;
+  border: 1px solid rgba(255,255,255,.05) !important;
+  border-radius: 10px !important;
+  background: rgba(0,0,0,.11) !important;
+}
+.space-preference-row, .session-row { border-radius: 10px !important; }
+
+/* Desktop: truly center the whole Settings window and nav contents. */
+@media (min-width: 901px) {
+  .modal-backdrop:has(.personal-settings-shell) {
+    display: grid !important;
+    place-items: center !important;
+    padding: 24px !important;
+    overflow: hidden !important;
+  }
+  .modal:has(.personal-settings-shell) {
+    position: relative !important;
+    inset: auto !important;
+    margin: 0 !important;
+    width: min(1160px, calc(100vw - 48px)) !important;
+    height: min(760px, calc(100vh - 48px)) !important;
+    max-width: 1160px !important;
+    max-height: 760px !important;
+    border-radius: 20px !important;
+  }
+  .personal-settings-shell {
+    grid-template-columns: 214px minmax(0,1fr) !important;
+  }
+  .personal-settings-nav {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    padding: 18px 14px !important;
+  }
+  .settings-profile-mini,
+  .personal-settings-nav > button,
+  .personal-settings-nav > .settings-signout {
+    width: 100% !important;
+    max-width: 184px !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+  }
+  .settings-profile-mini { margin-bottom: 13px !important; }
+  .personal-settings-nav > button {
+    min-height: 36px !important;
+    height: 36px !important;
+    padding-inline: 10px !important;
+  }
+  .personal-settings-content {
+    width: min(900px, 100%) !important;
+    max-width: 900px !important;
+    margin: 0 auto !important;
+    padding: 26px 30px 38px !important;
+  }
+}
+
+/* Mobile keeps the horizontal Settings nav and the same card styling. */
+@media (max-width: 900px) {
+  .modal:has(.personal-settings-shell) .modal-header > div {
+    position: static !important;
+    transform: none !important;
+    margin-right: auto !important;
+  }
+  .modal:has(.personal-settings-shell) .modal-header { justify-content: space-between !important; }
+  .personal-settings-content {
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+  }
+  .personal-settings-content > .setting-row,
+  .personal-settings-content > .personal-setting-row,
+  .personal-settings-content > .settings-card,
+  .personal-settings-content > .moderation-card,
+  .personal-settings-content > .profile-media-manager-v20,
+  .personal-settings-content > .space-notification-controls,
+  .personal-settings-content > .sessions-section {
+    margin: 8px 0 !important;
+  }
+}
+
+@media (max-width: 620px) {
+  .personal-settings-content > .setting-row,
+  .personal-settings-content > .personal-setting-row {
+    align-items: stretch !important;
+    gap: 10px !important;
+  }
+  .personal-settings-content > .setting-row.align-start,
+  .personal-settings-content > .personal-setting-row.align-start,
+  .accent-preference-row {
+    flex-direction: column !important;
+  }
+  .choice-pills, .personal-accent-picker { justify-content: flex-start !important; }
+  .personal-setting-row > .switch, .setting-row > .switch { align-self: flex-end !important; }
+  .accent-swatches {
+    max-width: 100% !important;
+    overflow-x: auto !important;
+    padding: 2px !important;
+  }
+}

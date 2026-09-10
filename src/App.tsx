@@ -55,6 +55,7 @@ import './styles/standalone-v45.css'
 
 import './styles/standalone-v47.css'
 import './styles/standalone-v48.css'
+import './styles/standalone-v49.css'
 function StartupLoadingScreen() {
   return (
     <div className="startup-loading-screen" aria-label="Opening Spaces">
