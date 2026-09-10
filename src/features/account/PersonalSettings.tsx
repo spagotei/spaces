@@ -12,15 +12,17 @@ import type { WorkspaceAccountSecurity, WorkspaceSessionInfo, WorkspaceTwoFactor
 import { contentFilterExample } from '../../utils/content-filter'
 import { gifFileToDataUrl, imageFileToRawDataUrl, isGifDataUrl, isGifFile } from '../../utils/image'
 import { formatTime } from '../../utils/format'
+import { formatPublicUserId } from '../../utils/public-id'
 import { platformRoleLabel } from '../../utils/permissions'
 
-export type PersonalSettingsTab = 'profile' | 'content' | 'appearance' | 'notifications' | 'security' | 'developer'
+export type PersonalSettingsTab = 'profile' | 'content' | 'appearance' | 'accessibility' | 'notifications' | 'security' | 'developer'
 type Tab = PersonalSettingsTab
 
 const tabs: { id: Tab; label: string; icon: IconName }[] = [
   { id: 'profile', label: 'My Profile', icon: 'user' },
   { id: 'content', label: 'Content & Safety', icon: 'shield' },
   { id: 'appearance', label: 'Appearance', icon: 'sparkle' },
+  { id: 'accessibility', label: 'Accessibility', icon: 'monitor' },
   { id: 'notifications', label: 'Notifications', icon: 'bell' },
   { id: 'security', label: 'Security', icon: 'lock' },
   { id: 'developer', label: 'Developer Mode', icon: 'command' },
@@ -33,7 +35,7 @@ export function PersonalSettings({ onClose, initialTab = 'profile' }: { onClose:
     changePassword, logout, pushToast, getAccountSecurity, startEmailVerification, verifyEmail,
     beginTwoFactorSetup, enableTwoFactor, disableTwoFactor, regenerateRecoveryCodes, createSupportCase,
   } = useSpaces()
-  const { preferences, setPreference, resetPreferences } = usePreferences()
+  const { preferences, setPreference } = usePreferences()
   const [tab, setTab] = useState<Tab>(initialTab)
   const [displayName, setDisplayName] = useState(profile?.displayName ?? '')
   const [bio, setBio] = useState(profile?.bio ?? '')
@@ -48,6 +50,9 @@ export function PersonalSettings({ onClose, initialTab = 'profile' }: { onClose:
   const [emailDraft, setEmailDraft] = useState('')
   const [emailCode, setEmailCode] = useState('')
   const [emailPending, setEmailPending] = useState(false)
+  const [emailEditing, setEmailEditing] = useState(false)
+  const [emailCurrentPassword, setEmailCurrentPassword] = useState('')
+  const [emailTwoFactorCode, setEmailTwoFactorCode] = useState('')
   const [twoFactorSetup, setTwoFactorSetup] = useState<WorkspaceTwoFactorSetup | null>(null)
   const [twoFactorCode, setTwoFactorCode] = useState('')
   const [recoveryCodes, setRecoveryCodes] = useState<string[]>([])
@@ -70,13 +75,15 @@ export function PersonalSettings({ onClose, initialTab = 'profile' }: { onClose:
     setSecurityLoading(true)
     void Promise.all([
       listSessions().then(setSessions),
-      getAccountSecurity().then(value => { setSecurity(value); setEmailDraft(value.email ?? '') }),
+      getAccountSecurity().then(value => { setSecurity(value); setEmailDraft(value.email ?? ''); setEmailEditing(!value.emailVerified); setEmailCurrentPassword(''); setEmailTwoFactorCode('') }),
     ])
       .catch(error => pushToast(error instanceof Error ? error.message : 'Could not load account security.', 'danger'))
       .finally(() => { setSessionsLoading(false); setSecurityLoading(false) })
   }, [getAccountSecurity, listSessions, pushToast, tab])
 
   const moderationLevels = useMemo(() => (['none', 'low', 'medium', 'high'] as ContentFilterLevel[]), [])
+  const emailChanged = Boolean(security?.emailVerified && security.email && emailDraft.trim().toLowerCase() !== security.email.toLowerCase())
+
   const profileDirty = Boolean(profile && (
     displayName !== profile.displayName ||
     bio !== profile.bio ||
@@ -167,13 +174,28 @@ export function PersonalSettings({ onClose, initialTab = 'profile' }: { onClose:
 
   async function sendEmailCode() {
     if (!emailDraft.trim() || busy) return
+    const changingVerifiedEmail = Boolean(security?.emailVerified && security.email && emailDraft.trim().toLowerCase() !== security.email.toLowerCase())
+    if (changingVerifiedEmail && security?.twoFactorEnabled && emailTwoFactorCode.length !== 6) {
+      pushToast('Enter your current 6-digit authenticator code first.', 'info')
+      return
+    }
+    if (changingVerifiedEmail && !security?.twoFactorEnabled && !emailCurrentPassword) {
+      pushToast('Enter your current password before changing email.', 'info')
+      return
+    }
     setBusy(true)
     try {
-      const result = await startEmailVerification(emailDraft.trim())
+      const result = await startEmailVerification(
+        emailDraft.trim(),
+        changingVerifiedEmail && !security?.twoFactorEnabled ? emailCurrentPassword : undefined,
+        changingVerifiedEmail && security?.twoFactorEnabled ? emailTwoFactorCode : undefined,
+      )
       setEmailDraft(result.email)
       setEmailPending(true)
       setEmailCode('')
-      pushToast('Verification code sent.', 'success')
+      setEmailCurrentPassword('')
+      setEmailTwoFactorCode('')
+      pushToast(`Verification code sent to ${result.email}.`, 'success')
     } catch (error) {
       pushToast(error instanceof Error ? error.message : 'Could not send verification email.', 'danger')
     } finally { setBusy(false) }
@@ -188,7 +210,10 @@ export function PersonalSettings({ onClose, initialTab = 'profile' }: { onClose:
       setEmailDraft(next.email ?? '')
       setEmailCode('')
       setEmailPending(false)
-      pushToast('Email verified.', 'success')
+      setEmailEditing(false)
+      setEmailCurrentPassword('')
+      setEmailTwoFactorCode('')
+      pushToast('Email verified and saved.', 'success')
     } catch (error) {
       pushToast(error instanceof Error ? error.message : 'Could not verify that code.', 'danger')
     } finally { setBusy(false) }
@@ -251,20 +276,59 @@ export function PersonalSettings({ onClose, initialTab = 'profile' }: { onClose:
   }
 
   async function reportBug() {
+    const category = await dialog.prompt({
+      title: 'Bug category',
+      message: 'Choose the closest type: Login/Account, Chat, Space/Channels, Roles/Permissions, Notifications, Uploads, Mobile/UI, Sync/Data, Performance/Crash, Security, or Other. Do not include passwords, tokens, recovery codes, or verification codes.',
+      label: 'Category',
+      placeholder: 'Mobile/UI',
+      maxLength: 40,
+      confirmText: 'Next',
+    })
+    if (!category) return
+    const severity = await dialog.prompt({ title: 'Bug severity', message: 'Use Low, Medium, High, or Critical.', label: 'Severity', initialValue: 'Medium', maxLength: 20, confirmText: 'Next' })
+    if (!severity) return
+    const reproducibility = await dialog.prompt({ title: 'Can you reproduce it?', message: 'Examples: Always, Often, Sometimes, Once.', label: 'Reproducibility', initialValue: 'Sometimes', maxLength: 30, confirmText: 'Next' })
+    if (!reproducibility) return
     const subject = await dialog.prompt({ title: 'Report a bug', message: 'Give Support a short summary of what went wrong.', label: 'Bug summary', maxLength: 120, confirmText: 'Next' })
     if (!subject) return
-    const details = await dialog.prompt({ title: 'Add bug details', message: 'Include what you were doing, what you expected, and what happened instead.', label: 'Details', maxLength: 1600, confirmText: 'Send bug report' })
-    if (!details) return
+    const steps = await dialog.prompt({ title: 'Steps to reproduce', message: 'List the shortest steps that make the bug happen.', label: 'Steps', maxLength: 1200, confirmText: 'Next' })
+    if (!steps) return
+    const expected = await dialog.prompt({ title: 'Expected result', message: 'What should have happened?', label: 'Expected', maxLength: 700, confirmText: 'Next' })
+    if (!expected) return
+    const actual = await dialog.prompt({ title: 'Actual result', message: 'What happened instead? Do not paste passwords, tokens, 2FA/recovery codes, or verification codes.', label: 'Actual', maxLength: 1000, confirmText: 'Send bug report' })
+    if (!actual) return
+
+    const details = [
+      `[Category] ${category}`,
+      `[Severity] ${severity}`,
+      `[Reproducibility] ${reproducibility}`,
+      '',
+      '[Steps to reproduce]',
+      steps,
+      '',
+      '[Expected]',
+      expected,
+      '',
+      '[Actual]',
+      actual,
+      '',
+      '[Environment]',
+      `Platform: ${navigator.platform || 'Unknown'}`,
+      `User agent: ${navigator.userAgent}`,
+      `Screen: ${window.innerWidth}x${window.innerHeight}`,
+    ].join('\n')
+
     try {
-      await createSupportCase({ kind: 'bug', subject, details })
-      pushToast('Bug report sent to Spaces Support.', 'success')
+      await createSupportCase({ kind: 'bug', subject: `[${category}] ${subject}`.slice(0, 120), details })
+      pushToast('Structured bug report sent to Spaces Support.', 'success')
     } catch (error) {
       pushToast(error instanceof Error ? error.message : 'Could not send bug report.', 'danger')
     }
   }
 
+
   return (
-    <Modal title="Settings" subtitle="Your account, safety and Spaces experience." onClose={onClose} wide>
+    <Modal title="Settings" onClose={onClose} wide>
       <div className="personal-settings-shell">
         <nav className="personal-settings-nav">
           <div className="settings-profile-mini">
@@ -289,7 +353,7 @@ export function PersonalSettings({ onClose, initialTab = 'profile' }: { onClose:
                   <Avatar name={profile?.displayName} initials={profile?.initials} src={profile?.avatarUrl} size={76} accent={profileAccent} animation="always" />
                   <span><Icon name="edit" size={14} /></span>
                 </button>
-                <div><h3>{displayName || profile?.displayName}</h3><p>@{profile?.username}{preferences.developerMode && profile?.publicUserId ? ` · #${profile.publicUserId}` : ''}</p></div>
+                <div><h3>{displayName || profile?.displayName}</h3><p>@{profile?.username}{preferences.developerMode && profile?.publicUserId ? ` · ${formatPublicUserId(profile.publicUserId)}` : ''}</p></div>
                 {profile?.platformRole && <span className={`founder-badge platform-${profile.platformRole}`}><Icon name="shield" size={13} /> {platformRoleLabel(profile.platformRole)}</span>}
               </div>
             </div>
@@ -319,6 +383,10 @@ export function PersonalSettings({ onClose, initialTab = 'profile' }: { onClose:
               </div>
               <p className="settings-footnote">Choose how strongly recognized language is masked on this device. Original messages are never changed.</p>
             </section>
+            <section className="settings-card settings-card-stack safety-status-card-v43">
+              <div className="section-heading"><div><span className="eyebrow">PRIVATE BY DEFAULT</span><h3>Friend & group safety</h3><p>Spaces keeps private conversations behind an accepted friend request.</p></div></div>
+              <div className="safety-status-grid-v43"><article><Icon name="members" size={15}/><div><strong>Friend requests first</strong><span>Direct messages unlock after a request is accepted.</span></div><b>ON</b></article><article><Icon name="chat" size={15}/><div><strong>Friends-only groups</strong><span>Group creators can only choose people already in Your Friends.</span></div><b>ON</b></article><article><Icon name="shield" size={15}/><div><strong>Protected identity changes</strong><span>Verified email changes require 2FA or your current password.</span></div><b>ON</b></article></div>
+            </section>
             <section className="settings-card settings-card-stack support-report-card-v17">
               <div className="security-feature-heading compact"><span className="security-orb"><Icon name="sparkle" size={16}/></span><div><strong>Report a Spaces bug</strong><span>Send a bug directly into the Support Console with your account attached as the reporter.</span></div></div>
               <div className="settings-action-row"><button className="secondary-button" onClick={() => void reportBug()}><Icon name="activity" size={14}/> Report a bug</button></div>
@@ -343,7 +411,23 @@ export function PersonalSettings({ onClose, initialTab = 'profile' }: { onClose:
             <ToggleRow title="Reduced motion" description="Cuts boot, panel, hover and message movement." checked={preferences.reducedMotion} onChange={value => setPreference('reducedMotion', value)} />
             <ToggleRow title="Spaces cursor" description="Use the subtle Spaces crosshair cursor on desktop. Touch devices always use native input." checked={preferences.customCursor} onChange={value => setPreference('customCursor', value)} />
             <ToggleRow title="Enter to send" description="Press Enter to send, Shift+Enter for a new line." checked={preferences.enterToSend} onChange={value => setPreference('enterToSend', value)} />
-            <button className="secondary-button settings-reset" onClick={resetPreferences}>Reset personal appearance</button>
+            <button className="secondary-button settings-reset" onClick={() => { setPreference('appTheme', 'obsidian'); setPreference('appAccent', '#8b6ca8'); setPreference('messageDensity', 'comfortable'); setPreference('glassEffects', true); setPreference('reducedMotion', false); setPreference('customCursor', true); setPreference('enterToSend', true) }}>Reset appearance</button>
+          </>}
+
+          {tab === 'accessibility' && <>
+            <div className="settings-page-heading"><span className="eyebrow">ACCESSIBILITY</span><h2>Text & readability</h2><p>Make Spaces easier to read without changing your Space or anyone else's settings.</p></div>
+            <section className="settings-card settings-card-stack accessibility-card-v43">
+              <div className="section-heading"><div><span className="eyebrow">TEXT SIZE</span><h3>Scale the interface your way</h3><p>These controls apply instantly on desktop and mobile and are saved only for your account on this device.</p></div></div>
+              <ScaleRow title="Interface text" description="Settings, labels, helper copy, cards, menus, and small subcategories." value={preferences.interfaceTextScale} onChange={value => setPreference('interfaceTextScale', value)} />
+              <ScaleRow title="Sidebar text" description="Space names, categories, channels, navigation, and the account dock." value={preferences.sidebarTextScale} onChange={value => setPreference('sidebarTextScale', value)} />
+              <ScaleRow title="Message text" description="Chat messages, direct messages, group chats, notes, and message metadata." value={preferences.messageTextScale} onChange={value => setPreference('messageTextScale', value)} />
+            </section>
+            <ChoiceRow title="Sidebar density" description="Comfortable gives channels more breathing room; Compact fits more on screen." value={preferences.sidebarDensity} options={[["comfortable", "Comfortable"], ["compact", "Compact"]]} onChange={value => setPreference('sidebarDensity', value as 'comfortable' | 'compact')} />
+            <ToggleRow title="Higher contrast text" description="Brightens muted and helper copy so small labels are easier to read." checked={preferences.highContrastText} onChange={value => setPreference('highContrastText', value)} />
+            <ToggleRow title="Underline links" description="Makes links easier to distinguish from normal text." checked={preferences.underlineLinks} onChange={value => setPreference('underlineLinks', value)} />
+            <ToggleRow title="Reduced motion" description="Cuts boot, panel, hover, and message movement." checked={preferences.reducedMotion} onChange={value => setPreference('reducedMotion', value)} />
+            <ToggleRow title="Glass effects" description="Turn off translucent blur if you prefer flatter, clearer surfaces." checked={preferences.glassEffects} onChange={value => setPreference('glassEffects', value)} />
+            <button className="secondary-button settings-reset" onClick={() => { setPreference('interfaceTextScale', 1); setPreference('sidebarTextScale', 1); setPreference('messageTextScale', 1); setPreference('highContrastText', false); setPreference('underlineLinks', false); setPreference('sidebarDensity', 'comfortable') }}>Reset accessibility</button>
           </>}
 
           {tab === 'notifications' && <>
@@ -377,7 +461,7 @@ export function PersonalSettings({ onClose, initialTab = 'profile' }: { onClose:
           </>}
 
           {tab === 'security' && <>
-            <div className="settings-page-heading"><span className="eyebrow">ACCOUNT SECURITY</span><h2>Email, 2FA & Sessions</h2><p>Secure your account without leaving Spaces. Codes and status stay inside the app UI.</p></div>
+            <div className="settings-page-heading"><span className="eyebrow">ACCOUNT SECURITY</span><h2>Security</h2><p>Email verification and authenticator 2FA are separate. You can keep a verified email with 2FA off.</p><p>Secure your account without leaving Spaces. Codes and status stay inside the app UI.</p></div>
 
             {securityLoading ? <div className="settings-loading security-loading-v16">Loading security status…</div> : <>
               <section className="security-overview-v16">
@@ -386,14 +470,19 @@ export function PersonalSettings({ onClose, initialTab = 'profile' }: { onClose:
                 <article><span><Icon name="monitor" size={17}/></span><div><strong>Sessions</strong><small>{sessions.length} active device{sessions.length === 1 ? '' : 's'}</small></div><b>LIVE</b></article>
               </section>
 
-              <section className="settings-card settings-card-stack security-feature-card">
-                <div className="security-feature-heading"><span className="security-orb"><Icon name="user" size={17}/></span><div><strong>Verified email</strong><span>Used for security notices and account verification. It is never shown on your public profile.</span></div>{security?.emailVerified && <span className="security-state-pill secure"><Icon name="check" size={11}/> Verified</span>}</div>
-                <label className="field-label">Email address<input className="text-input" type="email" autoComplete="email" value={emailDraft} onChange={event => { setEmailDraft(event.target.value); setEmailPending(false) }} placeholder="you@example.com" /></label>
-                <div className="settings-action-row security-inline-actions security-email-actions-v23">
-                  <button className="primary-button" disabled={busy || !emailDraft.trim() || (!security?.emailServiceAvailable || !security?.emailSenderConfigured)} onClick={() => void sendEmailCode()}><Icon name="send" size={13}/>{security?.emailVerified && emailDraft === security.email ? 'Resend code' : 'Send verification code'}</button>
-                </div>
+              <section className="settings-card settings-card-stack security-feature-card security-email-card-v43">
+                <div className="security-feature-heading"><span className="security-orb"><Icon name="user" size={17}/></span><div><strong>Verified email</strong><span>Used for security notices and account recovery. It is never shown on your public profile.</span></div>{security?.emailVerified && <span className="security-state-pill secure"><Icon name="check" size={11}/> Verified</span>}</div>
+                {security?.emailVerified && !emailEditing ? <div className="verified-email-summary-v43"><div><span>Email address</span><strong>{security.email}</strong></div><button className="secondary-button compact security-compact-action-v43" onClick={() => { setEmailEditing(true); setEmailDraft(security.email ?? ''); setEmailPending(false); setEmailCode('') }}><Icon name="edit" size={12}/>Change email</button></div> : <>
+                  <label className="field-label">{security?.emailVerified ? 'New email address' : 'Email address'}<input className="text-input" type="email" autoComplete="email" value={emailDraft} onChange={event => { setEmailDraft(event.target.value); setEmailPending(false); setEmailCode('') }} placeholder="you@example.com" /></label>
+                  {emailChanged && security?.twoFactorEnabled && <div className="email-reauth-panel-v43"><div><Icon name="shield" size={15}/><span><strong>Confirm with 2FA</strong><small>Your verified email is changing, so enter your current authenticator code.</small></span></div><input className="text-input security-code-input" inputMode="numeric" autoComplete="one-time-code" value={emailTwoFactorCode} maxLength={6} onChange={event => setEmailTwoFactorCode(event.target.value.replace(/\D/g, '').slice(0, 6))} placeholder="000000" /></div>}
+                  {emailChanged && !security?.twoFactorEnabled && <div className="email-reauth-panel-v43"><div><Icon name="lock" size={15}/><span><strong>Confirm with password</strong><small>2FA is off, so your current password is required before the verified email can change.</small></span></div><input className="text-input" type="password" autoComplete="current-password" value={emailCurrentPassword} onChange={event => setEmailCurrentPassword(event.target.value)} placeholder="Current password" /></div>}
+                  <div className="settings-action-row security-inline-actions security-email-actions-v23 security-email-actions-v43">
+                    {security?.emailVerified && <button className="secondary-button compact security-compact-action-v43" disabled={busy} onClick={() => { setEmailEditing(false); setEmailDraft(security.email ?? ''); setEmailPending(false); setEmailCode(''); setEmailCurrentPassword(''); setEmailTwoFactorCode('') }}>Cancel</button>}
+                    <button className="primary-button compact security-compact-action-v43" disabled={busy || !emailDraft.trim() || (!!security?.emailVerified && !emailChanged) || (!security?.emailServiceAvailable || !security?.emailSenderConfigured) || (emailChanged && !!security?.twoFactorEnabled && emailTwoFactorCode.length !== 6) || (emailChanged && !security?.twoFactorEnabled && !emailCurrentPassword)} onClick={() => void sendEmailCode()}><Icon name="send" size={12}/>{emailPending ? 'Send another code' : security?.emailVerified ? 'Verify new email' : 'Send verification code'}</button>
+                  </div>
+                </>}
                 {(!security?.emailServiceAvailable || !security?.emailSenderConfigured) && <div className="security-service-card-v23"><Icon name="activity" size={14}/><div><strong>Email delivery is not connected yet.</strong><span>Your email field is ready; verification will unlock as soon as the Spaces Email binding is configured.</span></div></div>}
-                {emailPending && <div className="security-code-panel"><label className="field-label">6-digit email code<input className="text-input security-code-input" inputMode="numeric" autoComplete="one-time-code" value={emailCode} maxLength={6} onChange={event => setEmailCode(event.target.value.replace(/\D/g, '').slice(0, 6))} placeholder="000000" /></label><button className="primary-button" disabled={busy || emailCode.length !== 6} onClick={() => void confirmEmail()}>Verify email</button></div>}
+                {emailPending && <div className="security-code-panel security-email-code-v43"><label className="field-label">6-digit email code<input className="text-input security-code-input" inputMode="numeric" autoComplete="one-time-code" value={emailCode} maxLength={6} onChange={event => setEmailCode(event.target.value.replace(/\D/g, '').slice(0, 6))} placeholder="000000" /></label><button className="primary-button compact security-compact-action-v43" disabled={busy || emailCode.length !== 6} onClick={() => void confirmEmail()}>Save verified email</button></div>}
               </section>
 
               <section className="settings-card settings-card-stack security-feature-card two-factor-card-v16">
@@ -436,8 +525,8 @@ export function PersonalSettings({ onClose, initialTab = 'profile' }: { onClose:
             <div className="settings-page-heading"><span className="eyebrow">DEVELOPER</span><h2>Developer Mode</h2><p>Expose stable Spaces IDs for support, testing, and internal tooling.</p></div>
             <section className="settings-card settings-card-stack developer-settings-card-v23">
               <div className="security-feature-heading"><span className="security-orb"><Icon name="command" size={17}/></span><div><strong>Developer mode</strong><span>Show generated Spaces IDs on member profiles and account surfaces. Internal UUIDs stay hidden.</span></div></div>
-              <ToggleRow title="Show Spaces IDs" description="Adds copyable IDs such as #00001 and #00100 to profiles you can already view." checked={preferences.developerMode} onChange={value => setPreference('developerMode', value)} />
-              {profile?.publicUserId && <div className="developer-own-id-v23"><div><span className="eyebrow">YOUR SPACES ID</span><strong>#{profile.publicUserId}</strong><small>This ID is safe to share with Spaces Support.</small></div><button className="secondary-button" onClick={() => { void navigator.clipboard.writeText(profile.publicUserId); pushToast(`Copied Spaces ID #${profile.publicUserId}.`, 'success') }}><Icon name="copy" size={13}/>Copy ID</button></div>}
+              <ToggleRow title="Show Spaces IDs" description="Shows your Spaces ID on supported account and member surfaces." checked={preferences.developerMode} onChange={value => setPreference('developerMode', value)} />
+              {profile?.publicUserId && <div className="developer-own-id-v23"><div><span className="eyebrow">YOUR SPACES ID</span><strong>{formatPublicUserId(profile.publicUserId)}</strong><small>This ID is safe to share with Spaces Support.</small></div><button className="secondary-button" onClick={() => { void navigator.clipboard.writeText(profile.publicUserId); pushToast(`Copied Spaces ID ${formatPublicUserId(profile.publicUserId)}.`, 'success') }}><Icon name="copy" size={13}/>Copy ID</button></div>}
             </section>
             <section className="settings-card developer-note-v23"><Icon name="shield" size={15}/><p>Developer Mode changes only what this device displays. It does not grant moderation, staff, or API permissions.</p></section>
           </>}
@@ -445,6 +534,11 @@ export function PersonalSettings({ onClose, initialTab = 'profile' }: { onClose:
       </div>
     </Modal>
   )
+}
+
+function ScaleRow({ title, description, value, onChange }: { title: string; description: string; value: number; onChange: (value: number) => void }) {
+  const percent = Math.round(value * 100)
+  return <div className="setting-row personal-setting-row accessibility-scale-row-v43"><div><strong>{title}</strong><span>{description}</span></div><div className="accessibility-scale-control-v43"><span>85%</span><input aria-label={title} type="range" min="0.85" max="1.4" step="0.05" value={value} onChange={event => onChange(Number(event.target.value))}/><span>140%</span><b>{percent}%</b></div></div>
 }
 
 function ToggleRow({ title, description, checked, onChange }: { title: string; description: string; checked: boolean; onChange: (checked: boolean) => void }) {

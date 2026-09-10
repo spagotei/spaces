@@ -1,0 +1,425 @@
+/* Spaces v43: readable desktop type, accessibility controls, friend/group-chat UI, and security polish. */
+
+:root {
+  --spaces-interface-text-scale: 1;
+  --spaces-sidebar-text-scale: 1;
+  --spaces-message-text-scale: 1;
+}
+
+html[data-text-contrast='high'] {
+  --muted: #c6c1ca;
+  --faint: #9d96a4;
+}
+
+html[data-link-style='underline'] a:not(.primary-button):not(.secondary-button) {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  text-decoration-thickness: 1px;
+}
+
+/* Accessibility settings */
+.accessibility-card-v43 { gap: 0 !important; overflow: hidden; }
+.accessibility-card-v43 .personal-setting-row { border-radius: 0 !important; border-left: 0 !important; border-right: 0 !important; }
+.accessibility-scale-row-v43 { align-items: center !important; }
+.accessibility-scale-control-v43 {
+  min-width: min(360px, 48vw);
+  display: grid;
+  grid-template-columns: auto minmax(130px, 1fr) auto 52px;
+  align-items: center;
+  gap: 8px;
+}
+.accessibility-scale-control-v43 > span { color: #77717c; font-size: 8px; font-weight: 650; }
+.accessibility-scale-control-v43 input[type='range'] { width: 100%; accent-color: var(--app-accent); }
+.accessibility-scale-control-v43 b {
+  min-width: 48px;
+  padding: 5px 7px;
+  border: 1px solid rgba(255,255,255,.07);
+  border-radius: 9px;
+  background: rgba(255,255,255,.025);
+  color: #d7d0dc;
+  font-size: 9px;
+  text-align: center;
+}
+
+/* Security card cleanup */
+.security-email-card-v43 { overflow: hidden; }
+.verified-email-summary-v43 {
+  min-height: 54px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 10px 12px;
+  border: 1px solid rgba(255,255,255,.055);
+  border-radius: 12px;
+  background: rgba(255,255,255,.018);
+}
+.verified-email-summary-v43 > div { min-width: 0; display: grid; gap: 3px; }
+.verified-email-summary-v43 span { color: #77717d; font-size: 8px; }
+.verified-email-summary-v43 strong { overflow: hidden; text-overflow: ellipsis; color: #dfd9e3; font-size: 10px; }
+.security-email-actions-v43 { justify-content: flex-start !important; gap: 7px !important; }
+.security-compact-action-v43 {
+  width: auto !important;
+  min-width: 0 !important;
+  min-height: 34px !important;
+  padding: 0 12px !important;
+  align-self: flex-start !important;
+}
+.email-reauth-panel-v43 {
+  display: grid;
+  grid-template-columns: minmax(0,1fr) minmax(170px, 280px);
+  gap: 12px;
+  align-items: center;
+  padding: 11px 12px;
+  border: 1px solid color-mix(in srgb,var(--app-accent,#8b6ca8) 20%,rgba(255,255,255,.055));
+  border-radius: 12px;
+  background: color-mix(in srgb,var(--app-accent,#8b6ca8) 5%,rgba(255,255,255,.012));
+}
+.email-reauth-panel-v43 > div { min-width: 0; display: grid; grid-template-columns: 28px minmax(0,1fr); gap: 9px; align-items: center; color: #91889a; }
+.email-reauth-panel-v43 > div > span { display: grid; gap: 3px; }
+.email-reauth-panel-v43 strong { color: #cfc8d3; font-size: 9px; }
+.email-reauth-panel-v43 small { color: #77717c; font-size: 8px; line-height: 1.45; }
+.security-email-code-v43 { align-items: end !important; }
+
+/* Friend and group-chat additions */
+.direct-center-v43 { min-height: 460px; }
+.direct-center-sidebar-v43 { gap: 3px !important; }
+.direct-center-sidebar-v43 > button { min-height: 44px !important; }
+.direct-group-list-v43 { display: grid; gap: 6px; }
+.direct-group-list-v43 > button {
+  min-height: 58px;
+  display: grid;
+  grid-template-columns: 38px minmax(0,1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border: 1px solid rgba(255,255,255,.045);
+  border-radius: 12px;
+  background: rgba(255,255,255,.012);
+  text-align: left;
+}
+.direct-group-list-v43 > button:hover { background: rgba(255,255,255,.028); border-color: rgba(255,255,255,.075); }
+.direct-group-list-v43 > button > span:nth-child(2) { min-width: 0; display: grid; gap: 3px; }
+.direct-group-list-v43 strong { color: #d7d0db; font-size: 10px; }
+.direct-group-list-v43 small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #77717c; font-size: 8px; }
+.direct-group-avatar-v43 {
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  border: 1px solid color-mix(in srgb,var(--app-accent,#8b6ca8) 24%,rgba(255,255,255,.06));
+  border-radius: 12px;
+  background: color-mix(in srgb,var(--app-accent,#8b6ca8) 8%,rgba(255,255,255,.012));
+  color: #bcaac8;
+}
+.direct-create-group-v43 { height: 100%; min-height: 0; display: grid; grid-template-rows: auto auto minmax(0,1fr) auto; gap: 12px; padding: 17px; overflow: hidden; }
+.direct-create-group-v43 > header { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+.direct-create-group-v43 h2 { margin: 3px 0; font-size: 17px; }
+.direct-create-group-v43 p { margin: 0; color: #77717c; font-size: 8px; line-height: 1.5; }
+.direct-group-friend-picker-v43 { min-height: 0; overflow-y: auto; display: grid; align-content: start; gap: 6px; padding-right: 4px; }
+.direct-group-friend-picker-v43 > button {
+  min-height: 52px;
+  display: grid;
+  grid-template-columns: auto minmax(0,1fr) 28px;
+  align-items: center;
+  gap: 9px;
+  padding: 7px 9px;
+  border: 1px solid rgba(255,255,255,.045);
+  border-radius: 11px;
+  background: rgba(255,255,255,.012);
+  text-align: left;
+}
+.direct-group-friend-picker-v43 > button.active { border-color: var(--accent-border); background: var(--accent-soft); }
+.direct-group-friend-picker-v43 > button:disabled { opacity: .48; }
+.direct-group-friend-picker-v43 > button > span { min-width: 0; display: grid; gap: 2px; }
+.direct-group-friend-picker-v43 strong { font-size: 9px; color: #d2ccd6; }
+.direct-group-friend-picker-v43 small { font-size: 7.5px; color: #77717c; }
+.direct-group-friend-picker-v43 i { width: 26px; height: 26px; display: grid; place-items: center; border-radius: 8px; background: rgba(255,255,255,.03); color: #a997b7; }
+.direct-group-create-footer-v43 { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,.05); }
+.direct-group-create-footer-v43 > span { color: #77717c; font-size: 8px; }
+.direct-group-thread-v43 > header > div { min-width: 0; }
+.direct-group-thread-v43 > header span { max-width: min(620px,60vw); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.spaces-beta-limit-v43 { margin: 4px 0 0 !important; color: #77717c !important; font-size: 8px !important; line-height: 1.4 !important; }
+
+/* Default desktop readability pass. Existing styles used many 6-8px labels. */
+@media (min-width: 901px) {
+  .personal-settings-shell .eyebrow,
+  .settings-view .eyebrow,
+  .support-console-v17 .eyebrow,
+  .home-view .eyebrow,
+  .direct-center-v43 .eyebrow {
+    font-size: calc(8px * var(--spaces-interface-text-scale)) !important;
+  }
+
+  .personal-settings-shell .settings-page-heading p,
+  .personal-settings-shell .section-heading p,
+  .personal-settings-shell .security-feature-heading > div > span,
+  .personal-settings-shell .setting-row > div > span,
+  .personal-settings-shell .settings-footnote,
+  .personal-settings-shell .profile-media-row-v20 span,
+  .personal-settings-shell .security-overview-v16 small,
+  .personal-settings-shell .security-service-card-v23 span,
+  .personal-settings-shell .session-row span,
+  .settings-view small,
+  .settings-view p {
+    font-size: calc(8.5px * var(--spaces-interface-text-scale)) !important;
+    line-height: 1.5 !important;
+  }
+
+  .personal-settings-shell .field-label,
+  .personal-settings-shell .setting-row > div > strong,
+  .personal-settings-shell .security-feature-heading > div > strong,
+  .personal-settings-shell .session-row strong,
+  .settings-view .field-label {
+    font-size: calc(9.5px * var(--spaces-interface-text-scale)) !important;
+  }
+
+  .personal-settings-nav > button span,
+  .personal-settings-nav .settings-profile-mini span {
+    font-size: calc(8.5px * var(--spaces-sidebar-text-scale)) !important;
+  }
+  .personal-settings-nav .settings-profile-mini strong { font-size: calc(10px * var(--spaces-sidebar-text-scale)) !important; }
+
+  .sidebar-section-label,
+  .sidebar-section-label > span,
+  .server-rail-label {
+    font-size: calc(7.5px * var(--spaces-sidebar-text-scale)) !important;
+  }
+  .sidebar-item,
+  .sidebar-space-row strong,
+  .space-header-copy strong,
+  .account-identity strong {
+    font-size: calc(10px * var(--spaces-sidebar-text-scale)) !important;
+  }
+  .sidebar-space-row span,
+  .space-header-copy small,
+  .account-identity small,
+  .sidebar-item small,
+  .sidebar-item kbd {
+    font-size: calc(8px * var(--spaces-sidebar-text-scale)) !important;
+  }
+
+  html[data-sidebar-density='compact'] .sidebar-item { min-height: 32px !important; }
+  html[data-sidebar-density='compact'] .sidebar-space-row { min-height: 42px !important; }
+  html[data-sidebar-density='compact'] .sidebar-section { margin-bottom: 7px !important; }
+
+  .message-body,
+  .message-edit textarea,
+  .composer-row textarea,
+  .note-body-input,
+  .note-list-item p,
+  .comment-body,
+  .direct-message-copy-v28 p,
+  .direct-message-feed-v23 p,
+  .rich-text {
+    font-size: calc(9.5px * var(--spaces-message-text-scale)) !important;
+    line-height: 1.55 !important;
+  }
+  .message-meta strong,
+  .direct-message-copy-v28 strong,
+  .direct-thread-v23 > header strong {
+    font-size: calc(9px * var(--spaces-message-text-scale)) !important;
+  }
+  .message-meta time,
+  .message-body small,
+  .direct-message-copy-v28 time,
+  .direct-thread-v23 > header span {
+    font-size: calc(7.5px * var(--spaces-message-text-scale)) !important;
+  }
+
+  /* Support Console readability */
+  .support-console-header-v17 p,
+  .support-console-nav-bottom > div,
+  .support-console-v17 small,
+  .support-console-v17 time,
+  .support-console-v17 footer span,
+  .support-account-state-v21,
+  .support-beta-template-actions-v37 > span {
+    font-size: calc(8px * var(--spaces-interface-text-scale)) !important;
+    line-height: 1.45 !important;
+  }
+  .support-console-nav-v17 > button span,
+  .support-console-nav-bottom > button span,
+  .support-console-toolbar-v17 input,
+  .support-console-v17 p,
+  .support-account-copy-v21 span,
+  .support-staff-message-v21 p,
+  .support-case-meta-v17 span {
+    font-size: calc(9px * var(--spaces-interface-text-scale)) !important;
+    line-height: 1.5 !important;
+  }
+  .support-console-v17 strong,
+  .support-account-copy-v21 strong,
+  .support-staff-message-v21 header strong,
+  .support-case-card-v17 h4 {
+    font-size: calc(9.5px * var(--spaces-interface-text-scale)) !important;
+  }
+  .support-console-nav-v17 > button small { font-size: calc(7.5px * var(--spaces-interface-text-scale)) !important; }
+
+  .home-people-copy-v23 p,
+  .direct-list-page-v23 p,
+  .direct-people-grid-v23 small,
+  .direct-request-list-v23 span,
+  .direct-request-list-v23 small,
+  .direct-add-person-v23 p,
+  .direct-empty-v23 span,
+  .direct-outgoing-v23 small,
+  .direct-outgoing-v23 em {
+    font-size: calc(8.5px * var(--spaces-interface-text-scale)) !important;
+  }
+  .direct-people-grid-v23 strong,
+  .direct-request-list-v23 strong,
+  .direct-empty-v23 strong,
+  .direct-outgoing-v23 strong {
+    font-size: calc(9.5px * var(--spaces-interface-text-scale)) !important;
+  }
+}
+
+@media (max-width: 900px) {
+  .accessibility-scale-control-v43 { min-width: 0; width: 100%; grid-template-columns: auto minmax(100px,1fr) auto 48px; }
+  .accessibility-scale-row-v43 { grid-template-columns: 1fr !important; gap: 10px !important; }
+  .email-reauth-panel-v43 { grid-template-columns: 1fr; }
+  .verified-email-summary-v43 { align-items: flex-start; flex-direction: column; }
+  .direct-center-sidebar-v43 { grid-template-columns: repeat(4,minmax(0,1fr)) !important; }
+  .direct-center-sidebar-v43 > button { grid-template-columns: 1fr !important; gap: 3px !important; justify-items: center !important; }
+  .direct-center-sidebar-v43 > button span { font-size: 10px !important; }
+  .direct-center-sidebar-v43 > button small { position: absolute; margin: -20px 0 0 26px; }
+  .direct-create-group-v43 { padding: 12px 10px calc(80px + env(safe-area-inset-bottom)) !important; }
+  .direct-create-group-v43 > header { align-items: flex-start; }
+  .direct-group-create-footer-v43 { flex-direction: column; align-items: stretch; }
+  .direct-group-create-footer-v43 .primary-button { width: 100%; }
+}
+
+.safety-status-grid-v43 { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 7px; }
+.safety-status-grid-v43 article { min-width: 0; display: grid; grid-template-columns: 28px minmax(0,1fr) auto; align-items: center; gap: 8px; padding: 10px; border: 1px solid rgba(255,255,255,.05); border-radius: 11px; background: rgba(255,255,255,.012); color: #8f8796; }
+.safety-status-grid-v43 article > div { min-width: 0; display: grid; gap: 2px; }
+.safety-status-grid-v43 strong { color: #cec7d2; font-size: 9px; }
+.safety-status-grid-v43 span { color: #77717c; font-size: 8px; line-height: 1.45; }
+.safety-status-grid-v43 b { padding: 3px 5px; border-radius: 999px; color: #8bc7aa; background: rgba(67,139,102,.09); font-size: 7px; }
+@media(max-width:900px){.safety-status-grid-v43{grid-template-columns:1fr}}
+
+/* Spaces v43.2: copy cleanup + larger default desktop type */
+
+/*
+  Remove redundant explanatory copy where the control/title already says the same thing.
+  Important warnings, security requirements, moderation explanations, and danger-zone copy stay visible.
+*/
+.spaces-beta-limit-v43,
+.support-console-header-v17 > div > p,
+.support-console-nav-bottom > div,
+.personal-settings-shell .settings-page-heading > p,
+.personal-settings-shell .personal-setting-row > div:first-child > span,
+.space-settings-v32-heading > div > p,
+.space-settings-v32-card:not(.space-settings-v32-danger) .space-settings-v32-card-head p,
+.space-settings-v32-profile-grid .space-settings-v32-copy > span,
+.space-settings-v32-frame-row .space-settings-v32-copy > span,
+.space-settings-v32-row .space-settings-v32-copy > span,
+.create-space-profile-v28 > div > small,
+.space-header-copy > small {
+  display: none !important;
+}
+
+/* Keep spacing tight after the redundant subtitles disappear. */
+.personal-settings-shell .settings-page-heading,
+.space-settings-v32-card-head > div,
+.space-settings-v32-copy,
+.support-console-header-v17 > div {
+  gap: 3px !important;
+}
+
+@media (min-width: 901px) {
+  /* Slightly larger defaults while preserving the v43 accessibility sliders. */
+  .personal-settings-shell .eyebrow,
+  .space-settings-v32 .eyebrow,
+  .support-console-v17 .eyebrow,
+  .home-view .eyebrow,
+  .direct-center-v43 .eyebrow {
+    font-size: calc(9px * var(--spaces-interface-text-scale)) !important;
+  }
+
+  .personal-settings-shell .field-label,
+  .personal-settings-shell .setting-row > div > strong,
+  .personal-settings-shell .security-feature-heading > div > strong,
+  .personal-settings-shell .session-row strong,
+  .space-settings-v32 .field-label,
+  .space-settings-v32-copy > strong,
+  .space-settings-v32-row strong {
+    font-size: calc(10.5px * var(--spaces-interface-text-scale)) !important;
+  }
+
+  .personal-settings-nav > button span,
+  .personal-settings-nav .settings-profile-mini span {
+    font-size: calc(9.5px * var(--spaces-sidebar-text-scale)) !important;
+  }
+
+  .personal-settings-nav .settings-profile-mini strong {
+    font-size: calc(11px * var(--spaces-sidebar-text-scale)) !important;
+  }
+
+  .sidebar-section-label,
+  .sidebar-section-label > span,
+  .server-rail-label {
+    font-size: calc(8.5px * var(--spaces-sidebar-text-scale)) !important;
+  }
+
+  .sidebar-item,
+  .sidebar-space-row strong,
+  .space-header-copy strong,
+  .account-identity strong {
+    font-size: calc(11px * var(--spaces-sidebar-text-scale)) !important;
+  }
+
+  .sidebar-space-row span,
+  .account-identity small,
+  .sidebar-item small,
+  .sidebar-item kbd {
+    font-size: calc(9px * var(--spaces-sidebar-text-scale)) !important;
+  }
+
+  .support-console-v17 small,
+  .support-console-v17 time,
+  .support-console-v17 footer span,
+  .support-account-state-v21,
+  .support-beta-template-actions-v37 > span {
+    font-size: calc(9px * var(--spaces-interface-text-scale)) !important;
+    line-height: 1.45 !important;
+  }
+
+  .support-console-nav-v17 > button span,
+  .support-console-nav-bottom > button span,
+  .support-console-toolbar-v17 input,
+  .support-console-v17 p,
+  .support-account-copy-v21 span,
+  .support-staff-message-v21 p,
+  .support-case-meta-v17 span {
+    font-size: calc(10px * var(--spaces-interface-text-scale)) !important;
+    line-height: 1.5 !important;
+  }
+
+  .support-console-v17 strong,
+  .support-account-copy-v21 strong,
+  .support-staff-message-v21 header strong,
+  .support-case-card-v17 h4 {
+    font-size: calc(10.5px * var(--spaces-interface-text-scale)) !important;
+  }
+
+  .support-console-nav-v17 > button small {
+    font-size: calc(8.5px * var(--spaces-interface-text-scale)) !important;
+  }
+
+  .space-settings-v32 small,
+  .space-settings-v32 p {
+    font-size: calc(9.5px * var(--spaces-interface-text-scale)) !important;
+    line-height: 1.5 !important;
+  }
+
+  .space-settings-v32-card-head h2 {
+    font-size: calc(15px * var(--spaces-interface-text-scale)) !important;
+  }
+
+  .space-settings-tabs-v36 > button span {
+    font-size: calc(10px * var(--spaces-interface-text-scale)) !important;
+  }
+}
+

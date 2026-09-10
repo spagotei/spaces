@@ -47,11 +47,11 @@ const USERNAME_BLOCKLIST = [
 
 export function validateUsername(value: string): { ok: true; username: string } | { ok: false; message: string } {
   const username = value.trim().toLowerCase()
-  if (username.length < 3) return { ok: false, message: 'Username must be at least 3 characters.' }
+  if (username.length < 4) return { ok: false, message: 'Username must be at least 4 characters.' }
   if (username.length > 24) return { ok: false, message: 'Username must be 24 characters or fewer.' }
-  if (!/^[a-z0-9._]+$/.test(username)) return { ok: false, message: 'Use letters, numbers, periods or underscores only.' }
-  if (/^[._]|[._]$/.test(username) || /[._]{2}/.test(username)) return { ok: false, message: 'Periods and underscores cannot start, end or repeat.' }
-  const compact = username.replace(/[._]/g, '')
+  if (!/^[a-z0-9_]+$/.test(username)) return { ok: false, message: 'Use lowercase letters, numbers or underscores only.' }
+  if (/^_|_$/.test(username) || /__/.test(username)) return { ok: false, message: 'Underscores cannot start, end or repeat.' }
+  const compact = username.replace(/_/g, '')
   if (USERNAME_BLOCKLIST.some(term => compact.includes(term.replace(/[^a-z0-9]/g, '')))) return { ok: false, message: 'Choose a different username.' }
   return { ok: true, username }
 }

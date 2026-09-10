@@ -1,31 +1,15 @@
+﻿# Dependencies and generated output
 node_modules/
 dist/
 src-tauri/target/
 
+# Local environment / downloaded config
 .env
 .env.*
 env.*
 download
 
-*.jks
-*.keystore
-keystore.properties
-
-src-tauri/gen/android/local.properties
-src-tauri/gen/android/.gradle/
-src-tauri/gen/android/.idea/
-src-tauri/gen/android/app/build/
-src-tauri/gen/android/build/
-
-*.log
-.DS_Store
-Thumbs.db
-# === PRIVATE / LOCAL ===
-.env
-.env.*
-env.*
-download
-
+# Signing / credentials
 *.jks
 *.keystore
 keystore.properties
@@ -33,7 +17,6 @@ keystore.properties
 *.key
 *.p12
 *.pfx
-
 credentials.json
 credentials*.json
 client_secret.json
@@ -41,13 +24,20 @@ client_secret*.json
 service-account.json
 service-account*.json
 
-node_modules/
-dist/
-src-tauri/target/
-
+# Android generated/local files
 src-tauri/gen/android/local.properties
 src-tauri/gen/android/.gradle/
 src-tauri/gen/android/.idea/
 src-tauri/gen/android/app/build/
 src-tauri/gen/android/build/
 
+# Spaces local repair / backup artifacts
+.spaces-*-backups/
+mobile-broken-backup-*/
+Spaces-Mobile-Current.zip
+APPLY_SAFE_MOBILE_V2*
+
+# OS / tool noise
+*.log
+.DS_Store
+Thumbs.db

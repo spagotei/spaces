@@ -45,7 +45,7 @@ export function RolesView() {
   const dialog = useAppDialog()
   const {
     data, profile, createRole, updateRole, reorderRoles, deleteRole, setMemberRoles,
-    upgradeRoleModel, pushToast,
+    upgradeRoleModel, updateBaseRoleSetting, pushToast,
   } = useSpaces()
   const roles = useMemo(() => [...(data?.roles ?? [])].sort((a, b) => b.position - a.position), [data?.roles])
   const members = data?.members ?? []
@@ -70,6 +70,14 @@ export function RolesView() {
   const upgradeStarted = useRef(false)
   const [baseLabels, setBaseLabels] = useState(() => loadRoleLabels(data?.workspace.id ?? ''))
   const [baseLabelDraft, setBaseLabelDraft] = useState('')
+  const [basePresentationDraft, setBasePresentationDraft] = useState({ color: '#b58ad8', hoist: true, mentionable: false })
+  const [basePresentationSaving, setBasePresentationSaving] = useState(false)
+
+  useEffect(() => {
+    const owner = data?.baseRoles?.owner
+    if (!owner) return
+    setBasePresentationDraft({ color: owner.color, hoist: owner.hoist, mentionable: owner.mentionable })
+  }, [data?.workspace.id])
 
   // Older builds used Administrator and Staff as hard-coded access levels. Convert
   // them once into ordinary custom roles. Owner and Member are the only fixed roles.
@@ -100,7 +108,7 @@ export function RolesView() {
       hoist: selected.hoist,
       mentionable: selected.mentionable,
     })
-  }, [selected])
+  }, [selected?.id])
 
   const actorHighestCustomPosition = roles
     .filter(role => currentMember?.customRoleIds.includes(role.id))
@@ -146,6 +154,12 @@ export function RolesView() {
     setMemberQuery('')
     const labels = loadRoleLabels(data?.workspace.id ?? '')
     setBaseLabelDraft(role === 'owner' ? labels.owner : labels.member)
+    const presentation = role === 'owner' ? data?.baseRoles?.owner : data?.baseRoles?.member
+    setBasePresentationDraft({
+      color: presentation?.color ?? (role === 'owner' ? '#b58ad8' : '#8b6ca8'),
+      hoist: presentation?.hoist ?? role === 'owner',
+      mentionable: presentation?.mentionable ?? false,
+    })
   }
 
   function saveBaseLabel() {
@@ -155,6 +169,19 @@ export function RolesView() {
     saveRoleLabels(workspaceId, next)
     setBaseLabels(next)
     pushToast(`${next[baseRole]} label updated.`, 'success')
+  }
+
+  async function saveBasePresentation() {
+    if (!baseRole || !actorIsOwner || basePresentationSaving) return
+    setBasePresentationSaving(true)
+    try {
+      const saved = await updateBaseRoleSetting(baseRole, basePresentationDraft)
+      setBasePresentationDraft({ color: saved.color, hoist: saved.hoist, mentionable: saved.mentionable })
+    } catch (error) {
+      pushToast(error instanceof Error ? error.message : 'Could not update base role.', 'danger')
+    } finally {
+      setBasePresentationSaving(false)
+    }
   }
 
   function selectRole(roleId: string) {
@@ -300,28 +327,25 @@ export function RolesView() {
   }, [memberQuery, members])
 
   const baseLabel = baseRole === 'owner' ? baseLabels.owner : baseLabels.member
-  const baseDescription = baseRole === 'owner'
-    ? 'The Space owner is always first in the hierarchy. It cannot be deleted, moved or outranked.'
-    : 'Every non-owner member has the Member base role. It stays at the bottom of the hierarchy and cannot be deleted.'
   const basePermissions = baseRole === 'owner' ? allPermissions : ['send_messages', 'attach_files'] as WorkspaceCustomPermission[]
   const dragSourceIndex = roles.findIndex(role => role.id === dragRoleId)
 
   return (
     <div className="roles-view roles-view-v2 roles-view-v9 roles-view-v14 roles-view-v40 page-enter">
       <aside className="roles-list-panel">
-        <header><div><span className="eyebrow">ROLE HIERARCHY</span><h2>Roles</h2><p>Higher roles outrank lower roles.</p></div></header>
+        <header><div><span className="eyebrow">ROLE HIERARCHY</span><h2>Roles</h2></div></header>
 
         {canManage && (
           <button className="create-role-button" onClick={() => begin()}>
             <Icon name="plus" size={15}/>
-            <span><strong>Create role</strong><small>Build a new permission set</small></span>
+            <span><strong>Create role</strong></span>
           </button>
         )}
 
         <div className="hierarchy-stack role-hierarchy-v14">
           <button className={`protected-role-row owner ${baseRole === 'owner' ? 'active' : ''}`} onClick={() => selectBase('owner')}>
-            <i className="role-swatch owner"/>
-            <span><strong>{baseLabels.owner}</strong><small>Space owner · always highest</small></span><Icon name="lock" size={13}/>
+            <i className="role-swatch owner" style={{ background: data?.baseRoles?.owner.color ?? '#b58ad8' }}/>
+            <span><strong>{baseLabels.owner}</strong></span><Icon name="lock" size={13}/>
           </button>
 
           {roles.map((role, roleIndex) => {
@@ -348,7 +372,7 @@ export function RolesView() {
             onClick={() => { if (roleClickSuppressed()) return; selectBase('member') }}
           >
             <i className="role-swatch member"/>
-            <span><strong>{baseLabels.member}</strong><small>Base role · always lowest</small></span><Icon name="lock" size={12}/>
+            <span><strong>{baseLabels.member}</strong></span><Icon name="lock" size={12}/>
           </button>
         </div>
       </aside>
@@ -357,22 +381,27 @@ export function RolesView() {
         {baseRole ? (
           <>
             <div className="content-heading compact-heading">
-              <div><span className="eyebrow">BASE ROLE</span><h1>{baseLabel}</h1><p>{baseDescription}</p></div>
+              <div><span className="eyebrow">BASE ROLE</span><h1>{baseLabel}</h1></div>
               <span className="protected-role-badge"><Icon name="lock" size={13}/>Protected</span>
             </div>
 
-            {actorIsOwner && <section className="base-role-name-editor-v29"><div><span className="eyebrow">DISPLAY NAME</span><strong>Rename this base role</strong><small>The security level stays the same.</small></div><div><input className="text-input" value={baseLabelDraft || baseLabel} maxLength={32} onFocus={() => !baseLabelDraft && setBaseLabelDraft(baseLabel)} onChange={event => setBaseLabelDraft(event.target.value)}/><button className="primary-button compact" disabled={!baseLabelDraft.trim() || baseLabelDraft.trim() === baseLabel} onClick={saveBaseLabel}>Save name</button></div></section>}
+            {actorIsOwner && <section className="base-role-presentation-v44">
+              <label className="role-color-field"><span>COLOR</span><input type="color" value={basePresentationDraft.color} onChange={event => setBasePresentationDraft(current => ({ ...current, color: event.target.value }))}/><code>{basePresentationDraft.color}</code></label>
+              <button className="primary-button compact" disabled={basePresentationSaving} onClick={() => void saveBasePresentation()}>{basePresentationSaving ? 'Saving…' : 'Save'}</button>
+            </section>}
 
-            <div className="owner-role-callout"><Icon name="shield" size={22}/><div><strong>{baseRole === 'owner' ? `${baseLabels.owner} stays above every role` : `${baseLabels.member} stays below every role`}</strong><span>{baseRole === 'owner' ? 'You can rename it, but ownership itself cannot be deleted, transferred by role assignment or moved down.' : 'Custom roles stack on top of Member. Deleting a custom role never removes someone from the Space.'}</span></div></div>
+            {actorIsOwner && <section className="base-role-name-editor-v29"><div><span className="eyebrow">DISPLAY NAME</span><strong>Rename this base role</strong></div><div><input className="text-input" value={baseLabelDraft || baseLabel} maxLength={32} onFocus={() => !baseLabelDraft && setBaseLabelDraft(baseLabel)} onChange={event => setBaseLabelDraft(event.target.value)}/><button className="primary-button compact" disabled={!baseLabelDraft.trim() || baseLabelDraft.trim() === baseLabel} onClick={saveBaseLabel}>Save name</button></div></section>}
+
+            <div className="owner-role-callout"><Icon name="shield" size={22}/><div><strong>{baseRole === 'owner' ? `${baseLabels.owner} stays above every role` : `${baseLabels.member} stays below every role`}</strong></div></div>
 
             <div className="permission-matrix protected-permission-matrix">
               {groups.map(group => (
                 <section key={group.title}>
-                  <header><div><strong>{group.title}</strong><span>{group.description}</span></div><small>{group.permissions.filter(permission => basePermissions.includes(permission)).length}/{group.permissions.length}</small></header>
+                  <header><div><strong>{group.title}</strong></div><small>{group.permissions.filter(permission => basePermissions.includes(permission)).length}/{group.permissions.length}</small></header>
                   <div>{group.permissions.map(permission => {
-                    const [label, desc] = permissionLabels[permission]
+                    const [label] = permissionLabels[permission]
                     const checked = basePermissions.includes(permission)
-                    return <div className={`permission-line ${checked ? 'enabled' : ''}`} key={permission}><div><strong>{label}</strong><span>{desc}</span></div><span className={`permission-toggle ${checked ? 'on' : ''} locked`}><i/></span></div>
+                    return <div className={`permission-line ${checked ? 'enabled' : ''}`} key={permission}><div><strong>{label}</strong></div><span className={`permission-toggle ${checked ? 'on' : ''} locked`}><i/></span></div>
                   })}</div>
                 </section>
               ))}
@@ -381,7 +410,7 @@ export function RolesView() {
         ) : (
           <>
             <div className="content-heading compact-heading role-heading-v14">
-              <div><span className="eyebrow">{selected ? 'EDIT ROLE' : creating ? 'NEW ROLE' : 'ROLE DESIGNER'}</span><h1>{selected?.name ?? (creating ? 'Create role' : 'Roles & Permissions')}</h1><p>{selected || creating ? 'Configure permissions and assign this role to members.' : 'Select a role or create one to begin.'}</p></div>
+              <div><span className="eyebrow">{selected ? 'EDIT ROLE' : creating ? 'NEW ROLE' : 'ROLE DESIGNER'}</span><h1>{selected?.name ?? (creating ? 'Create role' : 'Roles & Permissions')}</h1></div>
               {selected && canEditSelected && <button className="ghost-danger" onClick={() => void remove(selected)}><Icon name="trash" size={15}/>Delete role</button>}
             </div>
 
@@ -393,7 +422,7 @@ export function RolesView() {
             )}
 
             {!selected && !creating && canManage && (
-              <div className="role-onboarding"><Icon name="roles" size={28}/><h3>Build your hierarchy</h3><p>Roles can be renamed, reordered or deleted. Only {baseLabels.owner} and {baseLabels.member} are fixed.</p><div className="role-preset-cards"><button onClick={() => preset('Administrator', '#7f9dbb', administratorPermissions)}><strong>Administrator</strong><span>Full Space management</span></button><button onClick={() => preset('Staff', '#839887', staffPermissions)}><strong>Staff</strong><span>Community + moderation</span></button><button onClick={() => preset('Moderator', '#83a98f', ['send_messages', 'attach_files', 'moderate_messages', 'moderate_comments', 'view_audit_log'])}><strong>Moderator</strong><span>Moderation focused</span></button><button onClick={() => begin()}><strong>Custom</strong><span>Start with no permissions</span></button></div></div>
+              <div className="role-onboarding"><Icon name="roles" size={28}/><h3>Build your hierarchy</h3><div className="role-preset-cards"><button onClick={() => preset('Administrator', '#7f9dbb', administratorPermissions)}><strong>Administrator</strong><span>Full Space management</span></button><button onClick={() => preset('Staff', '#839887', staffPermissions)}><strong>Staff</strong><span>Community + moderation</span></button><button onClick={() => preset('Moderator', '#83a98f', ['send_messages', 'attach_files', 'moderate_messages', 'moderate_comments', 'view_audit_log'])}><strong>Moderator</strong><span>Moderation focused</span></button><button onClick={() => begin()}><strong>Custom</strong><span>Start with no permissions</span></button></div></div>
             )}
 
             {(selected || creating) && (creating || editorTab === 'permissions') && (
@@ -404,17 +433,17 @@ export function RolesView() {
                   <label className="role-color-field"><span>COLOR</span><input type="color" disabled={!canEditSelected} value={draft.color} onChange={e => setDraft(current => ({ ...current, color: e.target.value }))}/><code>{draft.color}</code></label>
                 </section>
                 <div className="role-toggle-row">
-                  <label><input type="checkbox" disabled={!canEditSelected} checked={draft.hoist} onChange={e => setDraft(current => ({ ...current, hoist: e.target.checked }))}/><span><strong>Display members separately</strong><small>Create a dedicated section in the member list.</small></span></label>
-                  <label><input type="checkbox" disabled={!canEditSelected} checked={draft.mentionable} onChange={e => setDraft(current => ({ ...current, mentionable: e.target.checked }))}/><span><strong>Allow role mentions</strong><small>Members can target this role with @mentions.</small></span></label>
+                  <label><input type="checkbox" disabled={!canEditSelected} checked={draft.hoist} onChange={e => setDraft(current => ({ ...current, hoist: e.target.checked }))}/><span><strong>Display members separately</strong></span></label>
+                  <label><input type="checkbox" disabled={!canEditSelected} checked={draft.mentionable} onChange={e => setDraft(current => ({ ...current, mentionable: e.target.checked }))}/><span><strong>Allow role mentions</strong></span></label>
                 </div>
                 <div className="permission-matrix">
                   {groups.map(group => (
                     <section key={group.title}>
-                      <header><div><strong>{group.title}</strong><span>{group.description}</span></div><small>{group.permissions.filter(permission => draft.permissions.includes(permission)).length}/{group.permissions.length}</small></header>
+                      <header><div><strong>{group.title}</strong></div><small>{group.permissions.filter(permission => draft.permissions.includes(permission)).length}/{group.permissions.length}</small></header>
                       <div>{group.permissions.map(permission => {
-                        const [label, desc] = permissionLabels[permission]
+                        const [label] = permissionLabels[permission]
                         const checked = draft.permissions.includes(permission)
-                        return <div className={`permission-line permission-line-clickable-v29 ${checked ? 'enabled' : ''}`} key={permission} onClick={() => { if (canEditSelected) toggle(permission, !checked) }}><div><strong>{label}</strong><span>{desc}</span></div><button type="button" className={`permission-toggle ${checked ? 'on' : ''}`} disabled={!canEditSelected} onClick={event => { event.stopPropagation(); toggle(permission, !checked) }} aria-pressed={checked}><i/></button></div>
+                        return <div className={`permission-line permission-line-clickable-v29 ${checked ? 'enabled' : ''}`} key={permission} onClick={() => { if (canEditSelected) toggle(permission, !checked) }}><div><strong>{label}</strong></div><button type="button" className={`permission-toggle ${checked ? 'on' : ''}`} disabled={!canEditSelected} onClick={event => { event.stopPropagation(); toggle(permission, !checked) }} aria-pressed={checked}><i/></button></div>
                       })}</div>
                     </section>
                   ))}
@@ -426,7 +455,7 @@ export function RolesView() {
             {selected && editorTab === 'members' && (
               <section className="role-member-manager">
                 <div className="role-member-manager-head">
-                  <div><span className="eyebrow">ROLE MEMBERS</span><h2>Assign {selected.name}</h2><p>You can only assign this role to members below your own highest role.</p></div>
+                  <div><span className="eyebrow">ROLE MEMBERS</span><h2>Assign {selected.name}</h2></div>
                   <span className="role-member-count"><i style={{ background: selected.color }}/>{selectedMemberCount} assigned</span>
                 </div>
                 <label className="role-member-search"><Icon name="search" size={14}/><input value={memberQuery} onChange={event => setMemberQuery(event.target.value)} placeholder="Search members"/></label>

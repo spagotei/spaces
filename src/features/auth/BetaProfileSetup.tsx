@@ -70,7 +70,7 @@ export function BetaProfileSetup() {
       <label className="field-label beta-username-field-v33">
         Username
         <div className={`input-shell ${username && !validation.ok ? 'invalid-v33' : ''}`}><span>@</span><input autoFocus value={username} minLength={3} maxLength={24} autoComplete="username" spellCheck={false} onChange={event => setUsername(event.target.value)} placeholder="yourname"/></div>
-        <small>{username && !validation.ok ? validation.message : 'Usernames must be at least 3 characters. Letters, numbers, periods, and underscores are allowed.'}</small>
+        <small>{username && !validation.ok ? validation.message : 'Usernames must be at least 4 characters. Lowercase letters, numbers, and underscores are allowed.'}</small>
       </label>
 
       <button className="primary-button primary-button-wide" disabled={!validation.ok || busy} onClick={() => void continueSetup()}>

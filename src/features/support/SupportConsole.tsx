@@ -5,12 +5,14 @@ import { useAppDialog } from '../../components/AppDialog'
 import { useSpaces } from '../../state/SpacesContext'
 import type { WorkspaceModerationReport, WorkspaceSupportCase, WorkspaceSupportMessage, WorkspaceSupportUser, WorkspaceSupportStaffMessage, WorkspaceBetaAccessEntry } from '../../types/spaces'
 import { platformRoleLabel } from '../../utils/permissions'
+import { SupportOperationsV48, useSupportV48Access } from './SupportOperationsV48'
+import { formatPublicUserId } from '../../utils/public-id'
 
-type SupportTab = 'queue' | 'players' | 'spaces' | 'bugs' | 'accounts' | 'access' | 'staff-chat' | 'dms'
+type SupportTab = 'queue' | 'players' | 'spaces' | 'bugs' | 'accounts' | 'restrictions' | 'access' | 'team' | 'staff-chat' | 'dms'
 
 const betaTemplateKey = 'spaces.support.beta-email-template.v1'
 const defaultBetaSubject = 'You’re in Spaces'
-const defaultBetaMessage = 'Your access to the Spaces Public Beta is ready.\n\nSign in with {email} to finish setting up your account.\n\nYour first sign-in must use the email address this invitation was sent to.\n\nSpaces'
+const defaultBetaMessage = 'Your access to the Spaces Public Beta is ready.\n\nSign in with {email} using the temporary password included below. You’ll choose your username after signing in.\n\nYour first sign-in must use the email address this invitation was sent to.\n\nSpaces'
 
 function loadBetaTemplate() {
   try {
@@ -61,6 +63,7 @@ export function SupportConsole({
   const [busyId, setBusyId] = useState('')
 
   const allowed = profile?.platformRole === 'founder' || profile?.platformRole === 'staff' || profile?.platformRole === 'support'
+  const v48Access = useSupportV48Access()
 
   async function refresh() {
     if (!allowed) return
@@ -294,7 +297,7 @@ export function SupportConsole({
       finally { setBusyId('') }
       return
     }
-    const reason = await dialog.prompt({ title: `Ban ${user.displayName}?`, message: `Spaces ID #${user.publicUserId}. This action is audit logged.`, label: 'Moderation reason', maxLength: 800, danger: true, confirmText: 'Ban account' })
+    const reason = await dialog.prompt({ title: `Ban ${user.displayName}?`, message: `Spaces ID ${formatPublicUserId(user.publicUserId)}. This action is audit logged.`, label: 'Moderation reason', maxLength: 800, danger: true, confirmText: 'Ban account' })
     if (!reason) return
     setBusyId(`user-${user.id}`)
     try { await banPlatformUser(user.id, reason); setSupportUsers(current => current.map(item => item.id === user.id ? { ...item, banned: true } : item)) }
@@ -317,19 +320,27 @@ export function SupportConsole({
         <nav className="support-console-nav-v17">
           <div className="support-console-nav-stats"><strong>{openPlayerReports.length + openCases.length}</strong><span>open items</span></div>
           {([
-            ['queue', 'Queue', 'activity'], ['players', 'Player reports', 'members'], ['spaces', 'Space reports', 'grid'], ['bugs', 'Bug reports', 'sparkle'], ['accounts', 'Account lookup', 'user'], ['access', 'Beta access', 'lock'], ['staff-chat', 'Staff chat', 'chat'], ['dms', 'Support DMs', 'message'],
-          ] as const).map(([id, label, icon]) => <button key={id} className={tab === id ? 'active' : ''} onClick={() => setTab(id)}><Icon name={icon} size={15}/><span>{label}</span>{id === 'players' && <small>{reports.length}</small>}{id === 'spaces' && <small>{cases.filter(item => item.kind === 'space').length}</small>}{id === 'bugs' && <small>{cases.filter(item => item.kind === 'bug').length}</small>}</button>)}
+            ['queue', 'Queue', 'activity'], ['players', 'Player reports', 'members'], ['spaces', 'Space reports', 'grid'], ['bugs', 'Bug reports', 'sparkle'], ['accounts', 'Accounts', 'user'], ['restrictions', 'Restrictions', 'lock'], ['access', 'Beta access', 'lock'], ['team', 'Team', 'members'], ['staff-chat', 'Staff chat', 'chat'], ['dms', 'Support DMs', 'message'],
+          ] as const).filter(([id]) => {
+            if (id === 'team') return v48Access.founder
+            if (id === 'access') return v48Access.can('manage_beta_access')
+            if (id === 'accounts' || id === 'restrictions') return v48Access.can('view_accounts')
+            if (id === 'staff-chat') return v48Access.can('staff_chat')
+            if (id === 'dms') return v48Access.can('send_support_dms')
+            if (id === 'bugs') return v48Access.can('view_reports') || v48Access.can('manage_bugs')
+            return v48Access.can('view_reports')
+          }).map(([id, label, icon]) => <button key={id} className={tab === id ? 'active' : ''} onClick={() => setTab(id)}><Icon name={icon} size={15}/><span>{label}</span>{id === 'players' && <small>{reports.length}</small>}{id === 'spaces' && <small>{cases.filter(item => item.kind === 'space').length}</small>}{id === 'bugs' && <small>{cases.filter(item => item.kind === 'bug').length}</small>}</button>)}
           <div className="support-console-nav-bottom"><button onClick={onOpenSecurity}><Icon name="lock" size={14}/><span>My security</span></button><div><Icon name="shield" size={13}/><span>Founder, Staff & Support only</span></div></div>
         </nav>
 
         <main className="support-console-main-v17">
           <div className="support-console-toolbar-v17">
-            <div><span className="eyebrow">{tab === 'queue' ? 'ACTIVE QUEUE' : tab === 'staff-chat' ? 'PRIVATE OPERATIONS' : tab.toUpperCase()}</span><h3>{tab === 'queue' ? 'Needs attention' : tab === 'players' ? 'Player reports' : tab === 'spaces' ? 'Space reports' : tab === 'bugs' ? 'Bug reports' : tab === 'accounts' ? 'Account lookup' : tab === 'access' ? 'Beta access' : tab === 'staff-chat' ? 'Staff chat' : 'Support message history'}</h3></div>
-            {!['dms','staff-chat','access'].includes(tab) && <label><Icon name="search" size={14}/><input value={query} onChange={event => setQuery(event.target.value)} placeholder={tab === 'accounts' ? 'Search #ID, username or display name…' : 'Search cases, people, Spaces…'}/></label>}
+            <div><span className="eyebrow">{tab === 'queue' ? 'ACTIVE QUEUE' : tab === 'staff-chat' ? 'PRIVATE OPERATIONS' : tab.toUpperCase()}</span><h3>{tab === 'queue' ? 'Needs attention' : tab === 'players' ? 'Player reports' : tab === 'spaces' ? 'Space reports' : tab === 'bugs' ? 'Bug reports' : tab === 'accounts' ? 'Account inspector' : tab === 'restrictions' ? 'Restrictions' : tab === 'access' ? 'Beta access' : tab === 'team' ? 'Team management' : tab === 'staff-chat' ? 'Staff chat' : 'Support message history'}</h3></div>
+            {!['dms','staff-chat','access','accounts','restrictions','team'].includes(tab) && <label><Icon name="search" size={14}/><input value={query} onChange={event => setQuery(event.target.value)} placeholder={tab === 'accounts' ? 'Search #ID, username or display name…' : 'Search cases, people, Spaces…'}/></label>}
             <button className="secondary-button compact" onClick={() => void refresh()}><Icon name="activity" size={13}/> Refresh</button>
           </div>
 
-          {loading ? <div className="support-console-loading support-console-loading-v17">Loading Support operations…</div> : tab === 'access' ? <div className="support-beta-access-v33">
+          {loading ? <div className="support-console-loading support-console-loading-v17">Loading Support operations…</div> : (tab === 'restrictions' || tab === 'team') ? <SupportOperationsV48 mode={tab}/> : tab === 'access' ? <div className="support-beta-access-v33">
             <section className="support-beta-invite-v33">
               <div><span className="eyebrow">LOCKED ACCESS</span><h4>Invite an email</h4><p>Approve the exact email the person must use for their first sign-in.</p></div>
               <div className="support-beta-invite-form-v33"><label className="input-shell"><Icon name="lock" size={14}/><input type="email" value={betaEmail} onChange={event => setBetaEmail(event.target.value)} onKeyDown={event => { if (event.key === 'Enter') { event.preventDefault(); void inviteAccessEmail() } }} placeholder="name@example.com"/></label><button className="primary-button" disabled={!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(betaEmail.trim()) || !betaInviteSubject.trim() || !betaInviteMessage.trim() || busyId === 'beta-access'} onClick={() => void inviteAccessEmail()}><Icon name="send" size={13}/>{busyId === 'beta-access' ? 'Approving…' : 'Approve & send'}</button></div>
@@ -349,13 +360,13 @@ export function SupportConsole({
           </div> : tab === 'dms' ? <div className="support-dm-history-v17">
             {messages.map(message => <article key={message.id}><span className="support-dm-icon"><Icon name="message" size={14}/></span><div><header><strong>{message.subject}</strong><small>{new Date(message.createdAt).toLocaleString()}</small></header><p>{message.body}</p><footer><span>To {message.recipientName}</span><span>by {message.senderName}</span>{message.caseId && <span>Case {message.caseId.slice(0, 8)}</span>}</footer></div></article>)}
             {!messages.length && <SupportEmpty icon="message" title="No Support DMs yet" note="Official messages sent from Support will appear here."/>}
-          </div> : tab === 'accounts' ? <div className="support-account-results-v21">
-            {!query.trim() ? <div className="support-account-helper-v21"><div><Icon name="search" size={22}/><h4>Find an account</h4><p>Search a generated Spaces ID like #00100, a username, or a display name.</p></div></div> : userSearchLoading ? <div className="support-console-loading support-console-loading-v17">Searching accounts…</div> : <div className="support-account-list-v21">
-              {supportUsers.map(user => <article className="support-account-row-v21" key={user.id}><Avatar name={user.displayName} src={user.avatarUrl} size={40}/><div className="support-account-copy-v21"><strong>{user.displayName}</strong><span>@{user.username} · {user.spaceCount} Space{user.spaceCount === 1 ? '' : 's'}</span><code>#{user.publicUserId}</code><span className={`support-account-state-v21 ${user.banned ? 'banned' : ''}`}>{user.banned ? 'BANNED' : user.platformRole ? platformRoleLabel(user.platformRole) : 'MEMBER'}</span></div><div className="support-account-actions-v21"><button onClick={() => void navigator.clipboard?.writeText(user.publicUserId)}><Icon name="copy" size={12}/> Copy ID</button><button onClick={() => void sendDm(user.id, 'Please review a Spaces Support notice')}><Icon name="message" size={12}/> Support DM</button><button className={user.banned ? '' : 'danger-soft'} disabled={busyId === `user-${user.id}`} onClick={() => void banSupportUser(user)}>{user.banned ? 'Unban' : 'Ban'}</button></div></article>)}
+          </div> : tab === 'accounts' ? <><SupportOperationsV48 mode="accounts"/><div className="support-account-results-v21 support-v48-legacy-hidden">
+            {!query.trim() ? <div className="support-account-helper-v21"><div><Icon name="search" size={22}/><h4>Find an account</h4><p>Search a Spaces ID, username, or display name.</p></div></div> : userSearchLoading ? <div className="support-console-loading support-console-loading-v17">Searching accounts…</div> : <div className="support-account-list-v21">
+              {supportUsers.map(user => <article className="support-account-row-v21" key={user.id}><Avatar name={user.displayName} src={user.avatarUrl} size={40}/><div className="support-account-copy-v21"><strong>{user.displayName}</strong><span>@{user.username} · {user.spaceCount} Space{user.spaceCount === 1 ? '' : 's'}</span><code>{formatPublicUserId(user.publicUserId)}</code><span className={`support-account-state-v21 ${user.banned ? 'banned' : ''}`}>{user.banned ? 'BANNED' : user.platformRole ? platformRoleLabel(user.platformRole) : 'MEMBER'}</span></div><div className="support-account-actions-v21"><button onClick={() => void navigator.clipboard?.writeText(user.publicUserId)}><Icon name="copy" size={12}/> Copy ID</button><button onClick={() => void sendDm(user.id, 'Please review a Spaces Support notice')}><Icon name="message" size={12}/> Support DM</button><button className={user.banned ? '' : 'danger-soft'} disabled={busyId === `user-${user.id}`} onClick={() => void banSupportUser(user)}>{user.banned ? 'Unban' : 'Ban'}</button></div></article>)}
               {!supportUsers.length && <SupportEmpty icon="check" title="No matching account" note="Try the exact Spaces ID, username, or another display name."/>}
             </div>}
-          </div> : tab === 'staff-chat' ? <div className="support-staff-chat-v21">
-            <div className="support-staff-chat-feed-v21">{staffMessages.map(message => <article className={`support-staff-message-v21 ${message.senderUserId === profile?.id ? 'own' : ''}`} key={message.id}><header><strong>{message.senderName}</strong><code>#{message.senderPublicUserId}</code><span className={`support-role-badge platform-${message.senderPlatformRole ?? 'support'}`}>{platformRoleLabel(message.senderPlatformRole ?? 'support')}</span><time>{new Date(message.createdAt).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</time></header><p>{message.body}</p></article>)}{!staffMessages.length && <SupportEmpty icon="message" title="Staff chat is quiet" note="Founder, Staff and Support can coordinate here."/>}</div>
+          </div></> : tab === 'staff-chat' ? <div className="support-staff-chat-v21">
+            <div className="support-staff-chat-feed-v21">{staffMessages.map(message => <article className={`support-staff-message-v21 ${message.senderUserId === profile?.id ? 'own' : ''}`} key={message.id}><header><strong>{message.senderName}</strong><code>{formatPublicUserId(message.senderPublicUserId)}</code><span className={`support-role-badge platform-${message.senderPlatformRole ?? 'support'}`}>{platformRoleLabel(message.senderPlatformRole ?? 'support')}</span><time>{new Date(message.createdAt).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</time></header><p>{message.body}</p></article>)}{!staffMessages.length && <SupportEmpty icon="message" title="Staff chat is quiet" note="Founder, Staff and Support can coordinate here."/>}</div>
             <div className="support-staff-chat-compose-v21"><textarea className="text-area" maxLength={1600} value={staffDraft} onChange={event => setStaffDraft(event.target.value)} placeholder="Message Founder, Staff and Support…" onKeyDown={event => { if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); void sendStaffChat() } }}/><button className="primary-button" disabled={!staffDraft.trim() || busyId === 'staff-chat'} onClick={() => void sendStaffChat()}><Icon name="send" size={13}/> Send</button></div>
           </div> : <div className="support-case-list-v17">
             {visibleReports.map(report => {
@@ -364,7 +375,7 @@ export function SupportConsole({
               return <article className="support-case-card-v17 player" key={report.id}>
                 <header><span className="support-case-type-v17"><Icon name="members" size={13}/> PLAYER</span><span className={`support-case-status-v17 status-${report.status}`}>{report.status}</span><time>{new Date(report.createdAt).toLocaleString()}</time></header>
                 <div className="support-case-body-v17"><div><h4>{report.reason}</h4><p>{report.details || 'No additional details supplied.'}</p><div className="support-case-meta-v17"><span>Reported: <strong>{target.displayName}</strong> @{target.username}</span><span>Reporter: <strong>{reporter.displayName}</strong> @{reporter.username}</span>{report.workspaceId && <button className="support-inline-id-v31" onClick={() => void navigator.clipboard?.writeText(report.workspaceId ?? '')}><Icon name="copy" size={11}/>Space ID {report.workspaceId}</button>}</div>{report.snapshot.messages.length > 0 && <div className="support-evidence-v31"><span className="eyebrow">RECENT CONTEXT</span>{report.snapshot.messages.slice(0, 4).map((message, index) => <article key={`${message.workspaceId}-${message.createdAt}-${index}`}><header><strong>{message.workspaceName}</strong><span>#{message.channelName}</span><time>{new Date(message.createdAt).toLocaleString()}</time></header><p>{message.body}</p></article>)}</div>}</div><div className="support-case-target-v17"><strong>{target.displayName}</strong><span>@{target.username}</span><small>{report.isBanned ? 'BANNED' : target.platformRole ? platformRoleLabel(target.platformRole) : 'Member'}</small></div></div>
-                <footer className="support-case-actions-v17"><button disabled={busyId === report.id} onClick={() => void sendDm(target.id, report.isBanned ? 'Action taken on your Spaces account' : 'Please review a Spaces Support notice', report.id)}><Icon name="message" size={13}/> Support DM</button>{!report.isBanned ? <button className="danger-soft" disabled={busyId === report.id} onClick={() => void handleBan(report)}><Icon name="lock" size={13}/> Ban</button> : <button disabled={busyId === report.id} onClick={() => void unbanPlatformUser(target.id).then(refresh)}><Icon name="shield" size={13}/> Unban</button>}<button disabled={busyId === report.id} onClick={() => void markReport(report.id, 'reviewed')}>Review</button><button disabled={busyId === report.id} onClick={() => void markReport(report.id, 'dismissed')}>Dismiss</button></footer>
+                <footer className="support-case-actions-v17"><button disabled={busyId === report.id} onClick={() => void sendDm(target.id, report.isBanned ? 'Action taken on your Spaces account' : 'Please review a Spaces Support notice', report.id)}><Icon name="message" size={13}/> Support DM</button>{v48Access.can('ban_users') && (!report.isBanned ? <button className="danger-soft" disabled={busyId === report.id} onClick={() => void handleBan(report)}><Icon name="lock" size={13}/> Ban</button> : <button disabled={busyId === report.id} onClick={() => void unbanPlatformUser(target.id).then(refresh)}><Icon name="shield" size={13}/> Unban</button>)}<button disabled={busyId === report.id} onClick={() => void markReport(report.id, 'reviewed')}>Review</button><button disabled={busyId === report.id} onClick={() => void markReport(report.id, 'dismissed')}>Dismiss</button></footer>
               </article>
             })}
 
@@ -373,8 +384,8 @@ export function SupportConsole({
               <div className="support-case-body-v17"><div><h4>{item.subject}</h4><p>{item.details}</p><div className="support-case-meta-v17"><span>Reporter: <strong>{item.reporterName}</strong> @{item.reporterUsername}</span>{item.targetWorkspaceId && <button className="support-inline-id-v31" onClick={() => void navigator.clipboard?.writeText(item.targetWorkspaceId ?? '')}><Icon name="copy" size={11}/>Space ID {item.targetWorkspaceId}</button>}{item.assignedToName && <span>Assigned: {item.assignedToName}</span>}</div></div>{item.kind === 'space' && <div className="support-case-target-v17"><strong>{item.targetWorkspaceName ?? 'Deleted Space'}</strong><span>Owner: {item.targetWorkspaceOwnerName ?? 'Unknown'}</span><small>{item.restricted ? 'RESTRICTED' : 'ACTIVE'}</small></div>}</div>
               <footer className="support-case-actions-v17">
                 <button disabled={busyId === item.id} onClick={() => void sendDm(item.kind === 'space' ? (item.targetWorkspaceOwnerId ?? item.reporterId) : item.reporterId, item.kind === 'space' ? `Regarding ${item.targetWorkspaceName ?? 'your Space'}` : `Regarding bug report: ${item.subject}`, item.id)}><Icon name="message" size={13}/> Support DM</button>
-                {item.kind === 'space' && item.targetWorkspaceId && (!item.restricted ? <button className="danger-soft" disabled={busyId === item.id} onClick={() => void restrictCase(item)}><Icon name="lock" size={13}/> Restrict</button> : <button disabled={busyId === item.id} onClick={() => void unrestrictCase(item)}><Icon name="shield" size={13}/> Unrestrict</button>)}
-                {item.kind === 'space' && item.targetWorkspaceId && <button className="danger-soft" disabled={busyId === item.id} onClick={() => void removeSpace(item)}><Icon name="trash" size={13}/> Delete Space</button>}
+                {v48Access.can('space_restrict') && item.kind === 'space' && item.targetWorkspaceId && (!item.restricted ? <button className="danger-soft" disabled={busyId === item.id} onClick={() => void restrictCase(item)}><Icon name="lock" size={13}/> Restrict</button> : <button disabled={busyId === item.id} onClick={() => void unrestrictCase(item)}><Icon name="shield" size={13}/> Unrestrict</button>)}
+                {v48Access.can('delete_space') && item.kind === 'space' && item.targetWorkspaceId && <button className="danger-soft" disabled={busyId === item.id} onClick={() => void removeSpace(item)}><Icon name="trash" size={13}/> Delete Space</button>}
                 <button disabled={busyId === item.id} onClick={() => void changeCase(item, 'reviewed', true)}>Take case</button><button disabled={busyId === item.id} onClick={() => void changeCase(item, 'resolved', true)}>Resolve</button><button disabled={busyId === item.id} onClick={() => void changeCase(item, 'dismissed')}>Dismiss</button>
               </footer>
             </article>)}

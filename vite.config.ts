@@ -5,6 +5,33 @@ export default defineConfig({
   plugins: [react()],
   clearScreen: false,
 
+  build: {
+    rolldownOptions: {
+      output: {
+        codeSplitting: {
+          minSize: 20_000,
+          groups: [
+            {
+              name: 'react-vendor',
+              test: /node_modules[\\/](?:react|react-dom)[\\/]/,
+              priority: 30,
+            },
+            {
+              name: 'tauri-vendor',
+              test: /node_modules[\\/]@tauri-apps[\\/]/,
+              priority: 20,
+            },
+            {
+              name: 'vendor',
+              test: /node_modules/,
+              priority: 10,
+            },
+          ],
+        },
+      },
+    },
+  },
+
   server: {
     host: '0.0.0.0',
     port: 5173,

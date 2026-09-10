@@ -57,7 +57,7 @@ export function WorkspaceOverview() {
           {activeWorkspace.bannerUrl && (
             <AnimatedBackdrop
               src={activeWorkspace.bannerUrl}
-              mode="still"
+              mode="always"
               className="space-overview-banner-media-v41"
             />
           )}
@@ -70,6 +70,7 @@ export function WorkspaceOverview() {
             src={activeWorkspace.avatarUrl}
             size={76}
             accent={activeWorkspace.accentColor}
+            animation="always"
           />
           <div className="space-overview-title">
             <span className="eyebrow">YOUR SPACE</span>

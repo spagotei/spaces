@@ -11,7 +11,7 @@ import type { WorkspaceChatMessage, WorkspaceMessageAttachment } from '../../typ
 import { formatBytes, formatTime } from '../../utils/format'
 import { filterContent } from '../../utils/content-filter'
 import { hasWorkspacePermission } from '../../utils/permissions'
-import { cleanThreadDescription } from '../../utils/workspace-local-meta'
+import { cleanThreadDescription, workspaceRoleDisplayName } from '../../utils/workspace-local-meta'
 
 const MAX_FILE_BYTES = 180 * 1024
 const ALLOWED_TYPES = new Set(['image/png', 'image/jpeg', 'image/webp', 'text/plain'])
@@ -64,7 +64,12 @@ export function ChatView() {
   const canMentionEveryone = hasWorkspacePermission(data, profile?.id, 'mention_everyone')
   const mentionSuggestions = useMemo(() => {
     if (!mentionMatch || !data) return []
+    const baseRoleMentionSuggestionsV44 = [
+      ...(data.baseRoles?.owner?.mentionable ? [{ value: `@${workspaceRoleDisplayName(data.workspace.id, 'owner')}`, label: `@${workspaceRoleDisplayName(data.workspace.id, 'owner')}`, note: '', icon: 'roles' as const }] : []),
+      ...(data.baseRoles?.member?.mentionable ? [{ value: `@${workspaceRoleDisplayName(data.workspace.id, 'viewer')}`, label: `@${workspaceRoleDisplayName(data.workspace.id, 'viewer')}`, note: '', icon: 'roles' as const }] : []),
+    ]
     const items = [
+      ...baseRoleMentionSuggestionsV44,
       ...(canMentionEveryone ? [
         { value: '@everyone', label: '@everyone', note: 'Notify everyone in this Space', icon: 'members' as const },
         { value: '@here', label: '@here', note: 'Notify people currently using Spaces', icon: 'bell' as const },
@@ -85,6 +90,12 @@ export function ChatView() {
   const personalPingTokens = useMemo(() => {
     const tokens = new Set<string>()
     if (profile?.username) tokens.add(`@${profile.username.toLowerCase()}`)
+    if (data?.workspace.id && currentMember?.role === 'owner' && data.baseRoles?.owner?.mentionable) {
+      tokens.add(`@${workspaceRoleDisplayName(data.workspace.id, 'owner').toLowerCase()}`)
+    }
+    if (data?.workspace.id && currentMember && currentMember.role !== 'owner' && data.baseRoles?.member?.mentionable) {
+      tokens.add(`@${workspaceRoleDisplayName(data.workspace.id, 'viewer').toLowerCase()}`)
+    }
     for (const role of data?.roles ?? []) {
       if (role.mentionable && currentMember?.customRoleIds.includes(role.id)) tokens.add(`@${role.name.toLowerCase()}`)
     }

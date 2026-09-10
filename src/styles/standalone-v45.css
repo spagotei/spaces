@@ -1,0 +1,109 @@
+/* Spaces v45
+   Compact account security + beta access actions.
+   Keep controls small and anchored to the right instead of stretching. */
+
+.personal-settings-content .security-feature-card > .settings-action-row,
+.personal-settings-content .security-card > .settings-action-row,
+.personal-settings-content .two-factor-enabled-v16 > .settings-action-row {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 8px;
+}
+
+.personal-settings-content .security-feature-card .primary-button,
+.personal-settings-content .security-feature-card .secondary-button,
+.personal-settings-content .security-card .primary-button,
+.personal-settings-content .security-card .secondary-button,
+.personal-settings-content .two-factor-enabled-v16 button {
+  width: auto;
+  min-width: 0;
+  min-height: 36px;
+  padding: 8px 12px;
+  margin: 0;
+}
+
+.personal-settings-content .security-main-action {
+  align-self: flex-end;
+  justify-self: end;
+  width: auto;
+  min-width: 0;
+  min-height: 36px;
+  padding: 8px 12px;
+}
+
+.personal-settings-content .security-email-actions-v23 {
+  justify-content: flex-end;
+}
+
+.personal-settings-content .security-code-panel {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: end;
+  gap: 10px;
+}
+
+.personal-settings-content .security-code-panel > button {
+  width: auto;
+  min-width: 0;
+  min-height: 36px;
+  padding: 8px 12px;
+}
+
+.personal-settings-content .security-feature-heading {
+  align-items: center;
+}
+
+.support-beta-invite-form-v33 {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+}
+
+.support-beta-invite-form-v33 > .primary-button {
+  width: auto;
+  min-width: 132px;
+  min-height: 36px;
+  padding: 8px 12px;
+  justify-self: end;
+}
+
+.support-beta-template-actions-v37 {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 10px;
+}
+
+.support-beta-list-v33 article > button {
+  width: auto;
+  min-width: 0;
+  padding: 7px 10px;
+}
+
+@media (max-width: 680px) {
+  .personal-settings-content .security-code-panel {
+    grid-template-columns: 1fr;
+  }
+
+  .personal-settings-content .security-code-panel > button,
+  .personal-settings-content .security-main-action,
+  .personal-settings-content .security-card > .settings-action-row > button {
+    justify-self: end;
+    width: auto;
+  }
+
+  .support-beta-invite-form-v33 {
+    grid-template-columns: 1fr;
+  }
+
+  .support-beta-invite-form-v33 > .primary-button {
+    justify-self: end;
+    width: auto;
+  }
+
+  .support-beta-template-actions-v37 {
+    flex-wrap: wrap;
+  }
+}

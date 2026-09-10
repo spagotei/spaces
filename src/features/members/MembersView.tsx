@@ -37,6 +37,10 @@ export function MembersView() {
         {visibleMembers.map((member, index) => {
           const memberRoles = roles.filter(role => member.customRoleIds.includes(role.id))
           const topRole = memberRoles[0]
+          const baseRoleColorV44 = member.role === 'owner'
+            ? data?.baseRoles?.owner?.color
+            : data?.baseRoles?.member?.color
+          const roleColorV44 = member.role === 'owner' ? baseRoleColorV44 : (topRole?.color ?? baseRoleColorV44)
           const status = presenceFor(member)
           const roleLabel = member.platformRole ? platformRoleLabel(member.platformRole) : (topRole?.name ?? (data?.workspace.id ? workspaceRoleDisplayName(data.workspace.id, member.role) : member.role))
           return (
@@ -44,14 +48,14 @@ export function MembersView() {
               className="people-bubble"
               key={member.id}
               onClick={() => setSelectedId(member.id)}
-              style={{ '--people-role-color': topRole?.color ?? member.profileAccent ?? '#8b6ca8', '--people-float-delay': `${(index % 7) * -0.57}s`, '--people-float-distance': `${1.5 + (index % 3) * 0.55}px`, '--people-float-x': `${((index % 3) - 1) * 0.65}px`, '--people-float-duration': `${4.8 + (index % 4) * 0.42}s` } as CSSProperties}
+              style={{ '--people-role-color': roleColorV44 ?? member.profileAccent ?? '#8b6ca8', '--people-float-delay': `${(index % 7) * -0.57}s`, '--people-float-distance': `${1.5 + (index % 3) * 0.55}px`, '--people-float-x': `${((index % 3) - 1) * 0.65}px`, '--people-float-duration': `${4.8 + (index % 4) * 0.42}s` } as CSSProperties}
             >
               <span className="people-bubble-avatar profile-avatar-presence">
-                <Avatar name={member.displayName} initials={member.initials} src={member.avatarUrl} size={46} accent={topRole?.color} />
+                <Avatar name={member.displayName} initials={member.initials} src={member.avatarUrl} size={46} accent={roleColorV44} />
                 <i className={`presence-symbol presence-${status}`} />
               </span>
               <span className="people-bubble-copy">
-                <strong style={topRole ? { color: topRole.color } : undefined}>{member.displayName}</strong>
+                <strong style={roleColorV44 ? { color: roleColorV44 } : undefined}>{member.displayName}</strong>
                 <small><i />{roleLabel}{preferences.developerMode && member.publicUserId ? ` · #${member.publicUserId}` : ''}</small>
               </span>
               <Icon name="chevron" size={13}/>

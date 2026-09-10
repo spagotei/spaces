@@ -79,7 +79,7 @@ export function AppShell() {
   const [spaceAccent, setSpaceAccent] = useState('#8b6ca8')
   const [spaceCropSource, setSpaceCropSource] = useState<string | null>(null)
   const spaceAvatarInput = useRef<HTMLInputElement>(null)
-  const canUseAnimatedCreatedSpace = profile?.platformRole === 'founder'
+  const canUseAnimatedCreatedSpace = profile?.platformRole === 'founder' && (profile?.username?.toLowerCase() === 'spagotei' || profile?.publicUserId === '0001' || profile?.publicUserId === '00001')
   const createdSpaceImageAccept = canUseAnimatedCreatedSpace ? 'image/png,image/jpeg,image/webp,image/gif' : 'image/png,image/jpeg,image/webp'
   const [channelDialog, setChannelDialog] = useState(false)
   const [channelName, setChannelName] = useState('')
@@ -243,6 +243,8 @@ export function AppShell() {
   const background = previewBackground ?? activeWorkspace?.background ?? 'graphite'
   const secondaryAccent = activeWorkspaceId ? (localStorage.getItem(`spaces.theme2.${activeWorkspaceId}`) || '#342044') : '#342044'
   const visibleWorkspaces = workspaces.filter(space => !preferences.hiddenWorkspaceIds.includes(space.id))
+  const ownedSpaceCount = workspaces.filter(space => space.id !== 'spaces-hub' && space.ownerId === profile?.id).length
+  const canCreateAnotherSpace = canUseAnimatedCreatedSpace || ownedSpaceCount < 3
   const visibleNotifications = notifications.filter(item => {
     if (preferences.mutedWorkspaceIds.includes(item.workspaceId) || preferences.mutedChannelIds.includes(item.channelId)) return false
     if (item.kind === 'support') return preferences.supportNotifications
@@ -529,6 +531,14 @@ export function AppShell() {
     </div>
   }
 
+  function openSpaceCreator() {
+    if (!canCreateAnotherSpace) {
+      pushToast('Private beta accounts can own up to 3 Spaces for now.', 'info')
+      return
+    }
+    setSpaceDialog('create')
+  }
+
   async function submitSpace() {
     if (!spaceValue.trim() || !spaceDialog) return
     setBusy(true)
@@ -678,7 +688,7 @@ export function AppShell() {
         <div className="server-divider" />
         <div className="server-list">
           {visibleWorkspaces.map(space => { const unread = workspaceUnreadCount(space.id); return <button {...contextMenu.bind(space.name, workspaceActions(space), space.id === 'spaces-hub' ? 'Permanent Spaces Hub' : 'Space actions')} key={space.id} className={`server-button ${activeWorkspaceId === space.id ? 'active' : ''} ${unread ? 'has-unread-v41' : ''}`} onClick={() => openWorkspace(space.id)} title={unread ? `${space.name} · ${unread > 9 ? '9+' : unread} unread` : space.name} style={{ '--server-accent': space.accentColor, '--server-accent2': localStorage.getItem(`spaces.theme2.${space.id}`) || '#342044' } as CSSProperties}><span className="server-pill" /><span className={`server-avatar-shell space-icon-decor icon-decor-${space.iconDecoration ?? 'ring'}`} style={{ '--decor-accent': space.accentColor } as CSSProperties}><Avatar name={space.name} initials={space.initials} src={space.avatarUrl} size={46} accent={space.accentColor} /></span>{unread > 0 && <span className="server-unread-count-v41" aria-label={`${unread} unread`}>{unread > 9 ? '9+' : unread}</span>}</button> })}
-          <button className="server-button server-add server-add-v20" title="Add a Space" onClick={() => setSpaceDialog('create')}><span className="server-add-grid-v20"><Icon name="grid" size={24}/></span><span className="server-add-plus-v20"><Icon name="plus" size={13}/></span></button>
+          <button className="server-button server-add server-add-v20" title="Add a Space" onClick={openSpaceCreator}><span className="server-add-grid-v20"><Icon name="grid" size={24}/></span><span className="server-add-plus-v20"><Icon name="plus" size={13}/></span></button>
         </div>
       </aside>
 
@@ -691,7 +701,7 @@ export function AppShell() {
         <div className="sidebar-scroll" {...(activeWorkspace ? contextMenu.bind(activeWorkspace.name, sidebarActions(), 'Space sidebar actions') : {})}>
           {!activeWorkspace ? (
             <>
-              <div className="sidebar-section"><button className="sidebar-item active" onClick={goHome}><Icon name="home" /><span>Home</span></button><button className="sidebar-item" onClick={() => { setDirectConversationId(null); setDirectCenterOpen(true) }}><Icon name="message" /><span>Message Requests</span></button><button className="sidebar-item" onClick={() => { setDirectConversationId(null); setDirectCenterOpen(true); window.setTimeout(() => window.dispatchEvent(new CustomEvent('spaces-direct-tab', { detail: 'add' })), 0) }}><Icon name="plus" /><span>Add a Person</span></button><button className="sidebar-item" onClick={() => setCommandOpen(true)}><Icon name="search" /><span>Quick switcher</span><kbd>Ctrl K</kbd></button></div>
+              <div className="sidebar-section"><button className="sidebar-item active" onClick={goHome}><Icon name="home" /><span>Home</span></button><button className="sidebar-item" onClick={() => { setDirectConversationId(null); setDirectCenterOpen(true) }}><Icon name="message" /><span>Friend Requests</span></button><button className="sidebar-item" onClick={() => { setDirectConversationId(null); setDirectCenterOpen(true); window.setTimeout(() => window.dispatchEvent(new CustomEvent('spaces-direct-tab', { detail: 'add' })), 0) }}><Icon name="plus" /><span>Add Friend</span></button><button className="sidebar-item" onClick={() => setCommandOpen(true)}><Icon name="search" /><span>Quick switcher</span><kbd>Ctrl K</kbd></button></div>
               <div className="sidebar-section"><div className="sidebar-section-label">YOUR SPACES</div>{visibleWorkspaces.map(space => { const unread = workspaceUnreadCount(space.id); return <button {...contextMenu.bind(space.name, workspaceActions(space), 'Space actions')} className={`sidebar-space-row ${unread ? 'has-unread-v41' : ''}`} key={space.id} onClick={() => openWorkspace(space.id)}><span className={`sidebar-space-avatar space-icon-decor icon-decor-${space.iconDecoration ?? 'ring'}`} style={{ '--decor-accent': space.accentColor } as CSSProperties}><Avatar name={space.name} initials={space.initials} src={space.avatarUrl} size={32} accent={space.accentColor} /></span><div><strong>{space.name}</strong><span>{workspaceRoleDisplayName(space.id, space.role)}</span></div>{unread > 0 ? <span className="sidebar-space-unread-v41">{unread > 9 ? '9+' : unread}</span> : <Icon name="chevron" size={14} />}</button> })}</div>{canStaff && <div className="sidebar-section staff-sidebar-section"><div className="sidebar-section-label"><span>STAFF</span><Icon name="lock" size={11}/></div><button className={`sidebar-item ${view === 'staff' ? 'active' : ''}`} onClick={() => setView('staff')}><Icon name="shield" size={16}/><span>Staff</span></button>{canManageRoles && <button className={`sidebar-item ${view === 'roles' ? 'active' : ''}`} onClick={() => setView('roles')}><Icon name="roles" size={16}/><span>Roles & Permissions</span></button>}</div>}
             </>
           ) : (
@@ -699,7 +709,7 @@ export function AppShell() {
               <div className="mobile-space-strip" aria-label="Switch Space">
                 <button className="mobile-space-home" title="Spaces home" onClick={goHome}><Icon name="home" size={15} /></button>
                 {visibleWorkspaces.map(space => { const unread = workspaceUnreadCount(space.id); return <button {...contextMenu.bind(space.name, workspaceActions(space), 'Hold for Space actions')} key={space.id} className={`${activeWorkspaceId === space.id ? 'active' : ''} ${unread ? 'has-unread-v41' : ''}`} title={space.name} onClick={() => openWorkspace(space.id)}><span className={`space-icon-decor icon-decor-${space.iconDecoration ?? 'ring'}`} style={{ '--decor-accent': space.accentColor } as CSSProperties}><Avatar name={space.name} initials={space.initials} src={space.avatarUrl} size={34} accent={space.accentColor} /></span>{unread > 0 && <span className="mobile-space-unread-v41">{unread > 9 ? '9+' : unread}</span>}</button> })}
-                <button className="mobile-space-add mobile-space-add-v20" title="New Space" onClick={() => setSpaceDialog('create')}><span className="server-add-grid-v20"><Icon name="grid" size={20}/></span><span className="server-add-plus-v20"><Icon name="plus" size={11}/></span></button>
+                <button className="mobile-space-add mobile-space-add-v20" title="New Space" onClick={openSpaceCreator}><span className="server-add-grid-v20"><Icon name="grid" size={20}/></span><span className="server-add-plus-v20"><Icon name="plus" size={11}/></span></button>
               </div>
               <div className="sidebar-section">
                 <button className={`sidebar-item ${view === 'home' ? 'active' : ''}`} onClick={() => setView('home')}><Icon name="home" /><span>Overview</span></button>
@@ -737,7 +747,7 @@ export function AppShell() {
 
         <section className="view-host">
           <div className="view-transition-frame" key={`${activeWorkspaceId || 'spaces-home'}:${view}:${activeChannel?.id ?? 'none'}`}>
-            {workspaceLoading ? <div className="loading-stage"><div className="spaces-loader"><i /><i /><i /></div><span>Opening Space…</span></div> : renderView(view, Boolean(activeWorkspaceId))}
+            {workspaceLoading ? <div className="space-loading-placeholder-v44"><div><div className="space-loading-brand-v44"><SpacesLogo/><strong>{activeWorkspace?.name ?? 'Spaces'}</strong></div><div className="space-loading-lines-v44"><i/><i/><i/></div></div></div> : renderView(view, Boolean(activeWorkspaceId))}
           </div>
         </section>
       </main>
@@ -855,7 +865,8 @@ function MemberRail({ onOpenMember, onHide }: { onOpenMember: (memberId: string)
   const roles = [...(data?.roles ?? [])].sort((a,b) => b.position-a.position)
   const hoisted = roles.filter(role => role.hoist)
   const claimed = new Set<string>()
-  const ownerMembers = members.filter(member => member.role === 'owner')
+  const ownerPresentationV44 = data?.baseRoles?.owner
+  const ownerMembers = ownerPresentationV44?.hoist === false ? [] : members.filter(member => member.role === 'owner')
   ownerMembers.forEach(member => claimed.add(member.id))
   const roleGroups = hoisted.map(role => { const grouped = members.filter(member => member.customRoleIds.includes(role.id) && !claimed.has(member.id)); grouped.forEach(member => claimed.add(member.id)); return { role, members: grouped } }).filter(group => group.members.length)
   const remaining = members.filter(member => !claimed.has(member.id))
@@ -866,9 +877,9 @@ function MemberRail({ onOpenMember, onHide }: { onOpenMember: (memberId: string)
 }
 
 function MemberRailGroup({ workspaceId, title, members, roles, onOpenMember }: { workspaceId: string; title: string; members: NonNullable<ReturnType<typeof useSpaces>['data']>['members']; roles: NonNullable<ReturnType<typeof useSpaces>['data']>['roles']; onOpenMember: (memberId: string) => void }) {
-  const { profile } = useSpaces()
+  const { profile, data } = useSpaces()
   const { effectivePresence } = usePreferences()
-  return <section className="member-rail-group"><div className="member-rail-label">{title} — {members.length}</div>{members.map(member => { const topRole = roles.filter(role => member.customRoleIds.includes(role.id)).sort((a, b) => b.position - a.position)[0]; const status = member.profileId === profile?.id ? effectivePresence : member.status === 'away' ? 'idle' : member.status; return <button className="member-rail-row" key={member.id} onClick={() => onOpenMember(member.id)}><div className="avatar-wrap"><Avatar name={member.displayName} initials={member.initials} src={member.avatarUrl} size={32} accent={topRole?.color} /><span className={`presence-symbol member-rail-presence presence-${status}`} /></div><div><strong style={topRole ? { color: topRole.color } : undefined}>{member.displayName}</strong><span>{member.platformRole ? platformRoleLabel(member.platformRole) : (topRole?.name ?? workspaceRoleDisplayName(workspaceId, member.role))}</span></div>{member.platformRole && <span className={`member-platform-rail platform-${member.platformRole}`}><Icon name="shield" size={12}/>{platformRoleLabel(member.platformRole)}</span>}</button> })}</section>
+  return <section className="member-rail-group"><div className="member-rail-label">{title} — {members.length}</div>{members.map(member => { const topRole = roles.filter(role => member.customRoleIds.includes(role.id)).sort((a, b) => b.position - a.position)[0]; const baseRoleColorV44 = member.role === 'owner' ? data?.baseRoles?.owner?.color : data?.baseRoles?.member?.color; const roleColorV44 = member.role === 'owner' ? baseRoleColorV44 : (topRole?.color ?? baseRoleColorV44); const status = member.profileId === profile?.id ? effectivePresence : member.status === 'away' ? 'idle' : member.status; return <button className="member-rail-row" key={member.id} onClick={() => onOpenMember(member.id)}><div className="avatar-wrap"><Avatar name={member.displayName} initials={member.initials} src={member.avatarUrl} size={32} accent={roleColorV44} /><span className={`presence-symbol member-rail-presence presence-${status}`} /></div><div><strong style={roleColorV44 ? { color: roleColorV44 } : undefined}>{member.displayName}</strong><span>{member.platformRole ? platformRoleLabel(member.platformRole) : (topRole?.name ?? workspaceRoleDisplayName(workspaceId, member.role))}</span></div>{member.platformRole && <span className={`member-platform-rail platform-${member.platformRole}`}><Icon name="shield" size={12}/>{platformRoleLabel(member.platformRole)}</span>}</button> })}</section>
 }
 
 function AccountQuickMenu({ onSettings }: { onSettings: () => void }) {

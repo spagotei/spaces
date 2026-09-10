@@ -12,6 +12,7 @@ export type MessageDensity = 'comfortable' | 'compact'
 export type NotificationLevel = 'all' | 'mentions' | 'none'
 export type AppTheme = 'obsidian' | 'midnight' | 'slate' | 'soft'
 export type PresenceStatus = 'online' | 'idle' | 'dnd' | 'offline'
+export type SidebarDensity = 'comfortable' | 'compact'
 
 export type SpacesPreferences = {
   contentFilter: ContentFilterLevel
@@ -39,6 +40,12 @@ export type SpacesPreferences = {
   customCursor: boolean
   developerMode: boolean
   showAllChannelThreads: boolean
+  interfaceTextScale: number
+  sidebarTextScale: number
+  messageTextScale: number
+  highContrastText: boolean
+  underlineLinks: boolean
+  sidebarDensity: SidebarDensity
 }
 
 const DEFAULTS: SpacesPreferences = {
@@ -67,6 +74,12 @@ const DEFAULTS: SpacesPreferences = {
   customCursor: true,
   developerMode: false,
   showAllChannelThreads: false,
+  interfaceTextScale: 1,
+  sidebarTextScale: 1,
+  messageTextScale: 1,
+  highContrastText: false,
+  underlineLinks: false,
+  sidebarDensity: 'comfortable',
 }
 
 const STORAGE_KEY = 'spaces.preferences.v1'
@@ -80,12 +93,24 @@ type PreferencesContextValue = {
 
 const PreferencesContext = createContext<PreferencesContextValue | null>(null)
 
+function clampScale(value: unknown, fallback = 1) {
+  const number = Number(value)
+  return Number.isFinite(number) ? Math.max(.85, Math.min(1.4, number)) : fallback
+}
+
 function loadPreferences(): SpacesPreferences {
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
     if (!raw) return DEFAULTS
     const parsed = JSON.parse(raw) as Partial<SpacesPreferences>
-    return { ...DEFAULTS, ...parsed }
+    return {
+      ...DEFAULTS,
+      ...parsed,
+      interfaceTextScale: clampScale(parsed.interfaceTextScale),
+      sidebarTextScale: clampScale(parsed.sidebarTextScale),
+      messageTextScale: clampScale(parsed.messageTextScale),
+      sidebarDensity: parsed.sidebarDensity === 'compact' ? 'compact' : 'comfortable',
+    }
   } catch {
     return DEFAULTS
   }
@@ -103,7 +128,13 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
     document.documentElement.dataset.theme = preferences.appTheme
     document.documentElement.dataset.presence = preferences.presence
     document.documentElement.dataset.developer = preferences.developerMode ? 'on' : 'off'
+    document.documentElement.dataset.textContrast = preferences.highContrastText ? 'high' : 'normal'
+    document.documentElement.dataset.linkStyle = preferences.underlineLinks ? 'underline' : 'plain'
+    document.documentElement.dataset.sidebarDensity = preferences.sidebarDensity
     document.documentElement.style.setProperty('--app-accent', preferences.appAccent)
+    document.documentElement.style.setProperty('--spaces-interface-text-scale', String(clampScale(preferences.interfaceTextScale)))
+    document.documentElement.style.setProperty('--spaces-sidebar-text-scale', String(clampScale(preferences.sidebarTextScale)))
+    document.documentElement.style.setProperty('--spaces-message-text-scale', String(clampScale(preferences.messageTextScale)))
   }, [preferences])
 
   useEffect(() => {

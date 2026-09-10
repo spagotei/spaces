@@ -51,7 +51,8 @@ export function SettingsView({ initialTab }: { initialTab?: SpaceSettingsTab }) 
   const isOwner = workspace?.role === 'owner'
   const isHub = workspace?.id === 'spaces-hub'
   const isHubFounder = isHub && profile?.platformRole === 'founder'
-  const canUseAnimatedSpaceMedia = profile?.platformRole === 'founder' && Boolean(isHub || (workspace?.ownerId && workspace.ownerId === profile.id))
+  const founderMediaAccount = profile?.platformRole === 'founder' && (profile?.username?.toLowerCase() === 'spagotei' || profile?.publicUserId === '0001' || profile?.publicUserId === '00001')
+  const canUseAnimatedSpaceMedia = founderMediaAccount && Boolean(isHub || (workspace?.ownerId && workspace.ownerId === profile.id))
   const spaceImageAccept = canUseAnimatedSpaceMedia ? 'image/png,image/jpeg,image/webp,image/gif' : 'image/png,image/jpeg,image/webp'
   const canManageSpace = isHubFounder || hasWorkspacePermission(data, profile?.id, 'manage_space')
   const canManageChannels = isHubFounder || hasWorkspacePermission(data, profile?.id, 'manage_channels')
@@ -86,7 +87,7 @@ export function SettingsView({ initialTab }: { initialTab?: SpaceSettingsTab }) 
     setAvatarUrl(currentWorkspace.avatarUrl)
     setBannerUrl(currentWorkspace.bannerUrl)
     setIconDecoration(currentWorkspace.iconDecoration === 'badge' ? 'ring' : (currentWorkspace.iconDecoration ?? 'ring'))
-  }, [workspace])
+  }, [workspace?.id])
 
   useEffect(() => {
     if (!canManageSpace && tab === 'profile') setTab(canManageEmojis ? 'appearance' : 'notifications')

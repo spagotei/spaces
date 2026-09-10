@@ -49,7 +49,12 @@ import './styles/standalone-v41.css'
 import './styles/standalone-v42.css'
 import './styles/mobile-overhaul.css'
 import './styles/mobile-v4.css'
+import './styles/standalone-v43.css'
+import './styles/standalone-v44.css'
+import './styles/standalone-v45.css'
 
+import './styles/standalone-v47.css'
+import './styles/standalone-v48.css'
 function StartupLoadingScreen() {
   return (
     <div className="startup-loading-screen" aria-label="Opening Spaces">

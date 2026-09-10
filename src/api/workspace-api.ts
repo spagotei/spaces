@@ -3,6 +3,7 @@ import type {
   WorkspaceChatMessage,
   WorkspaceCustomPermission,
   WorkspaceCustomRole,
+  WorkspaceBaseRoleSetting,
   WorkspaceEmoji,
   WorkspaceNoteComment,
   WorkspaceChannel,
@@ -43,6 +44,8 @@ import type {
   WorkspaceDirectCenter,
   WorkspaceDirectConversation,
   WorkspaceDirectMessage,
+  WorkspaceDirectGroup,
+  WorkspaceDirectGroupMessage,
   WorkspaceDmPreference,
 } from '../types/spaces'
 
@@ -512,10 +515,26 @@ export class WorkspaceApi {
     return this.request('/v1/account/security')
   }
 
-  startEmailVerification(email: string): Promise<WorkspaceEmailVerificationStart> {
+  async startEmailVerification(
+    email: string,
+    username?: string,
+    currentPassword?: string,
+    twoFactorCode?: string,
+  ): Promise<WorkspaceEmailVerificationStart> {
+    let currentPasswordVerifier: string | undefined
+    if (currentPassword && username) {
+      const challenge = await this.request<WorkspaceAuthChallenge>(
+        `/v1/auth/challenge?username=${encodeURIComponent(username)}`,
+      )
+      currentPasswordVerifier = await deriveWorkspacePasswordVerifier(
+        currentPassword,
+        challenge.salt,
+        challenge.iterations,
+      )
+    }
     return this.request('/v1/account/email/start', {
       method: 'POST',
-      body: JSON.stringify({ email }),
+      body: JSON.stringify({ email, currentPasswordVerifier, twoFactorCode }),
     })
   }
 
@@ -576,6 +595,31 @@ export class WorkspaceApi {
 
   sendDirectMessage(conversationId: string, body: string): Promise<WorkspaceDirectMessage> {
     return this.request(`/v1/direct/conversations/${encodeURIComponent(conversationId)}/messages`, {
+      method: 'POST',
+      body: JSON.stringify({ body }),
+    })
+  }
+
+  createDirectGroup(name: string, memberUserIds: string[]): Promise<WorkspaceDirectGroup> {
+    return this.request('/v1/direct/groups', {
+      method: 'POST',
+      body: JSON.stringify({ name, memberUserIds }),
+    })
+  }
+
+  updateDirectGroup(groupId: string, name: string): Promise<WorkspaceDirectGroup> {
+    return this.request(`/v1/direct/groups/${encodeURIComponent(groupId)}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ name }),
+    })
+  }
+
+  listDirectGroupMessages(groupId: string): Promise<WorkspaceDirectGroupMessage[]> {
+    return this.request(`/v1/direct/groups/${encodeURIComponent(groupId)}/messages`)
+  }
+
+  sendDirectGroupMessage(groupId: string, body: string): Promise<WorkspaceDirectGroupMessage> {
+    return this.request(`/v1/direct/groups/${encodeURIComponent(groupId)}/messages`, {
       method: 'POST',
       body: JSON.stringify({ body }),
     })
@@ -1070,6 +1114,17 @@ export class WorkspaceApi {
     return await response.blob()
   }
 
+
+  updateBaseRoleSetting(
+    workspaceId: string,
+    role: 'owner' | 'member',
+    input: Partial<Pick<WorkspaceBaseRoleSetting, 'color' | 'hoist' | 'mentionable'>>,
+  ): Promise<WorkspaceBaseRoleSetting> {
+    return this.request(
+      `/v1/workspaces/${encodeURIComponent(workspaceId)}/base-roles/${encodeURIComponent(role)}`,
+      { method: 'PATCH', body: JSON.stringify(input) },
+    )
+  }
 
   createCustomRole(
     workspaceId: string,

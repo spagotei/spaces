@@ -1,7 +1,7 @@
 import { useEffect, type ReactNode } from 'react'
 import { Icon } from './Icon'
 
-export function Modal({ title, subtitle, children, onClose, wide = false }: {
+export function Modal({ title, children, onClose, wide = false }: {
   title: string
   subtitle?: string
   children: ReactNode
@@ -33,8 +33,7 @@ export function Modal({ title, subtitle, children, onClose, wide = false }: {
         <header className="modal-header">
           <div>
             <h2>{title}</h2>
-            {subtitle && <p>{subtitle}</p>}
-          </div>
+</div>
           <button className="icon-button" onClick={onClose} aria-label="Close"><Icon name="x" /></button>
         </header>
         <div className="modal-body">{children}</div>

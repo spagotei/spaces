@@ -3,7 +3,7 @@ import { Icon } from '../../components/Icon'
 import { useSpaces } from '../../state/SpacesContext'
 
 export function LoginScreen() {
-  const { login, loading, error, apiUrl } = useSpaces()
+  const { login, loading, error } = useSpaces()
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [twoFactorCode, setTwoFactorCode] = useState('')
@@ -49,11 +49,6 @@ export function LoginScreen() {
         <h1>Spaces</h1>
         <div className="login-slogan">Your Space, Your Needs.</div>
         <p>A place for your communities, projects, conversations, and shared work.</p>
-        <div className="login-feature-row">
-          <span><Icon name="shield" size={15} /> Private beta</span>
-          <span><Icon name="activity" size={15} /> Live backend</span>
-          <span><Icon name="monitor" size={15} /> Desktop + app</span>
-        </div>
       </section>
 
       <form className={`login-card ${needsTwoFactor ? 'login-card-2fa' : ''}`} onSubmit={submit}>
@@ -91,12 +86,6 @@ export function LoginScreen() {
           {loading ? <span className="spinner" /> : <Icon name={needsTwoFactor ? 'shield' : 'sparkle'} size={16} />}
           {loading ? 'Checking…' : needsTwoFactor ? 'Verify & enter' : 'Enter Spaces'}
         </button>
-
-        <footer>
-          <span>{needsTwoFactor ? 'Protected by TOTP 2FA.' : 'Registration is closed.'}</span>
-          <span className="endpoint-dot" />
-          <span title={apiUrl}>Worker secured</span>
-        </footer>
       </form>
     </main>
   )

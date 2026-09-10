@@ -82,6 +82,19 @@ export type WorkspaceCustomRole = {
   updatedAt: number
 }
 
+export type WorkspaceBaseRoleSetting = {
+  role: 'owner' | 'member'
+  color: string
+  hoist: boolean
+  mentionable: boolean
+  updatedAt: number
+}
+
+export type WorkspaceBaseRoleSettings = {
+  owner: WorkspaceBaseRoleSetting
+  member: WorkspaceBaseRoleSetting
+}
+
 export type WorkspaceEmoji = {
   id: string
   workspaceId: string
@@ -245,15 +258,38 @@ export type WorkspaceDirectConversation = {
   lastMessageAt: number | null
 }
 
+export type WorkspaceDirectGroupMember = WorkspaceDirectPerson
+
+export type WorkspaceDirectGroup = {
+  id: string
+  name: string
+  ownerUserId: string
+  members: WorkspaceDirectGroupMember[]
+  createdAt: number
+  updatedAt: number
+  lastMessage: string | null
+  lastMessageAt: number | null
+}
+
 export type WorkspaceDirectCenter = {
   conversations: WorkspaceDirectConversation[]
   incomingRequests: WorkspaceDirectConversation[]
   outgoingRequests: WorkspaceDirectConversation[]
+  groups: WorkspaceDirectGroup[]
 }
 
 export type WorkspaceDirectMessage = {
   id: string
   conversationId: string
+  senderUserId: string
+  senderName: string
+  body: string
+  createdAt: number
+}
+
+export type WorkspaceDirectGroupMessage = {
+  id: string
+  groupId: string
   senderUserId: string
   senderName: string
   body: string
@@ -585,6 +621,7 @@ export type WorkspaceBootstrap = {
   messages: WorkspaceChatMessage[]
   comments: WorkspaceNoteComment[]
   roles: WorkspaceCustomRole[]
+  baseRoles?: WorkspaceBaseRoleSettings
   emojis: WorkspaceEmoji[]
   logs: WorkspaceAuditEntry[]
   updates: WorkspaceUpdateEntry[]

@@ -39,12 +39,23 @@ export function HomeView() {
   const [spaceAccent, setSpaceAccent] = useState('#8b6ca8')
   const [spaceCropSource, setSpaceCropSource] = useState<string | null>(null)
   const spaceAvatarInput = useRef<HTMLInputElement>(null)
-  const canUseAnimatedCreatedSpace = profile?.platformRole === 'founder'
+  const canUseAnimatedCreatedSpace = profile?.platformRole === 'founder' && (profile?.username?.toLowerCase() === 'spagotei' || profile?.publicUserId === '0001' || profile?.publicUserId === '00001')
+  const ownedSpaces = workspaces.filter(space => space.id !== 'spaces-hub' && space.ownerId === profile?.id)
+  const canCreateAnotherSpace = canUseAnimatedCreatedSpace || ownedSpaces.length < 3
   const createdSpaceImageAccept = canUseAnimatedCreatedSpace ? 'image/png,image/jpeg,image/webp,image/gif' : 'image/png,image/jpeg,image/webp'
   const visibleWorkspaces = workspaces.filter(space => !preferences.hiddenWorkspaceIds.includes(space.id))
   const hiddenWorkspaces = workspaces.filter(space => preferences.hiddenWorkspaceIds.includes(space.id))
   const visibleNotifications = notifications.filter(item => !preferences.mutedWorkspaceIds.includes(item.workspaceId) && !preferences.mutedChannelIds.includes(item.channelId))
   const firstNotification = visibleNotifications[0]
+
+
+  function openCreateSpace() {
+    if (!canCreateAnotherSpace) {
+      pushToast('Private beta accounts can own up to 3 Spaces for now.', 'info')
+      return
+    }
+    setDialog('create')
+  }
 
   function openNotifications() {
     window.dispatchEvent(new CustomEvent('spaces-open-notifications'))
@@ -93,7 +104,7 @@ export function HomeView() {
           <h1 className="hero-name-v41"><span>{profile?.displayName ?? 'Welcome'}</span><span className="hero-dot">.</span></h1>
           <p>Pick up where your team left off, jump into a conversation, or build a new Space around the next thing.</p>
           <div className="hero-actions">
-            <button className="primary-button" onClick={() => setDialog('create')}><Icon name="plus" size={16} /> New Space</button>
+            <button className="primary-button" onClick={openCreateSpace}><Icon name="plus" size={16} /> New Space</button>
             <button className="secondary-button" onClick={() => setDialog('join')}><Icon name="grid" size={16} /> Join with code</button>
           </div>
         </div>
@@ -114,23 +125,23 @@ export function HomeView() {
 
 
       <section className="home-people-v23">
-        <div className="home-people-copy-v23"><span className="eyebrow">PEOPLE</span><h2>Connections & message requests</h2><p>Add someone by username, review requests, and jump back into direct conversations.</p></div>
+        <div className="home-people-copy-v23"><span className="eyebrow">PEOPLE</span><h2>Your Friends & messages</h2><p>Add friends by username, review friend requests, open direct messages, or start a private group chat.</p></div>
         <div className="home-people-actions-v23">
-          <button className="primary-button" onClick={() => { window.dispatchEvent(new CustomEvent('spaces-open-direct-center')); window.setTimeout(() => window.dispatchEvent(new CustomEvent('spaces-direct-tab', { detail: 'add' })), 0) }}><Icon name="plus" size={14}/> Add a Person</button>
-          <button className="secondary-button" onClick={() => { window.dispatchEvent(new CustomEvent('spaces-open-direct-center')); window.setTimeout(() => window.dispatchEvent(new CustomEvent('spaces-direct-tab', { detail: 'requests' })), 0) }}><Icon name="message" size={14}/> Message Requests</button>
-          <button className="secondary-button" onClick={() => window.dispatchEvent(new CustomEvent('spaces-open-direct-center'))}><Icon name="members" size={14}/> Your People</button>
+          <button className="primary-button" onClick={() => { window.dispatchEvent(new CustomEvent('spaces-open-direct-center')); window.setTimeout(() => window.dispatchEvent(new CustomEvent('spaces-direct-tab', { detail: 'add' })), 0) }}><Icon name="plus" size={14}/> Add Friend</button>
+          <button className="secondary-button" onClick={() => { window.dispatchEvent(new CustomEvent('spaces-open-direct-center')); window.setTimeout(() => window.dispatchEvent(new CustomEvent('spaces-direct-tab', { detail: 'requests' })), 0) }}><Icon name="message" size={14}/> Friend Requests</button>
+          <button className="secondary-button" onClick={() => window.dispatchEvent(new CustomEvent('spaces-open-direct-center'))}><Icon name="members" size={14}/> Your Friends</button><button className="secondary-button" onClick={() => { window.dispatchEvent(new CustomEvent('spaces-open-direct-center')); window.setTimeout(() => window.dispatchEvent(new CustomEvent('spaces-direct-tab', { detail: 'groups' })), 0) }}><Icon name="chat" size={14}/> Group Chats</button>
         </div>
       </section>
 
       <section className="section-block">
-        <div className="section-heading"><div><span className="eyebrow">JUMP BACK IN</span><h2>Your Spaces</h2></div><span className="section-count">{visibleWorkspaces.length}</span></div>
+        <div className="section-heading"><div><span className="eyebrow">JUMP BACK IN</span><h2>Your Spaces</h2><p className="spaces-beta-limit-v43">{canUseAnimatedCreatedSpace ? 'Founder-owned Spaces can use animated GIF artwork.' : `${ownedSpaces.length}/3 owned Spaces · GIF artwork is reserved for Founder-owned Spaces during beta.`}</p></div><span className="section-count">{visibleWorkspaces.length}</span></div>
         {visibleWorkspaces.length ? (
           <div className="space-card-grid">
             {visibleWorkspaces.map((space, index) => (
               <button className="space-card" key={space.id} onClick={() => void chooseWorkspace(space.id)} style={{ '--delay': `${index * 45}ms`, '--space-accent': space.accentColor } as CSSProperties}>
-                <div className="space-card-banner">{space.bannerUrl && <AnimatedBackdrop src={space.bannerUrl} className="space-card-banner-media-v41" mode="still"/>}</div>
+                <div className="space-card-banner">{space.bannerUrl && <AnimatedBackdrop src={space.bannerUrl} className="space-card-banner-media-v41" mode="always"/>}</div>
                 <div className="space-card-body">
-                  <span className={`space-icon-decor icon-decor-${space.iconDecoration ?? 'ring'}`} style={{ '--decor-accent': space.accentColor } as CSSProperties}><Avatar name={space.name} initials={space.initials} src={space.avatarUrl} size={46} accent={space.accentColor} /></span>
+                  <span className={`space-icon-decor icon-decor-${space.iconDecoration ?? 'ring'}`} style={{ '--decor-accent': space.accentColor } as CSSProperties}><Avatar name={space.name} initials={space.initials} src={space.avatarUrl} size={46} accent={space.accentColor} animation="still" /></span>
                   <div><strong>{space.name}</strong><span>{space.description || 'Shared Space'}</span></div>
                   <Icon name="chevron" size={17} className="card-chevron" />
                 </div>

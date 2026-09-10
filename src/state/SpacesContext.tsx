@@ -19,6 +19,7 @@ import type {
   WorkspaceChannel,
   WorkspaceCustomPermission,
   WorkspaceCustomRole,
+  WorkspaceBaseRoleSetting,
   WorkspaceMessageAttachment,
   WorkspaceNote,
   WorkspaceProfile,
@@ -47,6 +48,8 @@ import type {
   WorkspaceDirectCenter,
   WorkspaceDirectConversation,
   WorkspaceDirectMessage,
+  WorkspaceDirectGroup,
+  WorkspaceDirectGroupMessage,
   WorkspaceDmPreference,
 } from '../types/spaces'
 
@@ -105,6 +108,7 @@ type SpacesContextValue = {
   deleteComment: (commentId: string) => Promise<void>
   createRole: (input: { name: string; color: string; permissions: WorkspaceCustomPermission[]; hoist?: boolean; mentionable?: boolean }) => Promise<void>
   updateRole: (roleId: string, input: Partial<Pick<WorkspaceCustomRole, 'name' | 'color' | 'permissions' | 'position' | 'hoist' | 'mentionable'>>) => Promise<void>
+  updateBaseRoleSetting: (role: 'owner' | 'member', input: Partial<Pick<WorkspaceBaseRoleSetting, 'color' | 'hoist' | 'mentionable'>>) => Promise<WorkspaceBaseRoleSetting>
   reorderRoles: (orderedRoleIds: string[]) => Promise<void>
   deleteRole: (roleId: string) => Promise<void>
   upgradeRoleModel: () => Promise<void>
@@ -123,7 +127,7 @@ type SpacesContextValue = {
   revokeSession: (sessionId: string) => Promise<void>
   changePassword: (currentPassword: string, newPassword: string) => Promise<void>
   getAccountSecurity: () => Promise<WorkspaceAccountSecurity>
-  startEmailVerification: (email: string) => Promise<WorkspaceEmailVerificationStart>
+  startEmailVerification: (email: string, currentPassword?: string, twoFactorCode?: string) => Promise<WorkspaceEmailVerificationStart>
   verifyEmail: (code: string) => Promise<WorkspaceAccountSecurity>
   beginTwoFactorSetup: () => Promise<WorkspaceTwoFactorSetup>
   enableTwoFactor: (code: string) => Promise<WorkspaceTwoFactorEnableResult>
@@ -135,6 +139,10 @@ type SpacesContextValue = {
   declineDirectConversation: (conversationId: string) => Promise<void>
   listDirectMessages: (conversationId: string) => Promise<WorkspaceDirectMessage[]>
   sendDirectMessage: (conversationId: string, body: string) => Promise<WorkspaceDirectMessage>
+  createDirectGroup: (name: string, memberUserIds: string[]) => Promise<WorkspaceDirectGroup>
+  updateDirectGroup: (groupId: string, name: string) => Promise<WorkspaceDirectGroup>
+  listDirectGroupMessages: (groupId: string) => Promise<WorkspaceDirectGroupMessage[]>
+  sendDirectGroupMessage: (groupId: string, body: string) => Promise<WorkspaceDirectGroupMessage>
   getWorkspaceDmPreference: (workspaceId: string) => Promise<WorkspaceDmPreference>
   updateWorkspaceDmPreference: (workspaceId: string, allowDms: boolean) => Promise<WorkspaceDmPreference>
   setPlatformSupportRole: (userId: string, role: 'support' | null) => Promise<void>
@@ -185,6 +193,7 @@ export function SpacesProvider({ children }: { children: ReactNode }) {
   const toastCounter = useRef(0)
   const notificationReadBefore = useRef(Number(localStorage.getItem('spaces.notifications.readBefore') || 0))
   const notificationPollSince = useRef(Math.max(notificationReadBefore.current, Date.now() - 7 * 24 * 60 * 60 * 1000))
+  const workspaceCacheV44 = useRef(new Map<string, WorkspaceBootstrap>())
 
   const api = useMemo(
     () => new WorkspaceApi({ baseUrl: SPACES_API_URL, getToken: () => session?.token ?? '' }),
@@ -221,6 +230,7 @@ export function SpacesProvider({ children }: { children: ReactNode }) {
   const refreshWorkspace = useCallback(async () => {
     if (!activeWorkspaceId || !session) return
     const next = await api.bootstrapWorkspace(activeWorkspaceId)
+    workspaceCacheV44.current.set(activeWorkspaceId, next)
     setData(next)
     setWorkspaces(current => current.map(item => item.id === next.workspace.id ? next.workspace : item))
     setActiveChannelId(current => {
@@ -375,11 +385,26 @@ export function SpacesProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const chooseWorkspace = useCallback(async (workspaceId: string) => {
-    setWorkspaceLoading(true)
+    const cached = workspaceCacheV44.current.get(workspaceId)
+    setWorkspaceLoading(!cached)
     setActiveWorkspaceId(workspaceId)
     setMobileNavOpen(false)
+
+    if (cached) {
+      setData(cached)
+      const cachedFirst = cached.channels[0]
+      setActiveChannelId(current => current && cached.channels.some(channel => channel.id === current) ? current : (cachedFirst?.id ?? ''))
+      if (cachedFirst?.kind === 'notes') setView('notes')
+      else setView('chat')
+    } else {
+      setData(null)
+      setActiveChannelId('')
+      setView('home')
+    }
+
     try {
       const next = await api.bootstrapWorkspace(workspaceId)
+      workspaceCacheV44.current.set(workspaceId, next)
       setData(next)
       setWorkspaces(current => current.some(item => item.id === next.workspace.id)
         ? current.map(item => item.id === next.workspace.id ? next.workspace : item)
@@ -388,15 +413,20 @@ export function SpacesProvider({ children }: { children: ReactNode }) {
         localStorage.setItem(`spaces.background.${next.workspace.id}`, next.workspace.background)
         localStorage.setItem(`spaces.workspace.${next.workspace.id}`, JSON.stringify({ background: next.workspace.background, accentColor: next.workspace.accentColor, avatarUrl: next.workspace.avatarUrl, bannerUrl: next.workspace.bannerUrl, iconDecoration: next.workspace.iconDecoration }))
       } catch { /* Bootstrap data is still authoritative. */ }
-      const first = next.channels[0]
-      setActiveChannelId(first?.id ?? '')
-      if (first?.kind === 'notes') setView('notes')
-      else setView('chat')
+
+      if (!cached) {
+        const first = next.channels[0]
+        setActiveChannelId(first?.id ?? '')
+        setView('home')
+      }
     } catch (cause) {
-      pushToast(messageFromError(cause), 'danger')
-      setActiveWorkspaceId('')
-      setData(null)
-      throw cause
+      if (!cached) {
+        pushToast(messageFromError(cause), 'danger')
+        setActiveWorkspaceId('')
+        setData(null)
+        throw cause
+      }
+      pushToast('Could not refresh this Space. Showing the last loaded copy.', 'info')
     } finally {
       setWorkspaceLoading(false)
     }
@@ -593,6 +623,31 @@ export function SpacesProvider({ children }: { children: ReactNode }) {
     await refreshWorkspace()
   }, [activeWorkspaceId, api, data, profile, refreshWorkspace])
 
+  const updateBaseRoleSetting = useCallback(async (
+    role: 'owner' | 'member',
+    input: Partial<Pick<WorkspaceBaseRoleSetting, 'color' | 'hoist' | 'mentionable'>>,
+  ) => {
+    if (!activeWorkspaceId) throw new Error('Open a Space first.')
+    const saved = await api.updateBaseRoleSetting(activeWorkspaceId, role, input)
+    setData(current => {
+      if (!current) return current
+      const defaults = {
+        owner: { role: 'owner' as const, color: '#b58ad8', hoist: true, mentionable: false, updatedAt: 0 },
+        member: { role: 'member' as const, color: '#8b6ca8', hoist: false, mentionable: false, updatedAt: 0 },
+      }
+      return {
+        ...current,
+        baseRoles: {
+          ...defaults,
+          ...(current.baseRoles ?? {}),
+          [role]: saved,
+        },
+      }
+    })
+    pushToast(`${role === 'owner' ? 'Owner' : 'Member'} appearance updated.`, 'success')
+    return saved
+  }, [activeWorkspaceId, api, pushToast])
+
   const createRole = useCallback(async (input: { name: string; color: string; permissions: WorkspaceCustomPermission[]; hoist?: boolean; mentionable?: boolean }) => {
     if (!activeWorkspaceId) return
     await api.createCustomRole(activeWorkspaceId, input)
@@ -774,7 +829,10 @@ export function SpacesProvider({ children }: { children: ReactNode }) {
   }, [api, pushToast, session?.profile.username])
 
   const getAccountSecurity = useCallback(async () => api.getAccountSecurity(), [api])
-  const startEmailVerification = useCallback(async (email: string) => api.startEmailVerification(email), [api])
+  const startEmailVerification = useCallback(async (email: string, currentPassword?: string, twoFactorCode?: string) => {
+    const username = session?.profile.username
+    return api.startEmailVerification(email, username, currentPassword, twoFactorCode)
+  }, [api, session?.profile.username])
   const verifyEmail = useCallback(async (code: string) => api.verifyEmail(code), [api])
   const beginTwoFactorSetup = useCallback(async () => api.beginTwoFactorSetup(), [api])
   const enableTwoFactor = useCallback(async (code: string) => api.enableTwoFactor(code), [api])
@@ -786,6 +844,10 @@ export function SpacesProvider({ children }: { children: ReactNode }) {
   const declineDirectConversation = useCallback(async (conversationId: string) => api.declineDirectConversation(conversationId), [api])
   const listDirectMessages = useCallback(async (conversationId: string) => api.listDirectMessages(conversationId), [api])
   const sendDirectMessage = useCallback(async (conversationId: string, body: string) => api.sendDirectMessage(conversationId, body), [api])
+  const createDirectGroup = useCallback(async (name: string, memberUserIds: string[]) => api.createDirectGroup(name, memberUserIds), [api])
+  const updateDirectGroup = useCallback(async (groupId: string, name: string) => api.updateDirectGroup(groupId, name), [api])
+  const listDirectGroupMessages = useCallback(async (groupId: string) => api.listDirectGroupMessages(groupId), [api])
+  const sendDirectGroupMessage = useCallback(async (groupId: string, body: string) => api.sendDirectGroupMessage(groupId, body), [api])
   const getWorkspaceDmPreference = useCallback(async (workspaceId: string) => api.getWorkspaceDmPreference(workspaceId), [api])
   const updateWorkspaceDmPreference = useCallback(async (workspaceId: string, allowDms: boolean) => api.updateWorkspaceDmPreference(workspaceId, allowDms), [api])
   const setPlatformSupportRole = useCallback(async (userId: string, role: 'support' | null) => {
@@ -891,6 +953,7 @@ export function SpacesProvider({ children }: { children: ReactNode }) {
     deleteComment,
     createRole,
     updateRole,
+    updateBaseRoleSetting,
     reorderRoles,
     deleteRole,
     upgradeRoleModel,
@@ -915,7 +978,7 @@ export function SpacesProvider({ children }: { children: ReactNode }) {
     enableTwoFactor,
     disableTwoFactor,
     regenerateRecoveryCodes,
-    getDirectCenter, requestDirectConversation, acceptDirectConversation, declineDirectConversation, listDirectMessages, sendDirectMessage, getWorkspaceDmPreference, updateWorkspaceDmPreference,
+    getDirectCenter, requestDirectConversation, acceptDirectConversation, declineDirectConversation, listDirectMessages, sendDirectMessage, createDirectGroup, updateDirectGroup, listDirectGroupMessages, sendDirectGroupMessage, getWorkspaceDmPreference, updateWorkspaceDmPreference,
     setPlatformSupportRole,
     listModerationReports, updateModerationReport, banPlatformUser, unbanPlatformUser,
     createSupportCase, listSupportCases, updateSupportCase, listSupportMessages, sendSupportMessage,
@@ -928,7 +991,7 @@ export function SpacesProvider({ children }: { children: ReactNode }) {
     chooseWorkspace, commandOpen, createChannel, deleteChannel, createEmoji, createRole, createWorkspace, data, deleteComment,
     deleteEmoji, deleteMessage, deleteNote, deleteRole, upgradeRoleModel, editMessage, error, goHome, joinWorkspace, loading, login, completeBetaProfile,
     clearNotifications, logout, memberRailOpen, mobileNavOpen, pushToast, refreshWorkspace, refreshWorkspaces, saveNote, updateChannelPermissions, listChannelPermissionOverwrites, saveChannelPermissionOverwrite, deleteChannelPermissionOverwrite, reportUser,
-    sendMessage, session, notifications, setMemberRoles, changeMemberRole, removeMember, toasts, updateRole, reorderRoles, updateWorkspace, leaveWorkspace, deleteWorkspace, updateProfile, setAvatar, setBanner, listSessions, revokeSession, changePassword, getAccountSecurity, startEmailVerification, verifyEmail, beginTwoFactorSetup, enableTwoFactor, disableTwoFactor, regenerateRecoveryCodes, getDirectCenter, requestDirectConversation, acceptDirectConversation, declineDirectConversation, listDirectMessages, sendDirectMessage, getWorkspaceDmPreference, updateWorkspaceDmPreference, setPlatformSupportRole, listModerationReports, updateModerationReport, banPlatformUser, unbanPlatformUser, createSupportCase, listSupportCases, updateSupportCase, listSupportMessages, sendSupportMessage, searchSupportUsers, listSupportStaffMessages, sendSupportStaffMessage, restrictSupportSpace, unrestrictSupportSpace, deleteSupportSpace, listBetaAccess, inviteBetaEmail, revokeBetaAccess, view, workspaceLoading, workspaces,
+    sendMessage, session, notifications, setMemberRoles, changeMemberRole, removeMember, toasts, updateRole, updateBaseRoleSetting, reorderRoles, updateWorkspace, leaveWorkspace, deleteWorkspace, updateProfile, setAvatar, setBanner, listSessions, revokeSession, changePassword, getAccountSecurity, startEmailVerification, verifyEmail, beginTwoFactorSetup, enableTwoFactor, disableTwoFactor, regenerateRecoveryCodes, getDirectCenter, requestDirectConversation, acceptDirectConversation, declineDirectConversation, listDirectMessages, sendDirectMessage, createDirectGroup, updateDirectGroup, listDirectGroupMessages, sendDirectGroupMessage, getWorkspaceDmPreference, updateWorkspaceDmPreference, setPlatformSupportRole, listModerationReports, updateModerationReport, banPlatformUser, unbanPlatformUser, createSupportCase, listSupportCases, updateSupportCase, listSupportMessages, sendSupportMessage, searchSupportUsers, listSupportStaffMessages, sendSupportStaffMessage, restrictSupportSpace, unrestrictSupportSpace, deleteSupportSpace, listBetaAccess, inviteBetaEmail, revokeBetaAccess, view, workspaceLoading, workspaces,
   ])
 
   return <SpacesContext.Provider value={value}>{children}</SpacesContext.Provider>
