@@ -1,0 +1,9 @@
+Spaces 0.0.20
+- New Notes creation fix
+- Profile photo/banner replace + crop + reset controls
+- Space PFP replace + crop + reset controls
+- Founder-only Space banner lock (frontend + Worker enforcement)
+- Current Space context menu cleanup
+- Four-square Add Space button treatment
+- Initial/fallback letter typography normalization
+- Responsive desktop/tablet/mobile polish
