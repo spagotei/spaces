@@ -194,6 +194,12 @@ export function SpacesProvider({ children }: { children: ReactNode }) {
   const notificationReadBefore = useRef(Number(localStorage.getItem('spaces.notifications.readBefore') || 0))
   const notificationPollSince = useRef(Math.max(notificationReadBefore.current, Date.now() - 7 * 24 * 60 * 60 * 1000))
   const workspaceCacheV44 = useRef(new Map<string, WorkspaceBootstrap>())
+  // Space bootstraps can overlap when the user switches Spaces quickly or a
+  // background refresh is still in flight. Keep explicit request generations
+  // so an older response can never replace the newest channel structure.
+  const workspaceChoiceSerial = useRef(0)
+  const workspaceRefreshSerial = useRef(0)
+  const activeWorkspaceRef = useRef('')
 
   const api = useMemo(
     () => new WorkspaceApi({ baseUrl: SPACES_API_URL, getToken: () => session?.token ?? '' }),
@@ -228,9 +234,21 @@ export function SpacesProvider({ children }: { children: ReactNode }) {
   }, [api, session])
 
   const refreshWorkspace = useCallback(async () => {
-    if (!activeWorkspaceId || !session) return
-    const next = await api.bootstrapWorkspace(activeWorkspaceId)
-    workspaceCacheV44.current.set(activeWorkspaceId, next)
+    const workspaceId = activeWorkspaceId
+    if (!workspaceId || !session) return
+    const choiceSerial = workspaceChoiceSerial.current
+    const refreshSerial = ++workspaceRefreshSerial.current
+    const next = await api.bootstrapWorkspace(workspaceId)
+
+    // Ignore stale refreshes. This prevents an older bootstrap from briefly
+    // removing newly-created channels or painting data from a Space we left.
+    if (
+      activeWorkspaceRef.current !== workspaceId
+      || workspaceChoiceSerial.current !== choiceSerial
+      || workspaceRefreshSerial.current !== refreshSerial
+    ) return
+
+    workspaceCacheV44.current.set(workspaceId, next)
     setData(next)
     setWorkspaces(current => current.map(item => item.id === next.workspace.id ? next.workspace : item))
     setActiveChannelId(current => {
@@ -367,6 +385,9 @@ export function SpacesProvider({ children }: { children: ReactNode }) {
 
   const logout = useCallback(async () => {
     try { if (session) await api.logout() } catch { /* Local logout still proceeds. */ }
+    workspaceChoiceSerial.current += 1
+    workspaceRefreshSerial.current += 1
+    activeWorkspaceRef.current = ''
     clearWorkspaceSession()
     setSession(null)
     setWorkspaces([])
@@ -377,6 +398,9 @@ export function SpacesProvider({ children }: { children: ReactNode }) {
   }, [api, session])
 
   const goHome = useCallback(() => {
+    workspaceChoiceSerial.current += 1
+    workspaceRefreshSerial.current += 1
+    activeWorkspaceRef.current = ''
     setActiveWorkspaceId('')
     setData(null)
     setActiveChannelId('')
@@ -386,24 +410,25 @@ export function SpacesProvider({ children }: { children: ReactNode }) {
 
   const chooseWorkspace = useCallback(async (workspaceId: string) => {
     const cached = workspaceCacheV44.current.get(workspaceId)
-    setWorkspaceLoading(!cached)
+    const choiceSerial = ++workspaceChoiceSerial.current
+    // Any refresh started for the previously-active Space is now obsolete.
+    workspaceRefreshSerial.current += 1
+    activeWorkspaceRef.current = workspaceId
+
+    // Always wait for one complete fresh bootstrap before painting the channel
+    // tree. Previously an in-memory snapshot could render first, making
+    // stale/missing channels pop in when the network response arrived.
+    setWorkspaceLoading(true)
     setActiveWorkspaceId(workspaceId)
     setMobileNavOpen(false)
-
-    if (cached) {
-      setData(cached)
-      const cachedFirst = cached.channels[0]
-      setActiveChannelId(current => current && cached.channels.some(channel => channel.id === current) ? current : (cachedFirst?.id ?? ''))
-      if (cachedFirst?.kind === 'notes') setView('notes')
-      else setView('chat')
-    } else {
-      setData(null)
-      setActiveChannelId('')
-      setView('home')
-    }
+    setData(null)
+    setActiveChannelId('')
+    setView('home')
 
     try {
       const next = await api.bootstrapWorkspace(workspaceId)
+      if (workspaceChoiceSerial.current !== choiceSerial || activeWorkspaceRef.current !== workspaceId) return
+
       workspaceCacheV44.current.set(workspaceId, next)
       setData(next)
       setWorkspaces(current => current.some(item => item.id === next.workspace.id)
@@ -414,21 +439,31 @@ export function SpacesProvider({ children }: { children: ReactNode }) {
         localStorage.setItem(`spaces.workspace.${next.workspace.id}`, JSON.stringify({ background: next.workspace.background, accentColor: next.workspace.accentColor, avatarUrl: next.workspace.avatarUrl, bannerUrl: next.workspace.bannerUrl, iconDecoration: next.workspace.iconDecoration }))
       } catch { /* Bootstrap data is still authoritative. */ }
 
-      if (!cached) {
-        const first = next.channels[0]
-        setActiveChannelId(first?.id ?? '')
-        setView('home')
-      }
+      // Commit the complete channel list at once so the sidebar does not
+      // progressively fill in or temporarily lose channels.
+      setActiveChannelId(next.channels[0]?.id ?? '')
+      setView('home')
     } catch (cause) {
+      if (workspaceChoiceSerial.current !== choiceSerial || activeWorkspaceRef.current !== workspaceId) return
       if (!cached) {
         pushToast(messageFromError(cause), 'danger')
+        activeWorkspaceRef.current = ''
         setActiveWorkspaceId('')
         setData(null)
         throw cause
       }
+
+      // Cache is fallback-only: it is never painted before the fresh bootstrap
+      // finishes, but it still keeps Spaces usable if the request fails.
+      setData(cached)
+      const fallback = cached.channels[0]
+      setActiveChannelId(fallback?.id ?? '')
+      setView(fallback?.kind === 'notes' ? 'notes' : fallback ? 'chat' : 'home')
       pushToast('Could not refresh this Space. Showing the last loaded copy.', 'info')
     } finally {
-      setWorkspaceLoading(false)
+      if (workspaceChoiceSerial.current === choiceSerial && activeWorkspaceRef.current === workspaceId) {
+        setWorkspaceLoading(false)
+      }
     }
   }, [api, pushToast])
 
@@ -744,6 +779,9 @@ export function SpacesProvider({ children }: { children: ReactNode }) {
     if (!activeWorkspaceId) return
     const leavingId = activeWorkspaceId
     await api.leaveWorkspace(leavingId)
+    workspaceChoiceSerial.current += 1
+    workspaceRefreshSerial.current += 1
+    activeWorkspaceRef.current = ''
     setActiveWorkspaceId('')
     setActiveChannelId('')
     setData(null)
@@ -756,6 +794,9 @@ export function SpacesProvider({ children }: { children: ReactNode }) {
     if (!activeWorkspaceId) return
     const deletingId = activeWorkspaceId
     await api.deleteWorkspace(deletingId)
+    workspaceChoiceSerial.current += 1
+    workspaceRefreshSerial.current += 1
+    activeWorkspaceRef.current = ''
     setActiveWorkspaceId('')
     setActiveChannelId('')
     setData(null)
