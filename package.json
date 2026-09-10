@@ -18,7 +18,8 @@
     "android:build": "tauri android build",
     "tauri": "tauri",
     "updater:setup": "node scripts/setup-updater.mjs",
-    "release:prepare": "node scripts/prepare-release.mjs"
+    "release:prepare": "node scripts/prepare-release.mjs",
+    "build:web": "node scripts/check-source-encoding.mjs && tsc -b && node scripts/build-web.mjs"
   },
   "dependencies": {
     "@tauri-apps/api": "^2.8.0",
