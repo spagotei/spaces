@@ -36,7 +36,7 @@ import {
 } from '../../utils/workspace-local-meta'
 import { startPressDrag } from '../../utils/press-drag'
 import { gifFileToDataUrl, imageFileToRawDataUrl, isGifFile } from '../../utils/image'
-import { playSpacesNotificationSound, playSpacesQueueAlert } from '../../utils/notification-sound'
+import { playSpacesNotificationSound, playSpacesQueueAlert, playSpacesSupportSound } from '../../utils/notification-sound'
 import { clearDesktopAttention, requestDesktopAttention, syncDesktopUnread } from '../../utils/desktop-unread'
 import { hasWorkspacePermission, platformRoleLabel } from '../../utils/permissions'
 import type { WorkspaceChannel, WorkspaceSummary } from '../../types/spaces'
@@ -108,6 +108,12 @@ export function AppShell() {
   const [supportQueueCount, setSupportQueueCount] = useState(0)
   const supportQueueInitialized = useRef(false)
   const [channelNavCollapsed, setChannelNavCollapsed] = useState(false)
+  const [channelNavWidth, setChannelNavWidth] = useState(() => {
+    const stored = Number(localStorage.getItem('spaces.channelNavWidth.v53') || 238)
+    return Number.isFinite(stored) ? Math.max(184, Math.min(360, stored)) : 238
+  })
+  const [channelNavResizing, setChannelNavResizing] = useState(false)
+  const channelNavResizeState = useRef<{ startX: number; startWidth: number; lastRaw: number; allowCollapse: boolean } | null>(null)
   const [directCenterOpen, setDirectCenterOpen] = useState(false)
   const [directConversationId, setDirectConversationId] = useState<string | null>(null)
   const [workspacePrivacyOpen, setWorkspacePrivacyOpen] = useState<WorkspaceSummary | null>(null)
@@ -115,6 +121,50 @@ export function AppShell() {
   const mobileSwipeStart = useRef<{ x: number; y: number } | null>(null)
   useEffect(() => { const rerender = () => forceTheme(value => value + 1); window.addEventListener('spaces-theme-updated', rerender); return () => window.removeEventListener('spaces-theme-updated', rerender) }, [])
   useEffect(() => { document.title = 'Spaces' }, [])
+  useEffect(() => {
+    if (!channelNavResizing) return
+    const move = (event: PointerEvent) => {
+      const drag = channelNavResizeState.current
+      if (!drag) return
+      const raw = drag.startWidth + event.clientX - drag.startX
+      drag.lastRaw = raw
+      setChannelNavWidth(Math.max(184, Math.min(360, raw)))
+    }
+    const up = () => {
+      const drag = channelNavResizeState.current
+      channelNavResizeState.current = null
+      setChannelNavResizing(false)
+      if (!drag) return
+      if (drag.allowCollapse && drag.lastRaw < 164) {
+        setChannelNavCollapsed(true)
+        return
+      }
+      const next = Math.max(184, Math.min(360, drag.lastRaw))
+      setChannelNavWidth(next)
+      localStorage.setItem('spaces.channelNavWidth.v53', String(Math.round(next)))
+    }
+    window.addEventListener('pointermove', move)
+    window.addEventListener('pointerup', up)
+    window.addEventListener('pointercancel', up)
+    return () => {
+      window.removeEventListener('pointermove', move)
+      window.removeEventListener('pointerup', up)
+      window.removeEventListener('pointercancel', up)
+    }
+  }, [channelNavResizing])
+  function beginChannelNavResize(event: ReactPointerEvent<HTMLButtonElement>) {
+    if (window.innerWidth <= 900) return
+    event.preventDefault()
+    event.stopPropagation()
+    setChannelNavCollapsed(false)
+    channelNavResizeState.current = {
+      startX: event.clientX,
+      startWidth: channelNavWidth,
+      lastRaw: channelNavWidth,
+      allowCollapse: Boolean(activeWorkspaceId),
+    }
+    setChannelNavResizing(true)
+  }
   useEffect(() => {
     const onTouchStart = (event: TouchEvent) => {
       if (window.innerWidth > 900 || event.touches.length !== 1) return
@@ -189,7 +239,9 @@ export function AppShell() {
     let timer = 0
     const show = (event: Event) => {
       const item = (event as CustomEvent<SpacesNotification>).detail
-      const muted = preferences.mutedWorkspaceIds.includes(item.workspaceId) || preferences.mutedChannelIds.includes(item.channelId)
+      const muted = item.kind === 'support'
+        ? false
+        : preferences.mutedWorkspaceIds.includes(item.workspaceId) || preferences.mutedChannelIds.includes(item.channelId)
       const blockedKind =
         (item.kind === 'mention' && !preferences.mentionNotifications) ||
         ((item.kind === 'everyone' || item.kind === 'here') && !preferences.everyoneNotifications) ||
@@ -200,14 +252,23 @@ export function AppShell() {
         : item.kind !== 'support' && preferences.notificationLevel === 'none'
       if (muted || blockedKind || blockedLevel || preferences.presence === 'dnd') return
       if (preferences.notificationPreviews) setNoticePeek(item)
-      if (preferences.desktopSounds) playSpacesNotificationSound(item.kind)
+      if (preferences.desktopSounds) {
+        if (item.kind === 'support') {
+          const isReply = item.mentionLabel === 'Support reply'
+          if (isReply ? preferences.supportReceivedSounds : preferences.supportIncomingSounds) {
+            playSpacesSupportSound(isReply ? 'received' : 'incoming')
+          }
+        } else {
+          playSpacesNotificationSound(item.kind)
+        }
+      }
       void requestDesktopAttention()
       window.clearTimeout(timer)
       timer = window.setTimeout(() => setNoticePeek(null), 5200)
     }
     window.addEventListener('spaces-notification-peek', show)
     return () => { window.clearTimeout(timer); window.removeEventListener('spaces-notification-peek', show) }
-  }, [preferences.desktopSounds, preferences.everyoneNotifications, preferences.mentionNotifications, preferences.mutedChannelIds, preferences.mutedWorkspaceIds, preferences.notificationLevel, preferences.notificationPreviews, preferences.presence, preferences.roleNotifications, preferences.supportNotifications])
+  }, [preferences.desktopSounds, preferences.everyoneNotifications, preferences.mentionNotifications, preferences.mutedChannelIds, preferences.mutedWorkspaceIds, preferences.notificationLevel, preferences.notificationPreviews, preferences.presence, preferences.roleNotifications, preferences.supportIncomingSounds, preferences.supportNotifications, preferences.supportReceivedSounds])
 
   // Spaces - Hub behaves like a normal Space for its Founder. The only special
   // rules are that membership is permanent and the protected updates channel cannot be deleted.
@@ -246,8 +307,8 @@ export function AppShell() {
   const ownedSpaceCount = workspaces.filter(space => space.id !== 'spaces-hub' && space.ownerId === profile?.id).length
   const canCreateAnotherSpace = canUseAnimatedCreatedSpace || ownedSpaceCount < 3
   const visibleNotifications = notifications.filter(item => {
-    if (preferences.mutedWorkspaceIds.includes(item.workspaceId) || preferences.mutedChannelIds.includes(item.channelId)) return false
     if (item.kind === 'support') return preferences.supportNotifications
+    if (preferences.mutedWorkspaceIds.includes(item.workspaceId) || preferences.mutedChannelIds.includes(item.channelId)) return false
     if (item.kind === 'message') return preferences.notificationLevel === 'all'
     if (preferences.notificationLevel === 'none') return false
     if (item.kind === 'mention') return preferences.mentionNotifications
@@ -260,6 +321,7 @@ export function AppShell() {
     '--app-accent': preferences.appAccent,
     '--workspace-accent': activeWorkspace?.accentColor ?? preferences.appAccent,
     '--active-accent-2': secondaryAccent,
+    '--channel-rail': channelNavCollapsed && activeWorkspaceId ? '0px' : `${channelNavWidth}px`,
   } as CSSProperties
 
   useEffect(() => {
@@ -401,6 +463,12 @@ export function AppShell() {
   async function openNotificationItem(item: SpacesNotification) {
     setNoticePeek(null)
     setNotificationOpen(false)
+    if (item.kind === 'support') {
+      setDirectConversationId(null)
+      setDirectCenterOpen(true)
+      window.setTimeout(() => window.dispatchEvent(new CustomEvent('spaces-direct-tab', { detail: 'support' })), 0)
+      return
+    }
     await chooseWorkspace(item.workspaceId)
     chooseChannel(item.channelId)
   }
@@ -656,8 +724,8 @@ export function AppShell() {
       try {
         const [reports, cases] = await Promise.all([listModerationReports(), listSupportCases()])
         if (cancelled) return
-        const next = reports.filter(item => item.status === 'open' || item.status === 'reviewed').length +
-          cases.filter(item => item.status === 'open' || item.status === 'reviewed').length
+        const next = reports.filter(item => !(item as { archivedAt?: number | null }).archivedAt && (item.status === 'open' || item.status === 'reviewed')).length +
+          cases.filter(item => !(item as { archivedAt?: number | null }).archivedAt && (item.status === 'open' || item.status === 'reviewed')).length
         setSupportQueueCount(previous => {
           if (supportQueueInitialized.current && next > previous && preferences.desktopSounds && preferences.presence !== 'dnd') playSpacesQueueAlert()
           return next
@@ -682,7 +750,7 @@ export function AppShell() {
   }
 
   return (
-    <div className={`spaces-app-shell bg-${background} ${activeWorkspaceId ? 'has-space' : 'home-mode'} ${showMemberRail ? 'with-member-rail' : ''} ${channelNavCollapsed && activeWorkspaceId ? 'channel-nav-collapsed' : ''}`} style={appStyle}>
+    <div className={`spaces-app-shell bg-${background} ${activeWorkspaceId ? 'has-space' : 'home-mode'} ${showMemberRail ? 'with-member-rail' : ''} ${channelNavCollapsed && activeWorkspaceId ? 'channel-nav-collapsed' : ''} ${channelNavResizing ? 'channel-nav-resizing-v53' : ''}`} style={appStyle}>
       <aside className="server-rail">
         <button className={`server-home ${!activeWorkspaceId ? 'active' : ''}`} onClick={goHome} title="Home"><div className="brand-mark brand-home"><Icon name="home" size={22} /></div><span className="server-pill" /></button>
         <div className="server-divider" />
@@ -693,6 +761,7 @@ export function AppShell() {
       </aside>
 
       <aside className={`channel-sidebar ${mobileNavOpen ? 'mobile-open' : ''}`} aria-hidden={channelNavCollapsed && !mobileNavOpen ? true : undefined}>
+        <button className="channel-sidebar-resize-v53" aria-label="Resize Space navigation" title="Drag to resize · drag left to collapse" onPointerDown={beginChannelNavResize} />
         <header className={`space-header ${activeWorkspace?.bannerUrl ? 'has-space-banner-v42' : ''}`}>
           {activeWorkspace?.bannerUrl && <AnimatedBackdrop src={activeWorkspace.bannerUrl} className="space-header-full-banner-v42" mode={channelNavCollapsed && !mobileNavOpen ? 'still' : 'always'}/>}
           {activeWorkspace ? <><button {...contextMenu.bind(activeWorkspace.name, workspaceActions(activeWorkspace), 'Space actions')} className="space-header-identity-v16 space-header-menu-v18" title="Open Space menu" onClick={event => { const rect = event.currentTarget.getBoundingClientRect(); contextMenu.open(activeWorkspace.name, workspaceActions(activeWorkspace), rect.left + 14, rect.bottom + 8, 'Space actions') }}><span className={`space-icon-decor icon-decor-${activeWorkspace.iconDecoration ?? 'ring'}`} style={{ '--decor-accent': activeWorkspace.accentColor } as CSSProperties}><Avatar name={activeWorkspace.name} initials={activeWorkspace.initials} src={activeWorkspace.avatarUrl} size={34} accent={activeWorkspace.accentColor}/></span><div className="space-header-copy"><span className="eyebrow">SPACE</span><strong>{activeWorkspace.name}</strong><small>{canManageSpace ? 'Space menu · settings & tools' : 'Space menu'}</small></div><span className="space-header-menu-chevron-v18"><Icon name="chevron" size={13}/></span></button>{canManageSpace && <button className="icon-button" title="Space settings" onClick={() => setView('settings')}><Icon name="settings" size={16} /></button>}</> : <><div className="space-header-copy"><span className="eyebrow">SPACES</span><strong>Home</strong></div><div className="private-chip"><Icon name="lock" size={12} /> Private</div></>}

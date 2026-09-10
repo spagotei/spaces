@@ -27,6 +27,9 @@ export type SpacesPreferences = {
   everyoneNotifications: boolean
   roleNotifications: boolean
   supportNotifications: boolean
+  supportIncomingSounds: boolean
+  supportReceivedSounds: boolean
+  supportOutgoingSounds: boolean
   notificationPreviews: boolean
   appTheme: AppTheme
   presence: PresenceStatus
@@ -61,6 +64,9 @@ const DEFAULTS: SpacesPreferences = {
   everyoneNotifications: true,
   roleNotifications: true,
   supportNotifications: true,
+  supportIncomingSounds: true,
+  supportReceivedSounds: true,
+  supportOutgoingSounds: true,
   notificationPreviews: true,
   appTheme: 'obsidian',
   presence: 'online',

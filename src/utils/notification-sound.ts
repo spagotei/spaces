@@ -1,4 +1,12 @@
-type SpacesNotificationKind = 'message' | 'mention' | 'everyone' | 'here' | 'role' | 'support'
+type SpacesNotificationKind =
+  | 'message'
+  | 'mention'
+  | 'everyone'
+  | 'here'
+  | 'role'
+  | 'support'
+
+export type SpacesSupportSoundKind = 'incoming' | 'received' | 'outgoing'
 
 type SoundDefinition = {
   src: string
@@ -6,62 +14,52 @@ type SoundDefinition = {
 }
 
 const soundDefinitions: Record<SpacesNotificationKind, SoundDefinition> = {
-  // Low-priority incoming channel activity: short and unobtrusive.
   message: { src: '/spaces-soft-pop.mp3', volume: 0.6 },
-
-  // A direct mention keeps the original Spaces notification identity.
   mention: { src: '/spaces-notification-ding.mp3', volume: 1 },
-
-  // Broader pings get a clearer two-note alert.
   everyone: { src: '/spaces-double-ping.mp3', volume: 0.9 },
   here: { src: '/spaces-double-ping.mp3', volume: 0.9 },
-
-  // Role pings are noticeable without sounding as urgent as @everyone/@here.
   role: { src: '/spaces-soft-ping.mp3', volume: 0.8 },
+  support: { src: '/spaces-soft-ping.mp3', volume: 0.52 },
+}
 
-  // Official support keeps the distinctive original ding as well.
-  support: { src: '/spaces-notification-ding.mp3', volume: 1 },
+const supportSoundDefinitions: Record<SpacesSupportSoundKind, SoundDefinition> = {
+  // Official message delivered to a user.
+  incoming: { src: '/spaces-soft-ping.mp3', volume: 0.52 },
+  // A user replied and Support/Staff is receiving it.
+  received: { src: '/spaces-double-ping.mp3', volume: 0.44 },
+  // Local confirmation after sending a Support DM or Support reply.
+  outgoing: { src: '/spaces-soft-pop.mp3', volume: 0.42 },
 }
 
 const audioCache = new Map<string, HTMLAudioElement>()
 
-export function playSpacesNotificationSound(kind: SpacesNotificationKind) {
+function playDefinition(sound: SoundDefinition) {
   try {
-    const sound = soundDefinitions[kind] ?? soundDefinitions.mention
     let audio = audioCache.get(sound.src)
-
     if (!audio) {
       audio = new Audio(sound.src)
       audio.preload = 'auto'
       audioCache.set(sound.src, audio)
     }
-
     audio.pause()
     audio.currentTime = 0
     audio.volume = sound.volume
-
     void audio.play().catch(() => {
       // Browsers can block audio until the user has interacted with the app.
     })
   } catch {
-    // Audio is optional; a notification should never break the app.
+    // Audio is optional; a notification should never break Spaces.
   }
 }
 
+export function playSpacesNotificationSound(kind: SpacesNotificationKind) {
+  playDefinition(soundDefinitions[kind] ?? soundDefinitions.mention)
+}
+
+export function playSpacesSupportSound(kind: SpacesSupportSoundKind) {
+  playDefinition(supportSoundDefinitions[kind])
+}
+
 export function playSpacesQueueAlert() {
-  try {
-    const src = '/spaces-queue-alert.mp3'
-    let audio = audioCache.get(src)
-    if (!audio) {
-      audio = new Audio(src)
-      audio.preload = 'auto'
-      audioCache.set(src, audio)
-    }
-    audio.pause()
-    audio.currentTime = 0
-    audio.volume = 0.9
-    void audio.play().catch(() => undefined)
-  } catch {
-    // Platform queue audio is optional.
-  }
+  playDefinition({ src: '/spaces-queue-alert.mp3', volume: 0.9 })
 }
