@@ -627,7 +627,7 @@ export type WorkspaceBootstrap = {
   updates: WorkspaceUpdateEntry[]
 }
 
-export type WorkspacePingNotificationKind = 'message' | 'mention' | 'everyone' | 'here' | 'role' | 'support'
+export type WorkspacePingNotificationKind = 'message' | 'mention' | 'everyone' | 'here' | 'role' | 'support' | 'direct' | 'group' | 'friend_request'
 
 export type WorkspacePingNotification = {
   id: string
@@ -640,4 +640,6 @@ export type WorkspacePingNotification = {
   createdAt: number
   kind: WorkspacePingNotificationKind
   mentionLabel: string
+  conversationId?: string | null
+  groupId?: string | null
 }

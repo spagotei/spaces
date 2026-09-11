@@ -39,7 +39,8 @@ import { gifFileToDataUrl, imageFileToRawDataUrl, isGifFile } from '../../utils/
 import { playSpacesNotificationSound, playSpacesQueueAlert, playSpacesSupportSound } from '../../utils/notification-sound'
 import { clearDesktopAttention, requestDesktopAttention, syncDesktopUnread } from '../../utils/desktop-unread'
 import { hasWorkspacePermission, platformRoleLabel } from '../../utils/permissions'
-import type { WorkspaceChannel, WorkspaceSummary } from '../../types/spaces'
+import type { WorkspaceChannel, WorkspaceSummary, WorkspaceDirectCenter } from '../../types/spaces'
+import '../../styles/standalone-v54.css'
 
 const navItems: { view: AppView; label: string; icon: IconName }[] = [
   { view: 'members', label: 'People', icon: 'members' },
@@ -66,11 +67,11 @@ export function AppShell() {
   const { effectivePresence, preferences, setPreference } = usePreferences()
   const contextMenu = useContextMenu()
   const {
-    profile, workspaces, activeWorkspaceId, activeWorkspace, data, activeChannel, view,
+    apiUrl, session, profile, workspaces, activeWorkspaceId, activeWorkspace, data, activeChannel, view,
     memberRailOpen, mobileNavOpen, commandOpen, workspaceLoading, toasts, notifications,
     goHome, chooseWorkspace, chooseChannel, setView, setMemberRailOpen, setMobileNavOpen,
     setCommandOpen, createWorkspace, joinWorkspace, createChannel, deleteChannel, createSupportCase, pushToast,
-    listModerationReports, listSupportCases,
+    listModerationReports, listSupportCases, getDirectCenter,
   } = useSpaces()
   const [spaceDialog, setSpaceDialog] = useState<'create' | 'join' | null>(null)
   const [spaceValue, setSpaceValue] = useState('')
@@ -116,6 +117,12 @@ export function AppShell() {
   const channelNavResizeState = useRef<{ startX: number; startWidth: number; lastRaw: number; allowCollapse: boolean } | null>(null)
   const [directCenterOpen, setDirectCenterOpen] = useState(false)
   const [directConversationId, setDirectConversationId] = useState<string | null>(null)
+  const [directGroupId, setDirectGroupId] = useState<string | null>(null)
+  const [directSidebarCenter, setDirectSidebarCenter] = useState<WorkspaceDirectCenter>({ conversations: [], incomingRequests: [], outgoingRequests: [], groups: [] })
+  const [supportSidebarSummary, setSupportSidebarSummary] = useState({ hasMessages: false, lastAt: 0, preview: '' })
+  const [pinnedDirectKeys, setPinnedDirectKeys] = useState<string[]>(() => {
+    try { return JSON.parse(localStorage.getItem('spaces.pinnedDirects.v54') || '[]') as string[] } catch { return [] }
+  })
   const [workspacePrivacyOpen, setWorkspacePrivacyOpen] = useState<WorkspaceSummary | null>(null)
   const [, forceTheme] = useState(0)
   const mobileSwipeStart = useRef<{ x: number; y: number } | null>(null)
@@ -228,18 +235,54 @@ export function AppShell() {
   useEffect(() => { const open = () => setNotificationOpen(true); window.addEventListener('spaces-open-notifications', open); return () => window.removeEventListener('spaces-open-notifications', open) }, [])
   useEffect(() => {
     const open = (event: Event) => {
-      const detail = (event as CustomEvent<{ conversationId?: string | null }>).detail
+      const detail = (event as CustomEvent<{ conversationId?: string | null; groupId?: string | null }>).detail
       setDirectConversationId(detail?.conversationId ?? null)
+      setDirectGroupId(detail?.groupId ?? null)
       setDirectCenterOpen(true)
     }
     window.addEventListener('spaces-open-direct-center', open)
     return () => window.removeEventListener('spaces-open-direct-center', open)
   }, [])
+
+  useEffect(() => {
+    if (!session?.token) {
+      setDirectSidebarCenter({ conversations: [], incomingRequests: [], outgoingRequests: [], groups: [] })
+      setSupportSidebarSummary({ hasMessages: false, lastAt: 0, preview: '' })
+      return
+    }
+    let cancelled = false
+    const load = async () => {
+      try {
+        const center = await getDirectCenter()
+        if (!cancelled) setDirectSidebarCenter({ conversations: center.conversations ?? [], incomingRequests: center.incomingRequests ?? [], outgoingRequests: center.outgoingRequests ?? [], groups: center.groups ?? [] })
+      } catch { /* Sidebar DMs should never block the shell. */ }
+      try {
+        const response = await fetch(`${apiUrl}/v1/support/inbox`, { headers: { Authorization: `Bearer ${session.token}` } })
+        if (response.ok) {
+          const items = await response.json() as { body: string; createdAt: number }[]
+          const last = items[items.length - 1]
+          if (!cancelled) setSupportSidebarSummary({ hasMessages: items.length > 0, lastAt: Number(last?.createdAt ?? 0), preview: String(last?.body ?? '') })
+        }
+      } catch { /* Support history may be unavailable during an upgrade. */ }
+    }
+    void load()
+    const timer = window.setInterval(() => void load(), 8000)
+    return () => { cancelled = true; window.clearInterval(timer) }
+  }, [apiUrl, getDirectCenter, session?.token])
+
+  function togglePinnedDirect(key: string) {
+    setPinnedDirectKeys(current => {
+      const next = current.includes(key) ? current.filter(item => item !== key) : [...current, key]
+      localStorage.setItem('spaces.pinnedDirects.v54', JSON.stringify(next))
+      return next
+    })
+  }
   useEffect(() => {
     let timer = 0
     const show = (event: Event) => {
       const item = (event as CustomEvent<SpacesNotification>).detail
-      const muted = item.kind === 'support'
+      const globalDirect = item.kind === 'support' || item.kind === 'direct' || item.kind === 'group' || item.kind === 'friend_request'
+      const muted = globalDirect
         ? false
         : preferences.mutedWorkspaceIds.includes(item.workspaceId) || preferences.mutedChannelIds.includes(item.channelId)
       const blockedKind =
@@ -247,9 +290,11 @@ export function AppShell() {
         ((item.kind === 'everyone' || item.kind === 'here') && !preferences.everyoneNotifications) ||
         (item.kind === 'role' && !preferences.roleNotifications) ||
         (item.kind === 'support' && !preferences.supportNotifications)
-      const blockedLevel = item.kind === 'message'
-        ? preferences.notificationLevel !== 'all'
-        : item.kind !== 'support' && preferences.notificationLevel === 'none'
+      const blockedLevel = globalDirect
+        ? false
+        : item.kind === 'message'
+          ? preferences.notificationLevel !== 'all'
+          : preferences.notificationLevel === 'none'
       if (muted || blockedKind || blockedLevel || preferences.presence === 'dnd') return
       if (preferences.notificationPreviews) setNoticePeek(item)
       if (preferences.desktopSounds) {
@@ -262,7 +307,7 @@ export function AppShell() {
           playSpacesNotificationSound(item.kind)
         }
       }
-      void requestDesktopAttention()
+      void requestDesktopAttention(item.kind === 'friend_request' ? 'request' : 'normal')
       window.clearTimeout(timer)
       timer = window.setTimeout(() => setNoticePeek(null), 5200)
     }
@@ -308,6 +353,7 @@ export function AppShell() {
   const canCreateAnotherSpace = canUseAnimatedCreatedSpace || ownedSpaceCount < 3
   const visibleNotifications = notifications.filter(item => {
     if (item.kind === 'support') return preferences.supportNotifications
+    if (item.kind === 'direct' || item.kind === 'group' || item.kind === 'friend_request') return true
     if (preferences.mutedWorkspaceIds.includes(item.workspaceId) || preferences.mutedChannelIds.includes(item.channelId)) return false
     if (item.kind === 'message') return preferences.notificationLevel === 'all'
     if (preferences.notificationLevel === 'none') return false
@@ -339,7 +385,41 @@ export function AppShell() {
   }, [])
 
   const workspaceUnreadCount = (workspaceId: string) =>
-    visibleNotifications.filter(item => item.workspaceId === workspaceId).length
+    visibleNotifications.filter(item =>
+      item.workspaceId === workspaceId &&
+      item.kind !== 'support' &&
+      item.kind !== 'direct' &&
+      item.kind !== 'group' &&
+      item.kind !== 'friend_request'
+    ).length
+
+  const sidebarDmItems = useMemo(() => {
+    const items: { key: string; kind: 'support' | 'direct' | 'group'; id: string | null; name: string; preview: string; lastAt: number; avatarUrl?: string | null; initials?: string; accent?: string }[] = []
+    if (supportSidebarSummary.hasMessages || pinnedDirectKeys.includes('support')) {
+      items.push({ key: 'support', kind: 'support', id: null, name: 'Support Replys', preview: supportSidebarSummary.preview || 'Spaces Support', lastAt: supportSidebarSummary.lastAt })
+    }
+    for (const conversation of directSidebarCenter.conversations) {
+      items.push({ key: `dm:${conversation.id}`, kind: 'direct', id: conversation.id, name: conversation.person.displayName, preview: conversation.lastMessage || `@${conversation.person.username}`, lastAt: conversation.lastMessageAt ?? conversation.updatedAt, avatarUrl: conversation.person.avatarUrl, initials: conversation.person.initials, accent: conversation.person.profileAccent })
+    }
+    for (const group of directSidebarCenter.groups) {
+      items.push({ key: `group:${group.id}`, kind: 'group', id: group.id, name: group.name, preview: group.lastMessage || `${group.members.length} members`, lastAt: group.lastMessageAt ?? group.updatedAt })
+    }
+    return items.sort((a, b) => {
+      const ap = pinnedDirectKeys.includes(a.key) ? 1 : 0
+      const bp = pinnedDirectKeys.includes(b.key) ? 1 : 0
+      return bp - ap || b.lastAt - a.lastAt || a.name.localeCompare(b.name)
+    })
+  }, [directSidebarCenter.conversations, directSidebarCenter.groups, pinnedDirectKeys, supportSidebarSummary])
+
+  function sidebarDmUnread(item: (typeof sidebarDmItems)[number]) {
+    return visibleNotifications.filter(notification =>
+      item.kind === 'support'
+        ? notification.kind === 'support'
+        : item.kind === 'direct'
+          ? notification.kind === 'direct' && notification.conversationId === item.id
+          : notification.kind === 'group' && notification.groupId === item.id
+    ).length
+  }
 
   const channelMeta = useMemo(
     () => loadChannelMeta(activeWorkspaceId, data?.channels ?? []),
@@ -464,10 +544,20 @@ export function AppShell() {
     setNoticePeek(null)
     setNotificationOpen(false)
     if (item.kind === 'support') {
-      setDirectConversationId(null)
-      setDirectCenterOpen(true)
+      setDirectConversationId(null); setDirectGroupId(null); setDirectCenterOpen(true)
       window.setTimeout(() => window.dispatchEvent(new CustomEvent('spaces-direct-tab', { detail: 'support' })), 0)
       return
+    }
+    if (item.kind === 'friend_request') {
+      setDirectConversationId(null); setDirectGroupId(null); setDirectCenterOpen(true)
+      window.setTimeout(() => window.dispatchEvent(new CustomEvent('spaces-direct-tab', { detail: 'requests' })), 0)
+      return
+    }
+    if (item.kind === 'direct' && item.conversationId) {
+      setDirectGroupId(null); setDirectConversationId(item.conversationId); setDirectCenterOpen(true); return
+    }
+    if (item.kind === 'group' && item.groupId) {
+      setDirectConversationId(null); setDirectGroupId(item.groupId); setDirectCenterOpen(true); return
     }
     await chooseWorkspace(item.workspaceId)
     chooseChannel(item.channelId)
@@ -770,8 +860,35 @@ export function AppShell() {
         <div className="sidebar-scroll" {...(activeWorkspace ? contextMenu.bind(activeWorkspace.name, sidebarActions(), 'Space sidebar actions') : {})}>
           {!activeWorkspace ? (
             <>
-              <div className="sidebar-section"><button className="sidebar-item active" onClick={goHome}><Icon name="home" /><span>Home</span></button><button className="sidebar-item" onClick={() => { setDirectConversationId(null); setDirectCenterOpen(true) }}><Icon name="message" /><span>Friend Requests</span></button><button className="sidebar-item" onClick={() => { setDirectConversationId(null); setDirectCenterOpen(true); window.setTimeout(() => window.dispatchEvent(new CustomEvent('spaces-direct-tab', { detail: 'add' })), 0) }}><Icon name="plus" /><span>Add Friend</span></button><button className="sidebar-item" onClick={() => setCommandOpen(true)}><Icon name="search" /><span>Quick switcher</span><kbd>Ctrl K</kbd></button></div>
-              <div className="sidebar-section"><div className="sidebar-section-label">YOUR SPACES</div>{visibleWorkspaces.map(space => { const unread = workspaceUnreadCount(space.id); return <button {...contextMenu.bind(space.name, workspaceActions(space), 'Space actions')} className={`sidebar-space-row ${unread ? 'has-unread-v41' : ''}`} key={space.id} onClick={() => openWorkspace(space.id)}><span className={`sidebar-space-avatar space-icon-decor icon-decor-${space.iconDecoration ?? 'ring'}`} style={{ '--decor-accent': space.accentColor } as CSSProperties}><Avatar name={space.name} initials={space.initials} src={space.avatarUrl} size={32} accent={space.accentColor} /></span><div><strong>{space.name}</strong><span>{workspaceRoleDisplayName(space.id, space.role)}</span></div>{unread > 0 ? <span className="sidebar-space-unread-v41">{unread > 9 ? '9+' : unread}</span> : <Icon name="chevron" size={14} />}</button> })}</div>{canStaff && <div className="sidebar-section staff-sidebar-section"><div className="sidebar-section-label"><span>STAFF</span><Icon name="lock" size={11}/></div><button className={`sidebar-item ${view === 'staff' ? 'active' : ''}`} onClick={() => setView('staff')}><Icon name="shield" size={16}/><span>Staff</span></button>{canManageRoles && <button className={`sidebar-item ${view === 'roles' ? 'active' : ''}`} onClick={() => setView('roles')}><Icon name="roles" size={16}/><span>Roles & Permissions</span></button>}</div>}
+              <div className="sidebar-section"><button className="sidebar-item active" onClick={goHome}><Icon name="home" /><span>Home</span></button><button className="sidebar-item" onClick={() => setCommandOpen(true)}><Icon name="search" /><span>Quick switcher</span><kbd>Ctrl K</kbd></button></div>
+              <div className="sidebar-section sidebar-friends-v54">
+                <div className="sidebar-section-label">FRIENDS</div>
+                <button className="sidebar-item sidebar-request-row-v54" onClick={() => { setDirectConversationId(null); setDirectGroupId(null); setDirectCenterOpen(true); window.setTimeout(() => window.dispatchEvent(new CustomEvent('spaces-direct-tab', { detail: 'requests' })), 0) }}><Icon name="message" /><span>Requests</span>{directSidebarCenter.incomingRequests.length > 0 && <b className="sidebar-request-badge-v54">{directSidebarCenter.incomingRequests.length > 99 ? '99+' : directSidebarCenter.incomingRequests.length}</b>}</button>
+                <button className="sidebar-item" onClick={() => { setDirectConversationId(null); setDirectGroupId(null); setDirectCenterOpen(true); window.setTimeout(() => window.dispatchEvent(new CustomEvent('spaces-direct-tab', { detail: 'add' })), 0) }}><Icon name="plus" /><span>Add Friend</span></button>
+                <div className="sidebar-dm-list-v54">
+                  {sidebarDmItems.map(item => {
+                    const unread = sidebarDmUnread(item)
+                    const pinned = pinnedDirectKeys.includes(item.key)
+                    return <div className={`sidebar-dm-row-v54 ${item.kind === 'support' ? 'sidebar-support-dm-v54' : ''} ${pinned ? 'is-pinned-v54' : ''}`} key={item.key}>
+                      <button className="sidebar-dm-open-v54" onClick={() => {
+                        if (item.kind === 'support') {
+                          setDirectConversationId(null); setDirectGroupId(null); setDirectCenterOpen(true)
+                          window.setTimeout(() => window.dispatchEvent(new CustomEvent('spaces-direct-tab', { detail: 'support' })), 0)
+                        } else if (item.kind === 'direct') {
+                          setDirectGroupId(null); setDirectConversationId(item.id); setDirectCenterOpen(true)
+                        } else {
+                          setDirectConversationId(null); setDirectGroupId(item.id); setDirectCenterOpen(true)
+                        }
+                      }}>
+                        {item.kind === 'support' ? <span className="sidebar-support-avatar-v54"><Icon name="shield" size={14}/></span> : item.kind === 'group' ? <span className="sidebar-group-avatar-v54"><Icon name="chat" size={14}/></span> : <Avatar name={item.name} initials={item.initials} src={item.avatarUrl} size={30} accent={item.accent}/>}
+                        <div><strong>{item.name}</strong><small>{item.preview}</small></div>
+                        {unread > 0 && <span className="sidebar-dm-unread-v54">{unread > 99 ? '99+' : unread}</span>}
+                      </button>
+                      <button className="sidebar-dm-pin-v54" title={pinned ? 'Unpin DM' : 'Pin DM'} aria-label={pinned ? 'Unpin DM' : 'Pin DM'} onClick={() => togglePinnedDirect(item.key)}><Icon name="pin" size={11}/></button>
+                    </div>
+                  })}
+                </div>
+              </div>{canStaff && <div className="sidebar-section staff-sidebar-section"><div className="sidebar-section-label"><span>STAFF</span><Icon name="lock" size={11}/></div><button className={`sidebar-item ${view === 'staff' ? 'active' : ''}`} onClick={() => setView('staff')}><Icon name="shield" size={16}/><span>Staff</span></button>{canManageRoles && <button className={`sidebar-item ${view === 'roles' ? 'active' : ''}`} onClick={() => setView('roles')}><Icon name="roles" size={16}/><span>Roles & Permissions</span></button>}</div>}
             </>
           ) : (
             <>
@@ -836,7 +953,7 @@ export function AppShell() {
 
       {profileDialog && <PersonalSettings initialTab={profileDialog} onClose={() => setProfileDialog(null)} />}
       {supportConsoleOpen && <SupportConsole onClose={() => setSupportConsoleOpen(false)} onOpenSecurity={() => { setSupportConsoleOpen(false); setProfileDialog('security') }} />}
-      {directCenterOpen && <DirectMessagesCenter initialConversationId={directConversationId} onClose={() => { setDirectCenterOpen(false); setDirectConversationId(null) }} />}
+      {directCenterOpen && <DirectMessagesCenter initialConversationId={directConversationId} initialGroupId={directGroupId} onClose={() => { setDirectCenterOpen(false); setDirectConversationId(null); setDirectGroupId(null) }} />}
       {workspacePrivacyOpen && <WorkspacePrivacyModal workspaceId={workspacePrivacyOpen.id} workspaceName={workspacePrivacyOpen.name} onClose={() => setWorkspacePrivacyOpen(null)} />}
       {selectedRailMember && <MemberProfileDrawer memberId={selectedRailMember} onClose={() => setSelectedRailMember(null)} />}
 
@@ -889,8 +1006,17 @@ function renderView(view: AppView, hasWorkspace: boolean) {
 
 
 function IncomingNotificationPeek({ item, onOpen, onClose }: { item: SpacesNotification; onOpen: () => void; onClose: () => void }) {
-  return <aside className="incoming-notice page-enter" role="status">
-    <button className="incoming-notice-main" onClick={onOpen}><span className="incoming-notice-icon notification-spaces-mark"><SpacesLogo title="Spaces ping" /></span><span><small>{item.workspaceName}</small><strong>{item.kind === 'everyone' ? `${item.authorName} pinged @everyone` : item.kind === 'here' ? `${item.authorName} pinged @here` : item.kind === 'role' ? `${item.authorName} pinged ${item.mentionLabel}` : item.kind === 'mention' ? `${item.authorName} mentioned you` : item.authorName}</strong><p>{item.preview}</p></span></button>
+  const title = item.kind === 'friend_request' ? `${item.authorName} sent a friend request`
+    : item.kind === 'direct' ? `${item.authorName} sent you a DM`
+    : item.kind === 'group' ? `${item.authorName} messaged ${item.channelName}`
+    : item.kind === 'support' ? 'Spaces Support'
+    : item.kind === 'everyone' ? `${item.authorName} pinged @everyone`
+    : item.kind === 'here' ? `${item.authorName} pinged @here`
+    : item.kind === 'role' ? `${item.authorName} pinged ${item.mentionLabel}`
+    : item.kind === 'mention' ? `${item.authorName} mentioned you`
+    : item.authorName
+  return <aside className={`incoming-notice page-enter ${item.kind === 'friend_request' ? 'incoming-request-v54' : ''}`} role="status">
+    <button className="incoming-notice-main" onClick={onOpen}><span className="incoming-notice-icon notification-spaces-mark"><SpacesLogo title="Spaces ping" /></span><span><small>{item.workspaceName}</small><strong>{title}</strong><p>{item.preview}</p></span></button>
     <button className="incoming-notice-close" onClick={onClose} aria-label="Dismiss"><Icon name="x" size={13}/></button>
   </aside>
 }

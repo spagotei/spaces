@@ -4,11 +4,16 @@ import { usePreferences } from '../state/PreferencesContext'
 import { useSpaces } from '../state/SpacesContext'
 import { timeAgo } from '../utils/format'
 
+function isGlobalDirectKind(kind: string) {
+  return kind === 'support' || kind === 'direct' || kind === 'group' || kind === 'friend_request'
+}
+
 export function NotificationCenter({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { notifications, clearNotifications, chooseWorkspace, chooseChannel } = useSpaces()
   const { preferences } = usePreferences()
   const visible = notifications.filter(item => {
     if (item.kind === 'support') return preferences.supportNotifications
+    if (item.kind === 'direct' || item.kind === 'group' || item.kind === 'friend_request') return true
     if (preferences.mutedWorkspaceIds.includes(item.workspaceId) || preferences.mutedChannelIds.includes(item.channelId)) return false
     if (item.kind === 'message') return preferences.notificationLevel === 'all'
     if (preferences.notificationLevel === 'none') return false
@@ -19,15 +24,43 @@ export function NotificationCenter({ open, onClose }: { open: boolean; onClose: 
   })
 
   async function openNotification(item: (typeof notifications)[number]) {
+    onClose()
     if (item.kind === 'support') {
-      onClose()
-      window.dispatchEvent(new CustomEvent('spaces-open-direct-center', { detail: { conversationId: null } }))
+      window.dispatchEvent(new CustomEvent('spaces-open-direct-center', { detail: { conversationId: null, groupId: null } }))
       window.setTimeout(() => window.dispatchEvent(new CustomEvent('spaces-direct-tab', { detail: 'support' })), 0)
+      return
+    }
+    if (item.kind === 'friend_request') {
+      window.dispatchEvent(new CustomEvent('spaces-open-direct-center', { detail: { conversationId: null, groupId: null } }))
+      window.setTimeout(() => window.dispatchEvent(new CustomEvent('spaces-direct-tab', { detail: 'requests' })), 0)
+      return
+    }
+    if (item.kind === 'direct' && item.conversationId) {
+      window.dispatchEvent(new CustomEvent('spaces-open-direct-center', { detail: { conversationId: item.conversationId, groupId: null } }))
+      return
+    }
+    if (item.kind === 'group' && item.groupId) {
+      window.dispatchEvent(new CustomEvent('spaces-open-direct-center', { detail: { conversationId: null, groupId: item.groupId } }))
       return
     }
     await chooseWorkspace(item.workspaceId)
     chooseChannel(item.channelId)
-    onClose()
+  }
+
+  function sourceLabel(item: (typeof notifications)[number]) {
+    if (item.kind === 'support') return item.mentionLabel === 'Support reply' ? 'Support Reply' : 'Support DM'
+    if (item.kind === 'friend_request') return 'Friend request'
+    if (item.kind === 'direct') return 'Direct message'
+    if (item.kind === 'group') return item.channelName || 'Group chat'
+    return `${item.workspaceName} · #${item.channelName} · ${item.kind === 'message' ? 'message' : item.mentionLabel}`
+  }
+
+  function sourceIcon(item: (typeof notifications)[number]) {
+    if (item.kind === 'support') return <Icon name="shield" size={15}/>
+    if (item.kind === 'friend_request') return <Icon name="members" size={15}/>
+    if (item.kind === 'direct') return <Icon name="message" size={15}/>
+    if (item.kind === 'group') return <Icon name="chat" size={15}/>
+    return <SpacesLogo title="Spaces notification" />
   }
 
   if (!open) return null
@@ -35,16 +68,20 @@ export function NotificationCenter({ open, onClose }: { open: boolean; onClose: 
     <button className="notification-center-scrim" aria-label="Close notifications" onPointerDown={onClose} />
     <aside className="notification-center page-enter" aria-label="Notifications">
       <header>
-        <div><span className="eyebrow">INBOX</span><strong>Notifications</strong></div>
+        <div><span className="eyebrow">GLOBAL INBOX</span><strong>Notifications</strong></div>
         <div>{visible.length > 0 && <button className="notification-clear" onClick={clearNotifications}>Mark all read</button>}<button className="icon-button" onClick={onClose}><Icon name="x" size={15}/></button></div>
       </header>
       <div className="notification-center-list">
-        {visible.map(item => <button className={`notification-card ${item.kind === 'support' ? 'support-notification-card-v17' : ''}`} key={item.id} onClick={() => void openNotification(item)}>
-          <span className={`notification-card-icon ${item.kind === 'support' ? 'support-notification-icon-v17' : 'notification-spaces-mark'}`}>{item.kind === 'support' ? <Icon name="shield" size={15}/> : <SpacesLogo title="Spaces notification" />}</span>
-          <div><div><strong>{item.kind === 'support' ? 'Spaces Support' : item.authorName}</strong><time>{timeAgo(item.createdAt)}</time></div><span>{item.kind === 'support' ? (item.mentionLabel === 'Support reply' ? 'SUPPORT REPLY' : 'OFFICIAL SUPPORT DM') : `${item.workspaceName} · #${item.channelName} · ${item.kind === 'message' ? 'message' : item.mentionLabel}`}</span><p>{item.preview}</p></div>
+        {visible.map(item => <button
+          className={`notification-card ${isGlobalDirectKind(item.kind) ? `global-notification-v54 notification-${item.kind}-v54` : ''}`}
+          key={item.id}
+          onClick={() => void openNotification(item)}
+        >
+          <span className={`notification-card-icon ${item.kind === 'support' ? 'support-notification-icon-v17' : isGlobalDirectKind(item.kind) ? 'global-notification-icon-v54' : 'notification-spaces-mark'}`}>{sourceIcon(item)}</span>
+          <div><div><strong>{item.kind === 'support' ? 'Spaces Support' : item.authorName}</strong><time>{timeAgo(item.createdAt)}</time></div><span>{sourceLabel(item)}</span><p>{item.preview}</p></div>
           <Icon name="chevron" size={14}/>
         </button>)}
-        {!visible.length && <div className="notification-empty"><span className="notification-empty-icon notification-spaces-mark"><SpacesLogo title="Spaces" /></span><strong>You're all caught up</strong><p>Mentions and important activity will collect here.</p></div>}
+        {!visible.length && <div className="notification-empty"><span className="notification-empty-icon notification-spaces-mark"><SpacesLogo title="Spaces" /></span><strong>You're all caught up</strong><p>Server activity, DMs, friend requests, and Support messages collect here.</p></div>}
       </div>
     </aside>
   </>

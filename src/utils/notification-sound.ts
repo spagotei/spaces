@@ -5,6 +5,9 @@ type SpacesNotificationKind =
   | 'here'
   | 'role'
   | 'support'
+  | 'direct'
+  | 'group'
+  | 'friend_request'
 
 export type SpacesSupportSoundKind = 'incoming' | 'received' | 'outgoing'
 
@@ -20,6 +23,9 @@ const soundDefinitions: Record<SpacesNotificationKind, SoundDefinition> = {
   here: { src: '/spaces-double-ping.mp3', volume: 0.9 },
   role: { src: '/spaces-soft-ping.mp3', volume: 0.8 },
   support: { src: '/spaces-soft-ping.mp3', volume: 0.52 },
+  direct: { src: '/spaces-soft-pop.mp3', volume: 0.6 },
+  group: { src: '/spaces-soft-pop.mp3', volume: 0.6 },
+  friend_request: { src: '/spaces-notification-ding.mp3', volume: 0.82 },
 }
 
 const supportSoundDefinitions: Record<SpacesSupportSoundKind, SoundDefinition> = {

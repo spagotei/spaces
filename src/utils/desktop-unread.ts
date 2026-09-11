@@ -18,10 +18,12 @@ export async function syncDesktopUnread(count: number) {
   }
 }
 
-export async function requestDesktopAttention() {
+export async function requestDesktopAttention(kind: 'normal' | 'request' = 'normal') {
   if (!tauriAvailable() || (typeof document !== 'undefined' && document.hasFocus())) return
   try {
-    await getCurrentWindow().requestUserAttention(UserAttentionType.Informational)
+    await getCurrentWindow().requestUserAttention(
+      kind === 'request' ? UserAttentionType.Critical : UserAttentionType.Informational,
+    )
   } catch {
     // Optional desktop enhancement only.
   }

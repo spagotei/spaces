@@ -23,8 +23,7 @@ type SupportTab =
   | 'players'
   | 'spaces'
   | 'bugs'
-  | 'download'
-  | 'deleted'
+  | 'archive'
   | 'accounts'
   | 'restrictions'
   | 'access'
@@ -48,16 +47,6 @@ type SupportMessageV53 = WorkspaceSupportMessage & {
   messageKind?: 'official' | 'reply'
   recipientUsername?: string
   senderUsername?: string
-}
-
-type DeletedSupportItem = {
-  id: string
-  sourceKind: 'player' | 'space' | 'bug'
-  sourceId: string
-  label: string
-  deletedBy: string
-  deletedByName: string
-  deletedAt: number
 }
 
 const betaTemplateKey = 'spaces.support.beta-email-template.v1'
@@ -137,7 +126,6 @@ export function SupportConsole({
   const [reports, setReports] = useState<ReportV53[]>([])
   const [cases, setCases] = useState<CaseV53[]>([])
   const [messages, setMessages] = useState<SupportMessageV53[]>([])
-  const [deletedItems, setDeletedItems] = useState<DeletedSupportItem[]>([])
   const [staffMessages, setStaffMessages] = useState<WorkspaceSupportStaffMessage[]>([])
   const [staffDraft, setStaffDraft] = useState('')
   const [betaAccess, setBetaAccess] = useState<WorkspaceBetaAccessEntry[]>([])
@@ -182,18 +170,6 @@ export function SupportConsole({
     return (await response.json()) as T
   }
 
-  async function loadDeleted() {
-    if (!access.can('view_reports')) {
-      setDeletedItems([])
-      return
-    }
-    try {
-      setDeletedItems(await request<DeletedSupportItem[]>('/v1/support/deleted-items'))
-    } catch (error) {
-      pushToast(errorMessage(error, 'Could not load deleted report history.'), 'danger')
-    }
-  }
-
   async function refresh() {
     if (!allowed) return
     setLoading(true)
@@ -208,7 +184,6 @@ export function SupportConsole({
       setCases(nextCases as CaseV53[])
       setMessages(nextMessages as SupportMessageV53[])
       setStaffMessages(nextStaff)
-      if (access.can('view_reports')) await loadDeleted()
       window.dispatchEvent(new Event('spaces-support-queue-changed'))
     } catch (error) {
       pushToast(errorMessage(error, 'Could not load Support Console.'), 'danger')
@@ -230,11 +205,6 @@ export function SupportConsole({
     window.addEventListener('keydown', close)
     return () => window.removeEventListener('keydown', close)
   }, [onClose])
-
-  useEffect(() => {
-    if (tab === 'deleted') void loadDeleted()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tab])
 
   useEffect(() => {
     if (tab !== 'staff-chat') return
@@ -341,7 +311,7 @@ export function SupportConsole({
     const subject = await dialog.prompt({
       title: 'Support DM subject',
       message:
-        'This appears in the user’s Friends & Messages area as the official SUPPORT REPLY thread.',
+        'This appears in the user’s Friends & Messages area as the official Support Replys thread.',
       label: 'Subject',
       initialValue: defaultSubject,
       maxLength: 120,
@@ -467,7 +437,7 @@ export function SupportConsole({
       !(await dialog.confirm({
         title: 'Permanently delete player report?',
         message:
-          'The report body, snapshot, and evidence will be deleted from storage. Only a tiny deletion tombstone remains so staff can see that a deletion occurred.',
+          'The report body, snapshot, and evidence will be permanently deleted from storage. The moderation audit log will record that the deletion happened.',
         confirmText: 'Delete permanently',
         danger: true,
       }))
@@ -513,7 +483,7 @@ export function SupportConsole({
       !(await dialog.confirm({
         title: `Permanently delete ${item.kind === 'bug' ? 'bug' : 'Spaces'} report?`,
         message:
-          'The report details and stored evidence will be removed. A minimal deletion tombstone remains without the report payload.',
+          'The report details and stored evidence will be permanently removed. The moderation audit log will record that the deletion happened.',
         confirmText: 'Delete permanently',
         danger: true,
       }))
@@ -721,8 +691,7 @@ export function SupportConsole({
     ['players', 'Player reports', 'members'],
     ['spaces', 'Spaces reports', 'grid'],
     ['bugs', 'Bug reports', 'sparkle'],
-    ['download', 'Archived', 'download'],
-    ['deleted', 'Deleted', 'trash'],
+    ['archive', 'Archived', 'download'],
     ['accounts', 'Accounts', 'user'],
     ['restrictions', 'Restrictions', 'lock'],
     ['access', 'Beta access', 'lock'],
@@ -788,11 +757,9 @@ export function SupportConsole({
                     ? activeCases.filter(item => item.kind === 'space').length
                     : id === 'bugs'
                       ? activeCases.filter(item => item.kind === 'bug').length
-                      : id === 'download'
+                      : id === 'archive'
                         ? archivedReports.length + archivedCases.length
-                        : id === 'deleted'
-                          ? deletedItems.length
-                          : 0
+                        : 0
               return (
                 <button
                   key={id}
@@ -839,11 +806,9 @@ export function SupportConsole({
                         ? 'Spaces reports'
                         : tab === 'bugs'
                           ? 'Bug reports'
-                          : tab === 'download'
+                          : tab === 'archive'
                             ? 'Archived reports'
-                            : tab === 'deleted'
-                              ? 'Deleted report history'
-                              : tab === 'accounts'
+                            : tab === 'accounts'
                                 ? 'Account inspector'
                                 : tab === 'restrictions'
                                   ? 'Restrictions'
@@ -879,7 +844,7 @@ export function SupportConsole({
               <SupportOperationsV48 mode={tab} />
             ) : tab === 'accounts' ? (
               <SupportOperationsV48 mode="accounts" />
-            ) : tab === 'download' ? (
+            ) : tab === 'archive' ? (
               <ArchiveView
                 reports={archivedReports}
                 cases={archivedCases}
@@ -891,8 +856,6 @@ export function SupportConsole({
                 onRestoreCase={item => void archiveCase(item, false)}
                 onDeleteCase={item => void deleteCase(item)}
               />
-            ) : tab === 'deleted' ? (
-              <DeletedView items={deletedItems} />
             ) : tab === 'access' ? (
               <div className="support-beta-access-v33 support-beta-access-v53">
                 <section className="support-beta-invite-v33">
@@ -1586,42 +1549,6 @@ function ArchiveView({
           </article>
         )
       })}
-    </div>
-  )
-}
-
-function DeletedView({ items }: { items: DeletedSupportItem[] }) {
-  if (!items.length) {
-    return (
-      <SupportEmpty
-        icon="trash"
-        title="Nothing permanently deleted"
-        note="Deleted reports leave only a tiny audit tombstone; their report text and evidence are removed."
-      />
-    )
-  }
-
-  return (
-    <div className="support-deleted-list-v53">
-      {items.map(item => (
-        <article key={item.id}>
-          <span className="support-deleted-icon-v53">
-            <Icon name="trash" size={14} />
-          </span>
-          <div>
-            <header>
-              <strong>{item.label}</strong>
-              <span>{item.sourceKind.toUpperCase()}</span>
-            </header>
-            <p>Report payload and evidence permanently removed.</p>
-            <footer>
-              <code>{item.sourceId}</code>
-              <span>Deleted by {item.deletedByName}</span>
-              <time>{new Date(item.deletedAt).toLocaleString()}</time>
-            </footer>
-          </div>
-        </article>
-      ))}
     </div>
   )
 }

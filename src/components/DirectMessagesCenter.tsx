@@ -41,9 +41,11 @@ const emptyCenter: WorkspaceDirectCenter = {
 export function DirectMessagesCenter({
   onClose,
   initialConversationId = null,
+  initialGroupId = null,
 }: {
   onClose: () => void
   initialConversationId?: string | null
+  initialGroupId?: string | null
 }) {
   const {
     apiUrl,
@@ -64,7 +66,7 @@ export function DirectMessagesCenter({
   const [center, setCenter] = useState<WorkspaceDirectCenter>(emptyCenter)
   const [tab, setTab] = useState<DirectTab>('friends')
   const [selectedId, setSelectedId] = useState<string | null>(initialConversationId)
-  const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null)
+  const [selectedGroupId, setSelectedGroupId] = useState<string | null>(initialGroupId)
   const [messages, setMessages] = useState<WorkspaceDirectMessage[]>([])
   const [groupMessages, setGroupMessages] = useState<WorkspaceDirectGroupMessage[]>([])
   const [supportMessages, setSupportMessages] = useState<SupportInboxMessage[]>([])
@@ -431,7 +433,7 @@ export function DirectMessagesCenter({
             onClick={() => selectTab('support')}
           >
             <Icon name="shield" size={16} />
-            <span>SUPPORT REPLY</span>
+            <span>Support Replys</span>
             {supportUnread > 0 && <small>{supportUnread > 99 ? '99+' : supportUnread}</small>}
           </button>
           <button
@@ -750,7 +752,7 @@ function SupportReplyThread({
         </span>
         <div>
           <strong>Spaces Support</strong>
-          <span>SUPPORT REPLY · official platform conversation</span>
+          <span>Support Replys · official platform conversation</span>
         </div>
         <em>VERIFIED</em>
       </header>
@@ -770,7 +772,7 @@ function SupportReplyThread({
                 </span>
                 <div className="direct-message-copy-v28">
                   <strong>{own ? 'You' : message.senderName || 'Spaces Support'}</strong>
-                  <small>{message.messageKind === 'reply' ? 'SUPPORT REPLY' : message.subject}</small>
+                  <small>{message.messageKind === 'reply' ? 'Support Replys' : message.subject}</small>
                   <p>{message.body}</p>
                   <time>{timeAgo(message.createdAt)}</time>
                 </div>

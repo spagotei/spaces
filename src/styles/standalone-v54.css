@@ -1,0 +1,106 @@
+/* Spaces v54 — Discord-like Friends sidebar + global notifications */
+
+.sidebar-friends-v54{padding-top:4px!important}
+.sidebar-friends-v54 .sidebar-section-label{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:8px 8px 5px!important;
+}
+.sidebar-request-row-v54{
+  display:grid!important;
+  grid-template-columns:18px minmax(0,1fr) auto!important;
+  align-items:center!important;
+  gap:7px!important;
+}
+.sidebar-request-row-v54>span{min-width:0}
+.sidebar-request-badge-v54{
+  position:static!important;
+  display:grid!important;
+  place-items:center!important;
+  min-width:17px!important;
+  height:17px!important;
+  padding:0 4px!important;
+  margin:0!important;
+  border-radius:999px!important;
+  border:1px solid rgba(255,196,127,.26)!important;
+  background:#b86d2d!important;
+  color:#fff8ef!important;
+  box-shadow:0 3px 10px rgba(154,79,25,.24)!important;
+  font-size:8px!important;
+  font-weight:850!important;
+  line-height:1!important;
+}
+.sidebar-dm-list-v54{display:flex;flex-direction:column;gap:2px;margin-top:6px}
+.sidebar-dm-row-v54{
+  position:relative;
+  display:grid;
+  grid-template-columns:minmax(0,1fr) 24px;
+  align-items:center;
+  min-height:42px;
+  border-radius:9px;
+}
+.sidebar-dm-row-v54:hover{background:rgba(255,255,255,.028)}
+.sidebar-dm-open-v54{
+  width:100%;min-width:0;min-height:42px;
+  display:grid;grid-template-columns:31px minmax(0,1fr) auto;
+  gap:8px;align-items:center;
+  padding:5px 4px 5px 6px;
+  border:0;background:transparent;color:inherit;text-align:left;
+}
+.sidebar-dm-open-v54>div{min-width:0;display:grid;gap:2px}
+.sidebar-dm-open-v54 strong{
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  font-size:10.5px;font-weight:690;color:#cbc7cf;
+}
+.sidebar-dm-open-v54 small{
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  font-size:8px;color:#6f6a75;
+}
+.sidebar-dm-unread-v54{
+  display:grid;place-items:center;
+  min-width:17px;height:17px;padding:0 4px;
+  border-radius:999px;border:1px solid rgba(110,169,219,.18);
+  background:#214f79;color:#f6f9fc;
+  font-size:7.5px;font-weight:850;
+}
+.sidebar-dm-pin-v54{
+  opacity:0;
+  width:22px;height:22px;padding:0;
+  display:grid;place-items:center;
+  border:0;border-radius:6px;
+  background:transparent;color:#706a76;
+  transition:opacity .12s ease,background .12s ease,color .12s ease;
+}
+.sidebar-dm-row-v54:hover .sidebar-dm-pin-v54,
+.sidebar-dm-row-v54.is-pinned-v54 .sidebar-dm-pin-v54{opacity:1}
+.sidebar-dm-pin-v54:hover{background:rgba(255,255,255,.05);color:#b9b1bf}
+.sidebar-dm-row-v54.is-pinned-v54 .sidebar-dm-pin-v54{color:#a58ab8}
+.sidebar-support-avatar-v54,.sidebar-group-avatar-v54{
+  width:30px;height:30px;border-radius:10px;display:grid;place-items:center;
+  border:1px solid rgba(255,255,255,.055);
+  background:rgba(255,255,255,.025);color:#98909e;
+}
+.sidebar-support-avatar-v54{
+  background:color-mix(in srgb,var(--active-accent) 12%,rgba(255,255,255,.02));
+  color:#b99acf;
+}
+.sidebar-support-dm-v54 strong{color:#bda9c9}
+
+.notification-friend_request-v54 .global-notification-icon-v54{
+  color:#e6a05e!important;
+  background:rgba(184,109,45,.12)!important;
+  border-color:rgba(230,160,94,.18)!important;
+}
+.notification-direct-v54 .global-notification-icon-v54,
+.notification-group-v54 .global-notification-icon-v54{
+  color:#8ab8dd!important;
+  background:rgba(33,79,121,.16)!important;
+  border-color:rgba(92,146,194,.17)!important;
+}
+.notification-support-v54 .global-notification-icon-v54{color:#b99acf!important}
+
+/* Keep badges aligned at the far right of Requests instead of dropping below it. */
+.sidebar-item.sidebar-request-row-v54::after{display:none!important;content:none!important}
+
+@media(max-width:900px){
+  .sidebar-dm-pin-v54{opacity:1}
+}

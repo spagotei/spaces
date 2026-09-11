@@ -45,7 +45,17 @@ export function HomeView() {
   const createdSpaceImageAccept = canUseAnimatedCreatedSpace ? 'image/png,image/jpeg,image/webp,image/gif' : 'image/png,image/jpeg,image/webp'
   const visibleWorkspaces = workspaces.filter(space => !preferences.hiddenWorkspaceIds.includes(space.id))
   const hiddenWorkspaces = workspaces.filter(space => preferences.hiddenWorkspaceIds.includes(space.id))
-  const visibleNotifications = notifications.filter(item => !preferences.mutedWorkspaceIds.includes(item.workspaceId) && !preferences.mutedChannelIds.includes(item.channelId))
+  const visibleNotifications = notifications.filter(item => {
+    if (item.kind === 'support') return preferences.supportNotifications
+    if (item.kind === 'direct' || item.kind === 'group' || item.kind === 'friend_request') return true
+    if (preferences.mutedWorkspaceIds.includes(item.workspaceId) || preferences.mutedChannelIds.includes(item.channelId)) return false
+    if (item.kind === 'message') return preferences.notificationLevel === 'all'
+    if (preferences.notificationLevel === 'none') return false
+    if (item.kind === 'mention') return preferences.mentionNotifications
+    if (item.kind === 'everyone' || item.kind === 'here') return preferences.everyoneNotifications
+    if (item.kind === 'role') return preferences.roleNotifications
+    return true
+  })
   const firstNotification = visibleNotifications[0]
 
 
@@ -111,27 +121,18 @@ export function HomeView() {
         <aside className={`hero-missed ${visibleNotifications.length ? 'has-items' : ''}`} onClick={visibleNotifications.length ? openNotifications : undefined}>
           <div className="hero-missed-head"><span><Icon name="bell" size={15}/> SEE WHAT YOU MISSED</span><strong>{visibleNotifications.length ? `${visibleNotifications.length} update${visibleNotifications.length === 1 ? '' : 's'}` : 'All clear'}</strong></div>
           {firstNotification ? <>
-            <p><b>{firstNotification.authorName}</b> mentioned you in {firstNotification.workspaceName}: “{firstNotification.preview}”</p>
+            <p><b>{firstNotification.authorName}</b> · {firstNotification.workspaceName}: “{firstNotification.preview}”</p>
             <div className="hero-missed-actions">
               <button onClick={event => { event.stopPropagation(); openNotifications() }}>View notifications <Icon name="chevron" size={14}/></button>
               <button onClick={event => { event.stopPropagation(); clearNotifications() }}>Clear</button>
             </div>
           </> : <>
-            <p>No unread mentions yet. Replies, @mentions and important activity can surface here.</p>
+            <p>No unread notifications yet. Server activity, DMs, friend requests, and Support messages can surface here.</p>
             <button onClick={() => visibleWorkspaces[0] && void chooseWorkspace(visibleWorkspaces[0].id)} disabled={!visibleWorkspaces.length}>Jump back in <Icon name="chevron" size={14}/></button>
           </>}
         </aside>
       </section>
 
-
-      <section className="home-people-v23">
-        <div className="home-people-copy-v23"><span className="eyebrow">PEOPLE</span><h2>Your Friends & messages</h2><p>Add friends by username, review friend requests, open direct messages, or start a private group chat.</p></div>
-        <div className="home-people-actions-v23">
-          <button className="primary-button" onClick={() => { window.dispatchEvent(new CustomEvent('spaces-open-direct-center')); window.setTimeout(() => window.dispatchEvent(new CustomEvent('spaces-direct-tab', { detail: 'add' })), 0) }}><Icon name="plus" size={14}/> Add Friend</button>
-          <button className="secondary-button" onClick={() => { window.dispatchEvent(new CustomEvent('spaces-open-direct-center')); window.setTimeout(() => window.dispatchEvent(new CustomEvent('spaces-direct-tab', { detail: 'requests' })), 0) }}><Icon name="message" size={14}/> Friend Requests</button>
-          <button className="secondary-button" onClick={() => window.dispatchEvent(new CustomEvent('spaces-open-direct-center'))}><Icon name="members" size={14}/> Your Friends</button><button className="secondary-button" onClick={() => { window.dispatchEvent(new CustomEvent('spaces-open-direct-center')); window.setTimeout(() => window.dispatchEvent(new CustomEvent('spaces-direct-tab', { detail: 'groups' })), 0) }}><Icon name="chat" size={14}/> Group Chats</button>
-        </div>
-      </section>
 
       <section className="section-block">
         <div className="section-heading"><div><span className="eyebrow">JUMP BACK IN</span><h2>Your Spaces</h2><p className="spaces-beta-limit-v43">{canUseAnimatedCreatedSpace ? 'Founder-owned Spaces can use animated GIF artwork.' : `${ownedSpaces.length}/3 owned Spaces · GIF artwork is reserved for Founder-owned Spaces during beta.`}</p></div><span className="section-count">{visibleWorkspaces.length}</span></div>
