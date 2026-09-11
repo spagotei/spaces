@@ -1,0 +1,59 @@
+/* Spaces v57 — Beta Access status notice repair */
+
+.support-beta-notice-v37.support-beta-notice-v57{
+  width:calc(100% - 20px);
+  box-sizing:border-box;
+  grid-template-columns:28px minmax(0,1fr) auto!important;
+  align-items:center!important;
+  overflow:hidden;
+}
+.support-beta-notice-v57>svg{
+  width:28px;
+  height:28px;
+  padding:6px;
+  box-sizing:border-box;
+  border-radius:8px;
+  border:1px solid rgba(191,99,112,.14);
+  background:rgba(112,35,47,.08);
+  color:#b88992!important;
+}
+.support-beta-notice-v57>div{
+  min-width:0;
+  display:grid;
+  gap:2px;
+}
+.support-beta-notice-v57>div>strong{
+  display:block;
+  color:#c59aa2;
+  font-size:9px;
+  line-height:1.25;
+}
+.support-beta-notice-v57>div>span{
+  display:block;
+  min-width:0;
+  color:#957981;
+  font-size:8px;
+  line-height:1.4;
+  white-space:normal;
+  overflow-wrap:anywhere;
+}
+.support-beta-notice-v57>button{
+  min-width:72px;
+  min-height:30px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:5px;
+  padding:0 10px;
+  white-space:nowrap;
+}
+@media(max-width:700px){
+  .support-beta-notice-v37.support-beta-notice-v57{
+    grid-template-columns:26px minmax(0,1fr)!important;
+  }
+  .support-beta-notice-v57>button{
+    grid-column:2;
+    justify-self:start;
+    min-width:0;
+  }
+}

@@ -17,6 +17,7 @@ import { SupportOperationsV48, useSupportV48Access } from './SupportOperationsV4
 import { formatPublicUserId } from '../../utils/public-id'
 import { playSpacesSupportSound } from '../../utils/notification-sound'
 import '../../styles/standalone-v53.css'
+import '../../styles/standalone-v57.css'
 
 type SupportTab =
   | 'queue'
@@ -634,6 +635,21 @@ export function SupportConsole({
     pushToast('Invite email saved.', 'success')
   }
 
+  async function loadBetaAccess() {
+    setBetaAccessLoading(true)
+    setBetaAccessError('')
+    try {
+      const items = await listBetaAccess()
+      setBetaAccess(items)
+    } catch (error) {
+      const message = errorMessage(error, 'Could not load beta access.')
+      setBetaAccessError(message)
+      pushToast(message, 'danger')
+    } finally {
+      setBetaAccessLoading(false)
+    }
+  }
+
   async function removeAccess(entry: WorkspaceBetaAccessEntry) {
     if (
       !(await dialog.confirm({
@@ -662,27 +678,10 @@ export function SupportConsole({
 
   useEffect(() => {
     if (tab !== 'access') return
-    let cancelled = false
-    setBetaAccessLoading(true)
-    setBetaAccessError('')
-    void listBetaAccess()
-      .then(items => {
-        if (!cancelled) setBetaAccess(items)
-      })
-      .catch(error => {
-        if (!cancelled) {
-          const message = errorMessage(error, 'Could not load beta access.')
-          setBetaAccessError(message)
-          pushToast(message, 'danger')
-        }
-      })
-      .finally(() => {
-        if (!cancelled) setBetaAccessLoading(false)
-      })
-    return () => {
-      cancelled = true
-    }
-  }, [listBetaAccess, pushToast, tab])
+    void loadBetaAccess()
+    // The Beta Access view owns this refresh lifecycle.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tab])
 
   if (!allowed) return null
 
@@ -936,7 +935,23 @@ export function SupportConsole({
                     </div>
                     <span>{betaAccess.length}</span>
                   </header>
-                  {betaAccessError && <div className="support-beta-notice-v37">{betaAccessError}</div>}
+                  {betaAccessError && (
+                    <div className="support-beta-notice-v37 support-beta-notice-v57" role="status">
+                      <Icon name="activity" size={14} />
+                      <div>
+                        <strong>Beta access could not refresh</strong>
+                        <span>{betaAccessError}</span>
+                      </div>
+                      <button
+                        type="button"
+                        disabled={betaAccessLoading}
+                        onClick={() => void loadBetaAccess()}
+                      >
+                        <Icon name="refresh" size={11} />
+                        Retry
+                      </button>
+                    </div>
+                  )}
                   {betaAccessLoading ? (
                     <div className="support-console-loading support-console-loading-v17">
                       Loading beta access…
