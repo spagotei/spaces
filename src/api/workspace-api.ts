@@ -1429,7 +1429,7 @@ export class WorkspaceApi {
   ): Promise<WorkspaceBetaAccessInviteResult> {
     const subject = options?.subject?.trim() || 'You’re in Spaces'
     const template = options?.message?.trim()
-      || 'Your access to the Spaces Public Beta is ready.\n\nSign in with {email} to finish setting up your account.\n\nYour first sign-in must use the email address this invitation was sent to.\n\nSpaces'
+      || 'Your access to the Spaces Public Beta is ready.\n\nOpen Spaces and continue with {email}. We’ll send a one-time verification code to confirm your invitation. Once verified, you’ll choose your username and password.\n\nThis invitation is linked to this email address.\n\nWelcome to Spaces.'
     const message = template.split('{email}').join(email)
     return this.request('/v1/support/beta-access', {
       method: 'POST',

@@ -50,20 +50,33 @@ type SupportMessageV53 = WorkspaceSupportMessage & {
   senderUsername?: string
 }
 
-const betaTemplateKey = 'spaces.support.beta-email-template.v1'
+const betaTemplateKey = 'spaces.support.beta-email-template.v2'
+const legacyBetaTemplateKey = 'spaces.support.beta-email-template.v1'
 const defaultBetaSubject = 'You’re in Spaces'
 const defaultBetaMessage =
-  'Your access to the Spaces Public Beta is ready.\n\nSign in with {email} using the temporary password included below. You’ll choose your username after signing in.\n\nYour first sign-in must use the email address this invitation was sent to.\n\nSpaces'
+  'Your access to the Spaces Public Beta is ready.\n\nOpen Spaces and continue with {email}. We’ll send a one-time verification code to confirm your invitation. Once verified, you’ll choose your username and password.\n\nThis invitation is linked to this email address.\n\nWelcome to Spaces.'
 
 function loadBetaTemplate() {
   try {
-    const parsed = JSON.parse(localStorage.getItem(betaTemplateKey) || '{}') as {
+    const current = localStorage.getItem(betaTemplateKey)
+    const legacy = localStorage.getItem(legacyBetaTemplateKey)
+    const parsed = JSON.parse(current || legacy || '{}') as {
       subject?: string
       message?: string
     }
+    const savedMessage = parsed.message?.trim() || ''
+    const keepSavedMessage =
+      Boolean(savedMessage) &&
+      !/temporary password/i.test(savedMessage)
+
     return {
       subject: parsed.subject || defaultBetaSubject,
-      message: parsed.message || defaultBetaMessage,
+      message:
+        current
+          ? savedMessage || defaultBetaMessage
+          : keepSavedMessage
+            ? savedMessage
+            : defaultBetaMessage,
     }
   } catch {
     return { subject: defaultBetaSubject, message: defaultBetaMessage }
@@ -138,6 +151,7 @@ export function SupportConsole({
   )
   const [betaAccessLoading, setBetaAccessLoading] = useState(false)
   const [betaAccessError, setBetaAccessError] = useState('')
+  const [betaAccessErrorTitle, setBetaAccessErrorTitle] = useState('Beta access issue')
   const [query, setQuery] = useState('')
   const [loading, setLoading] = useState(true)
   const [busyId, setBusyId] = useState('')
@@ -619,6 +633,7 @@ export function SupportConsole({
       )
     } catch (error) {
       const message = errorMessage(error, 'Beta access is unavailable right now.')
+      setBetaAccessErrorTitle('Beta invite could not be sent')
       setBetaAccessError(message)
       pushToast(message, 'danger')
     } finally {
@@ -638,6 +653,7 @@ export function SupportConsole({
   async function loadBetaAccess() {
     setBetaAccessLoading(true)
     setBetaAccessError('')
+    setBetaAccessErrorTitle('Beta access could not refresh')
     try {
       const items = await listBetaAccess()
       setBetaAccess(items)
@@ -939,7 +955,7 @@ export function SupportConsole({
                     <div className="support-beta-notice-v37 support-beta-notice-v57" role="status">
                       <Icon name="activity" size={14} />
                       <div>
-                        <strong>Beta access could not refresh</strong>
+                        <strong>{betaAccessErrorTitle}</strong>
                         <span>{betaAccessError}</span>
                       </div>
                       <button
