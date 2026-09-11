@@ -1,0 +1,118 @@
+/* Spaces v59 — beta email claiming + Discord-style DM thread controls */
+
+.login-card-v59 {
+  max-width: 440px;
+}
+
+.auth-step-copy-v59 {
+  margin: -2px 0 4px;
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+.auth-identity-pill-v59,
+.beta-verified-email-v59 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 13px;
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 12px;
+  background: rgba(255,255,255,.035);
+}
+
+.auth-identity-pill-v59 span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.beta-verified-email-v59 > div {
+  display: grid;
+  min-width: 0;
+}
+
+.beta-verified-email-v59 strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.beta-verified-email-v59 span {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.beta-verified-email-v59.verified {
+  border-color: rgba(116, 228, 166, .22);
+  background: rgba(79, 174, 122, .08);
+}
+
+.beta-code-shell-v59 input {
+  letter-spacing: .28em;
+  font-size: 20px;
+  font-variant-numeric: tabular-nums;
+}
+
+.beta-code-actions-v59 {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.auth-notice-v59 {
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(139,108,168,.22);
+  background: rgba(139,108,168,.08);
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.direct-people-grid-v23 > button.thread-pinned-v59,
+.direct-group-list-v43 > button.thread-pinned-v59 {
+  border-color: rgba(163, 130, 196, .3);
+  background: rgba(139, 108, 168, .09);
+}
+
+.direct-people-grid-v23 > button.thread-muted-v59,
+.direct-group-list-v43 > button.thread-muted-v59 {
+  opacity: .72;
+}
+
+.direct-thread-state-v59 {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-left: 6px;
+  color: var(--muted);
+  font-size: 10px;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+
+.direct-support-dm-v59 .support-reply-avatar-v53 {
+  flex: 0 0 auto;
+}
+
+.direct-support-dm-v59 small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 720px) {
+  .login-stage-v59 {
+    padding: 14px;
+  }
+
+  .login-card-v59 {
+    width: 100%;
+    max-width: none;
+  }
+
+  .beta-code-actions-v59 {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Avatar } from './Avatar'
 import { Icon } from './Icon'
 import { Modal } from './Modal'
+import { ContextMenu, useContextMenu } from './ContextMenu'
 import { useSpaces } from '../state/SpacesContext'
 import { usePreferences } from '../state/PreferencesContext'
 import { playSpacesSupportSound } from '../utils/notification-sound'
@@ -18,6 +19,27 @@ import { platformRoleLabel } from '../utils/permissions'
 
 export type DirectTab = 'friends' | 'support' | 'requests' | 'groups' | 'add'
 
+type ThreadPreferenceV59 = {
+  pinnedAt: number | null
+  mutedUntil: number | null
+  closedAt: number | null
+}
+
+type DirectConversationV59 = WorkspaceDirectConversation & ThreadPreferenceV59
+type DirectGroupV59 = WorkspaceDirectGroup & ThreadPreferenceV59
+type SupportDirectThreadV59 = ThreadPreferenceV59 & {
+  id: 'support'
+  title: 'Support Replys'
+  lastMessage: string | null
+  lastMessageAt: number | null
+  unreadCount: number
+}
+type DirectCenterV59 = Omit<WorkspaceDirectCenter, 'conversations' | 'groups'> & {
+  conversations: DirectConversationV59[]
+  groups: DirectGroupV59[]
+  supportThread: SupportDirectThreadV59 | null
+}
+
 type SupportInboxMessage = {
   id: string
   recipientUserId: string
@@ -33,11 +55,12 @@ type SupportInboxMessage = {
   direction: 'incoming' | 'outgoing'
 }
 
-const emptyCenter: WorkspaceDirectCenter = {
+const emptyCenter: DirectCenterV59 = {
   conversations: [],
   incomingRequests: [],
   outgoingRequests: [],
   groups: [],
+  supportThread: null,
 }
 
 export function DirectMessagesCenter({
@@ -69,7 +92,7 @@ export function DirectMessagesCenter({
     pushToast,
   } = useSpaces()
   const { preferences } = usePreferences()
-  const [center, setCenter] = useState<WorkspaceDirectCenter>(emptyCenter)
+  const [center, setCenter] = useState<DirectCenterV59>(emptyCenter)
   const [tab, setTab] = useState<DirectTab>(initialTab)
   const [selectedId, setSelectedId] = useState<string | null>(initialConversationId)
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(initialGroupId)
@@ -86,6 +109,7 @@ export function DirectMessagesCenter({
   const [creatingGroup, setCreatingGroup] = useState(false)
   const [busy, setBusy] = useState(false)
   const [loading, setLoading] = useState(true)
+  const threadMenu = useContextMenu()
 
   const selected = useMemo(() => {
     const all = [
@@ -136,7 +160,13 @@ export function DirectMessagesCenter({
     setLoading(true)
     try {
       const next = await getDirectCenter()
-      const normalized = { ...emptyCenter, ...next, groups: next.groups ?? [] }
+      const normalized = {
+        ...emptyCenter,
+        ...next,
+        conversations: (next.conversations ?? []) as DirectConversationV59[],
+        groups: (next.groups ?? []) as DirectGroupV59[],
+        supportThread: (next as DirectCenterV59).supportThread ?? null,
+      } as DirectCenterV59
       setCenter(normalized)
       if (
         selectedId &&
@@ -417,6 +447,87 @@ export function DirectMessagesCenter({
     }
   }
 
+
+  async function updateThreadPreference(
+    kind: 'dm' | 'group' | 'support',
+    id: string,
+    input: { pinned?: boolean; muteMinutes?: number; unmute?: boolean; closed?: boolean },
+  ) {
+    try {
+      await supportRequest(`/v1/direct/preferences/${kind}/${encodeURIComponent(id)}`, {
+        method: 'PATCH',
+        body: JSON.stringify(input),
+      })
+      if (kind === 'dm' && input.closed && selectedId === id) setSelectedId(null)
+      if (kind === 'group' && input.closed && selectedGroupId === id) setSelectedGroupId(null)
+      if (kind === 'support' && input.closed && tab === 'support') setTab('friends')
+      await reload()
+      if (kind === 'support') await reloadSupport(false)
+    } catch (error) {
+      pushToast(
+        error instanceof Error ? error.message : 'Could not update that conversation.',
+        'danger',
+      )
+    }
+  }
+
+  function threadActions(
+    kind: 'dm' | 'group' | 'support',
+    id: string,
+    item: ThreadPreferenceV59,
+  ) {
+    const muted = Boolean(item.mutedUntil && item.mutedUntil > Date.now())
+    return [
+      {
+        id: 'pin',
+        label: item.pinnedAt ? 'Unpin conversation' : 'Pin conversation',
+        icon: 'pin' as const,
+        checked: Boolean(item.pinnedAt),
+        onSelect: () => updateThreadPreference(kind, id, { pinned: !item.pinnedAt }),
+      },
+      ...(muted
+        ? [{
+            id: 'unmute',
+            label: 'Unmute',
+            icon: 'bell' as const,
+            onSelect: () => updateThreadPreference(kind, id, { unmute: true }),
+          }]
+        : [
+            {
+              id: 'mute-1h',
+              label: 'Mute for 1 hour',
+              icon: 'bell' as const,
+              onSelect: () => updateThreadPreference(kind, id, { muteMinutes: 60 }),
+            },
+            {
+              id: 'mute-8h',
+              label: 'Mute for 8 hours',
+              icon: 'bell' as const,
+              onSelect: () => updateThreadPreference(kind, id, { muteMinutes: 480 }),
+            },
+            {
+              id: 'mute-24h',
+              label: 'Mute for 24 hours',
+              icon: 'bell' as const,
+              onSelect: () => updateThreadPreference(kind, id, { muteMinutes: 1440 }),
+            },
+            {
+              id: 'mute-forever',
+              label: 'Mute until I turn it back on',
+              icon: 'bell' as const,
+              onSelect: () => updateThreadPreference(kind, id, { muteMinutes: -1 }),
+            },
+          ]),
+      {
+        id: 'close',
+        label: kind === 'group' ? 'Close group DM' : 'Close DM',
+        note: 'It returns if a new message arrives.',
+        icon: 'x' as const,
+        onSelect: () => updateThreadPreference(kind, id, { closed: true }),
+      },
+    ]
+  }
+
   const selectTab = (next: DirectTab) => {
     setTab(next)
     setSelectedId(null)
@@ -443,14 +554,6 @@ export function DirectMessagesCenter({
             <Icon name="members" size={16} />
             <span>Friends</span>
             <small>{center.conversations.length}</small>
-          </button>
-          <button
-            className={`direct-support-tab-v53 ${tab === 'support' ? 'active' : ''}`}
-            onClick={() => selectTab('support')}
-          >
-            <Icon name="shield" size={16} />
-            <span>Support Replys</span>
-            {supportUnread > 0 && <small>{supportUnread > 99 ? '99+' : supportUnread}</small>}
           </button>
           <button
             className={tab === 'requests' ? 'active' : ''}
@@ -585,7 +688,12 @@ export function DirectMessagesCenter({
                 ) : center.groups.length ? (
                   <div className="direct-group-list-v43">
                     {center.groups.map(group => (
-                      <button key={group.id} onClick={() => setSelectedGroupId(group.id)}>
+                      <button
+                        key={group.id}
+                        className={`${group.pinnedAt ? 'thread-pinned-v59' : ''} ${group.mutedUntil && group.mutedUntil > Date.now() ? 'thread-muted-v59' : ''}`}
+                        onClick={() => setSelectedGroupId(group.id)}
+                        {...threadMenu.bind(group.name, threadActions('group', group.id, group), `${group.members.length} members`)}
+                      >
                         <span className="direct-group-avatar-v43">
                           <Icon name="members" size={18} />
                         </span>
@@ -703,10 +811,29 @@ export function DirectMessagesCenter({
               </header>
               {loading ? (
                 <div className="settings-loading">Loading friends…</div>
-              ) : center.conversations.length ? (
+              ) : (center.supportThread || center.conversations.length) ? (
                 <div className="direct-people-grid-v23">
+                  {center.supportThread && (
+                    <button
+                      className={`direct-support-dm-v59 ${center.supportThread.pinnedAt ? 'thread-pinned-v59' : ''} ${center.supportThread.mutedUntil && center.supportThread.mutedUntil > Date.now() ? 'thread-muted-v59' : ''}`}
+                      onClick={() => selectTab('support')}
+                      {...threadMenu.bind('Support Replys', threadActions('support', 'support', center.supportThread), 'Spaces Support')}
+                    >
+                      <span className="support-reply-avatar-v53"><Icon name="shield" size={18} /></span>
+                      <span>
+                        <strong>Support Replys</strong>
+                        <small>{center.supportThread.lastMessage || 'Official Spaces Support conversation'}</small>
+                      </span>
+                      {supportUnread > 0 ? <small>{supportUnread > 99 ? '99+' : supportUnread}</small> : <Icon name="chevron" size={13} />}
+                    </button>
+                  )}
                   {center.conversations.map(item => (
-                    <button key={item.id} onClick={() => setSelectedId(item.id)}>
+                    <button
+                      key={item.id}
+                      className={`${item.pinnedAt ? 'thread-pinned-v59' : ''} ${item.mutedUntil && item.mutedUntil > Date.now() ? 'thread-muted-v59' : ''}`}
+                      onClick={() => setSelectedId(item.id)}
+                      {...threadMenu.bind(item.person.displayName, threadActions('dm', item.id, item), `@${item.person.username}`)}
+                    >
                       <Avatar
                         name={item.person.displayName}
                         initials={item.person.initials}
@@ -739,6 +866,7 @@ export function DirectMessagesCenter({
           )}
         </section>
       </div>
+      <ContextMenu menu={threadMenu.menu} onClose={threadMenu.close} />
     </Modal>
   )
 }
