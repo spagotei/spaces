@@ -3,9 +3,14 @@ import { SpacesLogo } from './SpacesLogo'
 import { usePreferences } from '../state/PreferencesContext'
 import { useSpaces } from '../state/SpacesContext'
 import { timeAgo } from '../utils/format'
+import { dismissNotifications } from '../utils/notification-read'
 
 function isGlobalDirectKind(kind: string) {
   return kind === 'support' || kind === 'direct' || kind === 'group' || kind === 'friend_request'
+}
+
+function notificationTone(kind: string) {
+  return kind === 'support' || kind === 'friend_request' ? 'orange' : 'blue'
 }
 
 export function NotificationCenter({ open, onClose }: { open: boolean; onClose: () => void }) {
@@ -24,7 +29,9 @@ export function NotificationCenter({ open, onClose }: { open: boolean; onClose: 
   })
 
   async function openNotification(item: (typeof notifications)[number]) {
+    dismissNotifications({ id: item.id })
     onClose()
+
     if (item.kind === 'support') {
       window.dispatchEvent(new CustomEvent('spaces-open-direct-center', { detail: { conversationId: null, groupId: null } }))
       window.setTimeout(() => window.dispatchEvent(new CustomEvent('spaces-direct-tab', { detail: 'support' })), 0)
@@ -43,6 +50,7 @@ export function NotificationCenter({ open, onClose }: { open: boolean; onClose: 
       window.dispatchEvent(new CustomEvent('spaces-open-direct-center', { detail: { conversationId: null, groupId: item.groupId } }))
       return
     }
+
     await chooseWorkspace(item.workspaceId)
     chooseChannel(item.channelId)
   }
@@ -64,21 +72,29 @@ export function NotificationCenter({ open, onClose }: { open: boolean; onClose: 
   }
 
   if (!open) return null
+
   return <>
     <button className="notification-center-scrim" aria-label="Close notifications" onPointerDown={onClose} />
-    <aside className="notification-center page-enter" aria-label="Notifications">
+    <aside className="notification-center page-enter notification-center-v62" aria-label="Notifications">
       <header>
         <div><span className="eyebrow">GLOBAL INBOX</span><strong>Notifications</strong></div>
-        <div>{visible.length > 0 && <button className="notification-clear" onClick={clearNotifications}>Mark all read</button>}<button className="icon-button" onClick={onClose}><Icon name="x" size={15}/></button></div>
+        <div>
+          {visible.length > 0 && <button className="notification-clear" onClick={clearNotifications}>Mark all read</button>}
+          <button className="icon-button" onClick={onClose}><Icon name="x" size={15}/></button>
+        </div>
       </header>
       <div className="notification-center-list">
         {visible.map(item => <button
-          className={`notification-card ${isGlobalDirectKind(item.kind) ? `global-notification-v54 notification-${item.kind}-v54` : ''}`}
+          className={`notification-card notification-tone-${notificationTone(item.kind)} ${isGlobalDirectKind(item.kind) ? `global-notification-v54 notification-${item.kind}-v54` : ''}`}
           key={item.id}
           onClick={() => void openNotification(item)}
         >
           <span className={`notification-card-icon ${item.kind === 'support' ? 'support-notification-icon-v17' : isGlobalDirectKind(item.kind) ? 'global-notification-icon-v54' : 'notification-spaces-mark'}`}>{sourceIcon(item)}</span>
-          <div><div><strong>{item.kind === 'support' ? 'Spaces Support' : item.authorName}</strong><time>{timeAgo(item.createdAt)}</time></div><span>{sourceLabel(item)}</span><p>{item.preview}</p></div>
+          <div>
+            <div><strong>{item.kind === 'support' ? 'Spaces Support' : item.authorName}</strong><time>{timeAgo(item.createdAt)}</time></div>
+            <span>{sourceLabel(item)}</span>
+            <p>{item.preview}</p>
+          </div>
           <Icon name="chevron" size={14}/>
         </button>)}
         {!visible.length && <div className="notification-empty"><span className="notification-empty-icon notification-spaces-mark"><SpacesLogo title="Spaces" /></span><strong>You're all caught up</strong><p>Server activity, DMs, friend requests, and Support messages collect here.</p></div>}

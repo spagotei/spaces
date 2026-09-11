@@ -175,6 +175,28 @@ function messageFromError(error: unknown): string {
   return 'Something went wrong.'
 }
 
+function notificationStorageKey(userId: string | undefined) {
+  return userId ? `spaces.notifications.v62.${userId}` : ''
+}
+
+function notificationReadStorageKey(userId: string | undefined) {
+  return userId ? `spaces.notifications.readBefore.v62.${userId}` : ''
+}
+
+function storedNotifications(userId: string | undefined): SpacesNotification[] {
+  if (!userId) return []
+  try {
+    return JSON.parse(localStorage.getItem(notificationStorageKey(userId)) || '[]') as SpacesNotification[]
+  } catch {
+    return []
+  }
+}
+
+function storedNotificationReadBefore(userId: string | undefined) {
+  if (!userId) return 0
+  return Number(localStorage.getItem(notificationReadStorageKey(userId)) || 0)
+}
+
 export function SpacesProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<WorkspaceSession | null>(() => loadWorkspaceSession())
   const [workspaces, setWorkspaces] = useState<WorkspaceSummary[]>([])
@@ -189,9 +211,9 @@ export function SpacesProvider({ children }: { children: ReactNode }) {
   const [mobileNavOpen, setMobileNavOpen] = useState(false)
   const [commandOpen, setCommandOpen] = useState(false)
   const [toasts, setToasts] = useState<Toast[]>([])
-  const [notifications, setNotifications] = useState<SpacesNotification[]>(() => { try { return JSON.parse(localStorage.getItem('spaces.notifications.v1') || '[]') as SpacesNotification[] } catch { return [] } })
+  const [notifications, setNotifications] = useState<SpacesNotification[]>(() => storedNotifications(session?.profile.id))
   const toastCounter = useRef(0)
-  const notificationReadBefore = useRef(Number(localStorage.getItem('spaces.notifications.readBefore') || 0))
+  const notificationReadBefore = useRef(storedNotificationReadBefore(session?.profile.id))
   const notificationPollSince = useRef(Math.max(notificationReadBefore.current, Date.now() - 7 * 24 * 60 * 60 * 1000))
   const workspaceCacheV44 = useRef(new Map<string, WorkspaceBootstrap>())
   // Space bootstraps can overlap when the user switches Spaces quickly or a
@@ -211,15 +233,60 @@ export function SpacesProvider({ children }: { children: ReactNode }) {
   // during the first render and left the Tauri window blank.
   const profile = session?.profile ?? null
 
-  useEffect(() => { localStorage.setItem('spaces.notifications.v1', JSON.stringify(notifications.slice(0, 40))) }, [notifications])
+  useEffect(() => {
+    const userId = session?.profile.id
+    if (!userId) return
+    localStorage.setItem(notificationStorageKey(userId), JSON.stringify(notifications.slice(0, 80)))
+  }, [notifications, session?.profile.id])
+
+  useEffect(() => {
+    const userId = session?.profile.id
+    if (!userId) {
+      notificationReadBefore.current = 0
+      notificationPollSince.current = Date.now()
+      setNotifications([])
+      return
+    }
+    const readBefore = storedNotificationReadBefore(userId)
+    notificationReadBefore.current = readBefore
+    notificationPollSince.current = Math.max(readBefore, Date.now() - 7 * 24 * 60 * 60 * 1000)
+    setNotifications(storedNotifications(userId))
+  }, [session?.profile.id])
+
+  useEffect(() => {
+    const dismiss = (event: Event) => {
+      const filter = (event as CustomEvent<{
+        id?: string
+        workspaceId?: string
+        channelId?: string
+        conversationId?: string
+        groupId?: string
+        kind?: string
+      }>).detail ?? {}
+
+      setNotifications(current => current.filter(item => {
+        if (filter.id && item.id !== filter.id) return true
+        if (filter.workspaceId && item.workspaceId !== filter.workspaceId) return true
+        if (filter.channelId && item.channelId !== filter.channelId) return true
+        if (filter.conversationId && item.conversationId !== filter.conversationId) return true
+        if (filter.groupId && item.groupId !== filter.groupId) return true
+        if (filter.kind && item.kind !== filter.kind) return true
+        return false
+      }))
+    }
+
+    window.addEventListener('spaces-notifications-dismiss', dismiss)
+    return () => window.removeEventListener('spaces-notifications-dismiss', dismiss)
+  }, [])
 
   const clearNotifications = useCallback(() => {
     const now = Date.now()
+    const userId = session?.profile.id
     notificationReadBefore.current = now
     notificationPollSince.current = now
-    localStorage.setItem('spaces.notifications.readBefore', String(now))
+    if (userId) localStorage.setItem(notificationReadStorageKey(userId), String(now))
     setNotifications([])
-  }, [])
+  }, [session?.profile.id])
 
   const pushToast = useCallback((message: string, tone: Toast['tone'] = 'info') => {
     const id = ++toastCounter.current
@@ -472,7 +539,10 @@ export function SpacesProvider({ children }: { children: ReactNode }) {
     const channel = data?.channels.find(item => item.id === channelId)
     setView(channel?.kind === 'notes' ? 'notes' : 'chat')
     setMobileNavOpen(false)
-  }, [data?.channels])
+    window.dispatchEvent(new CustomEvent('spaces-notifications-dismiss', {
+      detail: { workspaceId: activeWorkspaceId, channelId },
+    }))
+  }, [activeWorkspaceId, data?.channels])
 
   const createWorkspace = useCallback(async (name: string, options?: { description?: string; avatarUrl?: string | null; accentColor?: string }) => {
     let created = await api.createWorkspace(name)

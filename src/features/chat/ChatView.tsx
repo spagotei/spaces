@@ -11,6 +11,7 @@ import type { WorkspaceChatMessage, WorkspaceMessageAttachment } from '../../typ
 import { formatBytes, formatTime } from '../../utils/format'
 import { filterContent } from '../../utils/content-filter'
 import { hasWorkspacePermission } from '../../utils/permissions'
+import { useBlockedUserIds } from '../../hooks/useBlockedUsers'
 import { cleanThreadDescription, workspaceRoleDisplayName } from '../../utils/workspace-local-meta'
 
 const MAX_FILE_BYTES = 180 * 1024
@@ -35,7 +36,7 @@ function runSlashCommand(input: string): string {
 
 export function ChatView() {
   const dialog = useAppDialog()
-  const { data, activeChannel, activeChannelId, profile, sendMessage, editMessage, deleteMessage, reportUser, pushToast } = useSpaces()
+  const { data, activeChannel, activeChannelId, profile, session, sendMessage, editMessage, deleteMessage, reportUser, pushToast } = useSpaces()
   const { preferences } = usePreferences()
   const [body, setBody] = useState('')
   const [attachment, setAttachment] = useState<WorkspaceMessageAttachment | null>(null)
@@ -46,6 +47,8 @@ export function ChatView() {
   const [dragging, setDragging] = useState(false)
   const [replyTarget, setReplyTarget] = useState<WorkspaceChatMessage | null>(null)
   const [previewImage, setPreviewImage] = useState<{ src: string; name: string } | null>(null)
+  const [revealedBlockedMessages, setRevealedBlockedMessages] = useState<string[]>([])
+  const blockedUserIds = useBlockedUserIds(session?.token)
   const fileInput = useRef<HTMLInputElement>(null)
   const endRef = useRef<HTMLDivElement>(null)
   const previousChannel = useRef('')
@@ -267,7 +270,20 @@ export function ChatView() {
                 {editingId === message.id ? (
                   <div className="message-edit"><textarea value={editBody} onChange={event => setEditBody(event.target.value)} onKeyDown={event => editKeyDown(event, message.id)} autoFocus /><div><span>Enter to save · Shift+Enter for a line · Esc to cancel</span><button onClick={() => void saveEdit(message.id)}>Save</button></div></div>
                 ) : (
-                  <div className="message-body">{renderRichText(message.body, emojis, preferences.contentFilter)}{message.editedAt && <small>(edited)</small>}</div>
+                  <div className="message-body">
+                    {blockedUserIds.includes(message.authorId) && !own && !revealedBlockedMessages.includes(message.id) ? (
+                      <button
+                        className="blocked-message-v62"
+                        onClick={() => setRevealedBlockedMessages(current => [...current, message.id])}
+                      >
+                        <Icon name="lock" size={13} />
+                        <span>Message hidden from a blocked user</span>
+                        <strong>Show</strong>
+                      </button>
+                    ) : (
+                      <>{renderRichText(message.body, emojis, preferences.contentFilter)}{message.editedAt && <small>(edited)</small>}</>
+                    )}
+                  </div>
                 )}
                 {message.attachment && (
                   <div className={`attachment-card ${isImage ? 'attachment-image-card' : ''}`}>

@@ -8,17 +8,25 @@ import { usePreferences } from '../state/PreferencesContext'
 import { timeAgo } from '../utils/format'
 import { hasWorkspacePermission, platformRoleLabel } from '../utils/permissions'
 import { workspaceRoleDisplayName } from '../utils/workspace-local-meta'
+import { ContextMenu, useContextMenu, type ContextAction } from './ContextMenu'
+import { useBlockedUserIds } from '../hooks/useBlockedUsers'
+import { blockUser, unblockUser } from '../api/social-api'
 
 export function MemberProfileDrawer({ memberId, onClose }: { memberId: string; onClose: () => void }) {
   const dialog = useAppDialog()
   const {
-    data, profile, setMemberRoles, removeMember, reportUser,
+    data, profile, session, setMemberRoles, removeMember, reportUser,
     pushToast, chooseChannel, setPlatformSupportRole, requestDirectConversation,
+    getDirectCenter, acceptDirectConversation,
   } = useSpaces()
   const { preferences, effectivePresence } = usePreferences()
   const [savingRoles, setSavingRoles] = useState(false)
   const [savingAccess, setSavingAccess] = useState(false)
   const [reporting, setReporting] = useState(false)
+  const [relationship, setRelationship] = useState<'none' | 'friend' | 'incoming' | 'outgoing'>('none')
+  const [relationshipConversationId, setRelationshipConversationId] = useState<string | null>(null)
+  const quickMenu = useContextMenu()
+  const blockedUserIds = useBlockedUserIds(session?.token)
 
   const members = data?.members ?? []
   const member = members.find(item => item.id === memberId) ?? null
@@ -60,6 +68,40 @@ export function MemberProfileDrawer({ memberId, onClose }: { memberId: string; o
   }, [data, member])
 
   useEffect(() => {
+    let cancelled = false
+    const loadRelationship = async () => {
+      if (!member || member.profileId === profile?.id) return
+      try {
+        const center = await getDirectCenter()
+        const all = [
+          ...center.conversations,
+          ...center.incomingRequests,
+          ...center.outgoingRequests,
+        ]
+        const item = all.find(row => row.person.id === member.profileId)
+        if (cancelled) return
+        setRelationshipConversationId(item?.id ?? null)
+        setRelationship(
+          !item
+            ? 'none'
+            : item.status === 'accepted'
+              ? 'friend'
+              : item.requestedByMe
+                ? 'outgoing'
+                : 'incoming',
+        )
+      } catch {
+        if (!cancelled) {
+          setRelationship('none')
+          setRelationshipConversationId(null)
+        }
+      }
+    }
+    void loadRelationship()
+    return () => { cancelled = true }
+  }, [getDirectCenter, member?.profileId, profile?.id])
+
+  useEffect(() => {
     const closeOnEscape = (event: KeyboardEvent) => {
       if (event.key === 'Escape') onClose()
     }
@@ -73,7 +115,10 @@ export function MemberProfileDrawer({ memberId, onClose }: { memberId: string; o
     ? effectivePresence
     : member.status === 'away' ? 'idle' : member.status
   const statusLabel = status === 'dnd' ? 'Do Not Disturb' : status === 'offline' ? 'Offline' : status === 'idle' ? 'Idle' : 'Online'
-  const customStatus = member.profileId === profile?.id ? preferences.customStatus.trim() : ''
+  const customStatus = member.profileId === profile?.id
+    ? preferences.customStatus.trim()
+    : member.customStatus?.trim() ?? ''
+  const isBlocked = blockedUserIds.includes(member.profileId)
   const topRole = memberRoles[0]
 
   async function toggleRole(roleId: string) {
@@ -141,6 +186,101 @@ export function MemberProfileDrawer({ memberId, onClose }: { memberId: string; o
     } finally { setSavingAccess(false) }
   }
 
+  async function addFriendFromProfile() {
+    if (!member || member.profileId === profile?.id || isBlocked) return
+    setSavingAccess(true)
+    try {
+      if (relationship === 'incoming' && relationshipConversationId) {
+        await acceptDirectConversation(relationshipConversationId)
+        setRelationship('friend')
+        pushToast(`${member.displayName} is now your friend.`, 'success')
+        return
+      }
+      const conversation = await requestDirectConversation({
+        targetUserId: member.profileId,
+        sourceWorkspaceId: data?.workspace.id ?? null,
+      })
+      setRelationshipConversationId(conversation.id)
+      setRelationship(conversation.status === 'accepted' ? 'friend' : conversation.requestedByMe ? 'outgoing' : 'incoming')
+      pushToast(
+        conversation.status === 'accepted'
+          ? `${member.displayName} is now your friend.`
+          : `Friend request sent to ${member.displayName}.`,
+        'success',
+      )
+    } catch (error) {
+      pushToast(error instanceof Error ? error.message : 'Could not update friend request.', 'danger')
+    } finally {
+      setSavingAccess(false)
+    }
+  }
+
+  async function toggleBlockFromProfile() {
+    if (!member || member.profileId === profile?.id || !session?.token) return
+
+    if (!isBlocked) {
+      const confirmed = await dialog.confirm({
+        title: `Block ${member.displayName}?`,
+        message: 'They will be removed from your Friends list. Their Space and group messages stay available as hidden messages you can reveal manually.',
+        confirmText: 'Block',
+        danger: true,
+      })
+      if (!confirmed) return
+    }
+
+    setSavingAccess(true)
+    try {
+      if (isBlocked) {
+        await unblockUser(session.token, member.profileId)
+        pushToast(`${member.displayName} unblocked. You can send a new friend request whenever you want.`, 'success')
+      } else {
+        await blockUser(session.token, member.profileId)
+        setRelationship('none')
+        setRelationshipConversationId(null)
+        pushToast(`${member.displayName} blocked.`, 'success')
+      }
+    } catch (error) {
+      pushToast(error instanceof Error ? error.message : 'Could not update block.', 'danger')
+    } finally {
+      setSavingAccess(false)
+    }
+  }
+
+  const socialActions: ContextAction[] = member.profileId === profile?.id
+    ? []
+    : [
+        {
+          id: 'message',
+          label: 'Message',
+          note: relationship === 'friend' ? 'Open direct messages' : 'Open or send a message request',
+          icon: 'message',
+          disabled: isBlocked,
+          onSelect: () => messageMember(),
+        },
+        {
+          id: 'friend',
+          label:
+            relationship === 'friend' ? 'Friends'
+              : relationship === 'outgoing' ? 'Request sent'
+                : relationship === 'incoming' ? 'Accept friend request'
+                  : 'Add Friend',
+          note: isBlocked ? 'Unblock before sending a friend request' : undefined,
+          icon: relationship === 'friend' ? 'check' : 'plus',
+          checked: relationship === 'friend',
+          disabled: isBlocked || relationship === 'friend' || relationship === 'outgoing',
+          onSelect: () => addFriendFromProfile(),
+        },
+        {
+          id: 'block',
+          label: isBlocked ? 'Unblock' : 'Block',
+          note: isBlocked ? 'Allow friend requests again' : 'Hide their messages and stop direct contact',
+          icon: 'lock',
+          danger: !isBlocked,
+          checked: isBlocked,
+          onSelect: () => toggleBlockFromProfile(),
+        },
+      ]
+
   async function togglePlatformSupport() {
     if (!member || !canManagePlatformSupport || member.platformRole === 'founder') return
     const granting = member.platformRole !== 'support'
@@ -160,7 +300,13 @@ export function MemberProfileDrawer({ memberId, onClose }: { memberId: string; o
   return (
     <>
       <button className="member-profile-scrim" aria-label="Close profile" onPointerDown={onClose} />
-      <aside className="member-profile-drawer" role="dialog" aria-modal="true" aria-label={`${member.displayName} profile`}>
+      <aside
+        className="member-profile-drawer"
+        role="dialog"
+        aria-modal="true"
+        aria-label={`${member.displayName} profile`}
+        {...(socialActions.length ? quickMenu.bind(member.displayName, socialActions, `@${member.username}`) : {})}
+      >
         <div className="member-profile-drawer-scroll">
           <div
             className="member-profile-drawer-banner"
@@ -183,6 +329,25 @@ export function MemberProfileDrawer({ memberId, onClose }: { memberId: string; o
             {customStatus && <p className="drawer-custom-status">{customStatus}</p>}
             {member.bio && <p className="drawer-bio">{member.bio}</p>}
             {member.platformRole && <><span className={`founder-badge drawer-platform-badge platform-${member.platformRole} ${member.platformRole === 'founder' ? 'founder-distinct-v56' : ''}`}><Icon name={member.platformRole === 'founder' ? 'sparkle' : 'shield'} size={12}/>{platformRoleLabel(member.platformRole)}</span><span className={`platform-verified-v55 drawer-verified-v55 platform-${member.platformRole}`} title={`${platformRoleLabel(member.platformRole)} · verified by Spaces`}><Icon name="check" size={10}/>VERIFIED</span></>}
+            {member.profileId !== profile?.id && <div className="profile-social-actions-v62">
+              <button
+                className="secondary-button compact"
+                disabled={savingAccess || isBlocked || relationship === 'friend' || relationship === 'outgoing'}
+                onClick={() => void addFriendFromProfile()}
+                title="Friend"
+              >
+                <Icon name={relationship === 'friend' ? 'check' : relationship === 'incoming' ? 'members' : 'plus'} size={13}/>
+                {relationship === 'friend' ? 'Friends' : relationship === 'outgoing' ? 'Request sent' : relationship === 'incoming' ? 'Accept' : 'Add Friend'}
+              </button>
+              <button
+                className={`secondary-button compact ${isBlocked ? 'is-blocked-v62' : ''}`}
+                disabled={savingAccess}
+                onClick={() => void toggleBlockFromProfile()}
+              >
+                <Icon name="lock" size={13}/>
+                {isBlocked ? 'Unblock' : 'Block'}
+              </button>
+            </div>}
           </div>
 
           <section className="drawer-section">
@@ -214,6 +379,7 @@ export function MemberProfileDrawer({ memberId, onClose }: { memberId: string; o
           </div>
         </div>
       </aside>
+      <ContextMenu menu={quickMenu.menu} onClose={quickMenu.close} />
     </>
   )
 }

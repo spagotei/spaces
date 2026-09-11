@@ -5,6 +5,8 @@ import { Modal } from './Modal'
 import { ContextMenu, useContextMenu } from './ContextMenu'
 import { useSpaces } from '../state/SpacesContext'
 import { usePreferences } from '../state/PreferencesContext'
+import { useBlockedUserIds } from '../hooks/useBlockedUsers'
+import { dismissNotifications } from '../utils/notification-read'
 import { playSpacesSupportSound } from '../utils/notification-sound'
 import type {
   WorkspaceDirectCenter,
@@ -92,6 +94,7 @@ export function DirectMessagesCenter({
     pushToast,
   } = useSpaces()
   const { preferences } = usePreferences()
+  const blockedUserIds = useBlockedUserIds(session?.token)
   const [center, setCenter] = useState<DirectCenterV59>(emptyCenter)
   const [tab, setTab] = useState<DirectTab>(initialTab)
   const [selectedId, setSelectedId] = useState<string | null>(initialConversationId)
@@ -136,6 +139,19 @@ export function DirectMessagesCenter({
     else if (initialGroupId) setTab('groups')
     else setTab(initialTab)
   }, [initialConversationId, initialGroupId, initialTab])
+
+  useEffect(() => {
+    if (selectedId) dismissNotifications({ conversationId: selectedId, kind: 'direct' })
+  }, [selectedId])
+
+  useEffect(() => {
+    if (selectedGroupId) dismissNotifications({ groupId: selectedGroupId, kind: 'group' })
+  }, [selectedGroupId])
+
+  useEffect(() => {
+    if (tab === 'support') dismissNotifications({ kind: 'support' })
+    if (tab === 'requests') dismissNotifications({ kind: 'friend_request' })
+  }, [tab])
 
   async function supportRequest<T>(path: string, init?: RequestInit): Promise<T> {
     const headers = new Headers(init?.headers)
@@ -611,6 +627,7 @@ export function DirectMessagesCenter({
               }}
               onAccept={() => void accept(selected)}
               onDecline={() => void decline(selected)}
+              blocked={blockedUserIds.includes(selected.person.id)}
             />
           ) : selectedGroup ? (
             <GroupThread
@@ -621,6 +638,7 @@ export function DirectMessagesCenter({
               onSend={sendGroup}
               busy={busy}
               currentUserId={profile?.id ?? ''}
+              blockedUserIds={blockedUserIds}
             />
           ) : tab === 'add' ? (
             <div className="direct-add-person-v23">
@@ -1055,6 +1073,7 @@ function GroupThread({
   onSend,
   busy,
   currentUserId,
+  blockedUserIds,
 }: {
   group: WorkspaceDirectGroup
   messages: WorkspaceDirectGroupMessage[]
@@ -1063,6 +1082,7 @@ function GroupThread({
   onSend: () => Promise<void>
   busy: boolean
   currentUserId: string
+  blockedUserIds: string[]
 }) {
   return (
     <div className="direct-thread-v23 direct-group-thread-v43">
@@ -1094,7 +1114,7 @@ function GroupThread({
                 />
                 <div className="direct-message-copy-v28">
                   <div className="direct-message-author-v55"><strong>{message.senderName}</strong><PlatformVerifiedBadge role={sender?.platformRole ?? null} compact /></div>
-                  <p>{message.body}</p>
+                  <p>{blockedUserIds.includes(message.senderUserId) ? <BlockedMessageText body={message.body} /> : message.body}</p>
                   <time>{timeAgo(message.createdAt)}</time>
                 </div>
               </div>
@@ -1144,6 +1164,7 @@ function DirectThread({
   currentUser,
   onAccept,
   onDecline,
+  blocked,
 }: {
   conversation: WorkspaceDirectConversation
   messages: WorkspaceDirectMessage[]
@@ -1161,6 +1182,7 @@ function DirectThread({
   }
   onAccept: () => void
   onDecline: () => void
+  blocked: boolean
 }) {
   const incoming = conversation.status === 'pending' && !conversation.requestedByMe
   const outgoing = conversation.status === 'pending' && conversation.requestedByMe
@@ -1226,7 +1248,7 @@ function DirectThread({
                     />
                     <div className="direct-message-copy-v28">
                       <div className="direct-message-author-v55"><strong>{message.senderName}</strong><PlatformVerifiedBadge role={own ? currentUser.platformRole : conversation.person.platformRole} compact /></div>
-                      <p>{message.body}</p>
+                      <p>{blocked && !own ? <BlockedMessageText body={message.body} /> : message.body}</p>
                       <time>{timeAgo(message.createdAt)}</time>
                     </div>
                   </div>
@@ -1240,9 +1262,11 @@ function DirectThread({
               </div>
             )}
           </div>
-          <div className="direct-compose-v23">
+          {blocked && <div className="blocked-thread-banner-v62"><Icon name="lock" size={13}/>You blocked this person. Unblock them from their profile before sending another DM.</div>}
+          <div className={`direct-compose-v23 ${blocked ? 'is-blocked-v62' : ''}`}>
             <textarea
               value={draft}
+              disabled={blocked}
               onChange={event => setDraft(event.target.value)}
               onKeyDown={event => {
                 if (event.key === 'Enter' && !event.shiftKey) {
@@ -1250,12 +1274,12 @@ function DirectThread({
                   void onSend()
                 }
               }}
-              placeholder={`Message ${conversation.person.displayName}`}
+              placeholder={blocked ? 'Unblock this person to send a DM' : `Message ${conversation.person.displayName}`}
               maxLength={2000}
             />
             <button
               className="primary-button"
-              disabled={busy || !draft.trim()}
+              disabled={blocked || busy || !draft.trim()}
               onClick={() => void onSend()}
             >
               <Icon name="send" size={14} /> Send
@@ -1267,6 +1291,18 @@ function DirectThread({
   )
 }
 
+
+function BlockedMessageText({ body }: { body: string }) {
+  const [revealed, setRevealed] = useState(false)
+  if (revealed) return <>{body}</>
+  return (
+    <button className="blocked-message-v62" onClick={() => setRevealed(true)}>
+      <Icon name="lock" size={13}/>
+      <span>Message hidden from a blocked user</span>
+      <strong>Show</strong>
+    </button>
+  )
+}
 
 function PlatformVerifiedBadge({
   role,

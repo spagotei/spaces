@@ -15,6 +15,7 @@ export function saveWorkspaceSession(
         session,
       ),
     )
+    window.dispatchEvent(new Event('spaces-session-changed'))
   } catch {
     // Current session can continue even if embedded storage is unavailable.
   }
@@ -66,6 +67,7 @@ export function clearWorkspaceSession():
     localStorage.removeItem(
       SESSION_STORAGE_KEY,
     )
+    window.dispatchEvent(new Event('spaces-session-changed'))
   } catch {
     // Nothing else to clear.
   }

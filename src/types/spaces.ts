@@ -152,7 +152,14 @@ export type WorkspaceMessageAttachment = {
 export type WorkspaceMemberStatus =
   | 'online'
   | 'away'
+  | 'dnd'
   | 'offline'
+
+export type WorkspacePresence =
+  | 'online'
+  | 'idle'
+  | 'dnd'
+  | 'invisible'
 
 export type WorkspacePlatformRole =
   | 'founder'
@@ -172,6 +179,8 @@ export type WorkspaceProfile = {
   bio: string
   platformRole: WorkspacePlatformRole
   publicProfile: boolean
+  presence: WorkspacePresence
+  customStatus: string
   createdAt: number
 }
 
@@ -244,6 +253,8 @@ export type WorkspaceDirectPerson = {
   avatarUrl: string | null
   profileAccent: string
   platformRole: WorkspacePlatformRole
+  presence: 'online' | 'idle' | 'dnd' | 'offline'
+  customStatus: string
 }
 
 export type WorkspaceDirectConversation = {
@@ -366,6 +377,7 @@ export type WorkspaceMember = {
   role: WorkspaceRole
   customRoleIds: string[]
   status: WorkspaceMemberStatus
+  customStatus: string
   joinedAt: number
 }
 

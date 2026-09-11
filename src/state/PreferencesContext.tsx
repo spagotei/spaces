@@ -6,6 +6,7 @@ import {
   useState,
   type ReactNode,
 } from 'react'
+import { loadWorkspaceSession } from '../api/session'
 
 export type ContentFilterLevel = 'none' | 'low' | 'medium' | 'high'
 export type MessageDensity = 'comfortable' | 'compact'
@@ -88,7 +89,7 @@ const DEFAULTS: SpacesPreferences = {
   sidebarDensity: 'comfortable',
 }
 
-const STORAGE_KEY = 'spaces.preferences.v1'
+const LEGACY_STORAGE_KEY = 'spaces.preferences.v1'
 
 type PreferencesContextValue = {
   preferences: SpacesPreferences
@@ -104,30 +105,63 @@ function clampScale(value: unknown, fallback = 1) {
   return Number.isFinite(number) ? Math.max(.85, Math.min(1.4, number)) : fallback
 }
 
-function loadPreferences(): SpacesPreferences {
+function accountIdNow() {
+  return loadWorkspaceSession()?.profile.id ?? 'signed-out'
+}
+
+function storageKey(accountId: string) {
+  return `spaces.preferences.v62.${accountId}`
+}
+
+function normalizePreferences(parsed: Partial<SpacesPreferences>): SpacesPreferences {
+  return {
+    ...DEFAULTS,
+    ...parsed,
+    interfaceTextScale: clampScale(parsed.interfaceTextScale),
+    sidebarTextScale: clampScale(parsed.sidebarTextScale),
+    messageTextScale: clampScale(parsed.messageTextScale),
+    sidebarDensity: parsed.sidebarDensity === 'compact' ? 'compact' : 'comfortable',
+  }
+}
+
+function loadPreferences(accountId: string): SpacesPreferences {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    if (!raw) return DEFAULTS
-    const parsed = JSON.parse(raw) as Partial<SpacesPreferences>
-    return {
-      ...DEFAULTS,
+    const scoped = localStorage.getItem(storageKey(accountId))
+    if (scoped) return normalizePreferences(JSON.parse(scoped) as Partial<SpacesPreferences>)
+
+    // Preserve harmless appearance/layout choices from older installs, but never
+    // inherit somebody else's status into a newly signed-in account.
+    const legacy = localStorage.getItem(LEGACY_STORAGE_KEY)
+    if (!legacy) return DEFAULTS
+    const parsed = JSON.parse(legacy) as Partial<SpacesPreferences>
+    return normalizePreferences({
       ...parsed,
-      interfaceTextScale: clampScale(parsed.interfaceTextScale),
-      sidebarTextScale: clampScale(parsed.sidebarTextScale),
-      messageTextScale: clampScale(parsed.messageTextScale),
-      sidebarDensity: parsed.sidebarDensity === 'compact' ? 'compact' : 'comfortable',
-    }
+      presence: 'online',
+      customStatus: '',
+    })
   } catch {
     return DEFAULTS
   }
 }
 
 export function PreferencesProvider({ children }: { children: ReactNode }) {
-  const [preferences, setPreferences] = useState<SpacesPreferences>(loadPreferences)
-  const [effectivePresence, setEffectivePresence] = useState<PresenceStatus>(() => loadPreferences().presence)
+  const [accountId, setAccountId] = useState(accountIdNow)
+  const [preferences, setPreferences] = useState<SpacesPreferences>(() => loadPreferences(accountId))
+  const effectivePresence = preferences.presence
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(preferences))
+    const refreshAccount = () => {
+      const next = accountIdNow()
+      if (next === accountId) return
+      setAccountId(next)
+      setPreferences(loadPreferences(next))
+    }
+    window.addEventListener('spaces-session-changed', refreshAccount)
+    return () => window.removeEventListener('spaces-session-changed', refreshAccount)
+  }, [accountId])
+
+  useEffect(() => {
+    localStorage.setItem(storageKey(accountId), JSON.stringify(preferences))
     document.documentElement.dataset.motion = preferences.reducedMotion ? 'reduced' : 'full'
     document.documentElement.dataset.glass = preferences.glassEffects ? 'on' : 'off'
     document.documentElement.dataset.density = preferences.messageDensity
@@ -141,28 +175,13 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
     document.documentElement.style.setProperty('--spaces-interface-text-scale', String(clampScale(preferences.interfaceTextScale)))
     document.documentElement.style.setProperty('--spaces-sidebar-text-scale', String(clampScale(preferences.sidebarTextScale)))
     document.documentElement.style.setProperty('--spaces-message-text-scale', String(clampScale(preferences.messageTextScale)))
-  }, [preferences])
-
-  useEffect(() => {
-    if (preferences.presence !== 'online') { setEffectivePresence(preferences.presence); return }
-    let timer = window.setTimeout(() => setEffectivePresence('idle'), 5 * 60 * 1000)
-    const wake = () => { setEffectivePresence('online'); window.clearTimeout(timer); timer = window.setTimeout(() => setEffectivePresence('idle'), 5 * 60 * 1000) }
-    const events: (keyof WindowEventMap)[] = ['pointerdown','keydown','focus']
-    events.forEach(name => window.addEventListener(name, wake, { passive: true }))
-    return () => { window.clearTimeout(timer); events.forEach(name => window.removeEventListener(name, wake)) }
-  }, [preferences.presence])
+  }, [accountId, preferences])
 
   const value = useMemo<PreferencesContextValue>(() => ({
     preferences,
     effectivePresence,
-    setPreference: (key, next) => {
-      if (key === 'presence') setEffectivePresence(next as PresenceStatus)
-      setPreferences(current => ({ ...current, [key]: next }))
-    },
-    resetPreferences: () => {
-      setEffectivePresence(DEFAULTS.presence)
-      setPreferences(DEFAULTS)
-    },
+    setPreference: (key, next) => setPreferences(current => ({ ...current, [key]: next })),
+    resetPreferences: () => setPreferences(DEFAULTS),
   }), [effectivePresence, preferences])
 
   return <PreferencesContext.Provider value={value}>{children}</PreferencesContext.Provider>

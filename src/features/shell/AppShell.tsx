@@ -39,6 +39,8 @@ import { gifFileToDataUrl, imageFileToRawDataUrl, isGifFile } from '../../utils/
 import { playSpacesNotificationSound, playSpacesQueueAlert, playSpacesSupportSound } from '../../utils/notification-sound'
 import { clearDesktopAttention, requestDesktopAttention, syncDesktopUnread } from '../../utils/desktop-unread'
 import { hasWorkspacePermission, platformRoleLabel } from '../../utils/permissions'
+import { updateSocialPresence } from '../../api/social-api'
+import { dismissNotifications } from '../../utils/notification-read'
 import type { WorkspaceChannel, WorkspaceSummary, WorkspaceDirectCenter } from '../../types/spaces'
 import '../../styles/standalone-v54.css'
 import '../../styles/standalone-v55.css'
@@ -131,6 +133,34 @@ export function AppShell() {
   const mobileSwipeStart = useRef<{ x: number; y: number } | null>(null)
   useEffect(() => { const rerender = () => forceTheme(value => value + 1); window.addEventListener('spaces-theme-updated', rerender); return () => window.removeEventListener('spaces-theme-updated', rerender) }, [])
   useEffect(() => { document.title = 'Spaces' }, [])
+
+  const presenceHydratedFor = useRef('')
+  useEffect(() => {
+    if (!profile) return
+    if (presenceHydratedFor.current === profile.id) return
+    presenceHydratedFor.current = profile.id
+    setPreference(
+      'presence',
+      profile.presence === 'invisible'
+        ? 'offline'
+        : profile.presence === 'idle' || profile.presence === 'dnd' || profile.presence === 'online'
+          ? profile.presence
+          : 'online',
+    )
+    setPreference('customStatus', profile.customStatus ?? '')
+  }, [profile?.id])
+
+  useEffect(() => {
+    if (!session?.token || !profile?.id || presenceHydratedFor.current !== profile.id) return
+    const timer = window.setTimeout(() => {
+      void updateSocialPresence(
+        session.token,
+        preferences.presence === 'offline' ? 'invisible' : preferences.presence,
+        preferences.customStatus,
+      ).catch(() => undefined)
+    }, 420)
+    return () => window.clearTimeout(timer)
+  }, [preferences.customStatus, preferences.presence, profile?.id, session?.token])
   useEffect(() => {
     if (!channelNavResizing) return
     const move = (event: PointerEvent) => {
@@ -303,6 +333,10 @@ export function AppShell() {
   }
 
   function openDirectPage(tab: DirectTab, conversationId: string | null = null, groupId: string | null = null) {
+    if (tab === 'support') dismissNotifications({ kind: 'support' })
+    if (tab === 'requests') dismissNotifications({ kind: 'friend_request' })
+    if (conversationId) dismissNotifications({ kind: 'direct', conversationId })
+    if (groupId) dismissNotifications({ kind: 'group', groupId })
     goHome()
     setDirectConversationId(conversationId)
     setDirectGroupId(groupId)
@@ -412,9 +446,14 @@ export function AppShell() {
     '--channel-rail': channelNavCollapsed && activeWorkspaceId ? '0px' : `${channelNavWidth}px`,
   } as CSSProperties
 
+  const notificationBadgeTone =
+    visibleNotifications.some(item => item.kind === 'support' || item.kind === 'friend_request')
+      ? 'orange'
+      : 'blue'
+
   useEffect(() => {
-    void syncDesktopUnread(visibleNotifications.length)
-  }, [visibleNotifications.length])
+    void syncDesktopUnread(visibleNotifications.length, notificationBadgeTone)
+  }, [notificationBadgeTone, visibleNotifications.length])
 
   useEffect(() => {
     const clearAttention = () => void clearDesktopAttention()
@@ -583,6 +622,7 @@ export function AppShell() {
   }
 
   async function openNotificationItem(item: SpacesNotification) {
+    dismissNotifications({ id: item.id })
     setNoticePeek(null)
     setNotificationOpen(false)
     if (item.kind === 'support') {
@@ -976,7 +1016,7 @@ export function AppShell() {
           <div className="topbar-left"><button className={`mobile-menu-button nav-arrow-toggle-v19 ${mobileNavOpen ? 'open' : 'closed'}`} aria-label={mobileNavOpen ? 'Close Space navigation' : 'Open Space navigation'} aria-expanded={mobileNavOpen} onClick={() => setMobileNavOpen(!mobileNavOpen)}><Icon name="chevron" size={17} /></button>{activeWorkspace && <button className={`desktop-nav-toggle nav-arrow-toggle-v19 ${channelNavCollapsed ? 'collapsed' : 'expanded'}`} aria-label={channelNavCollapsed ? 'Show Space navigation' : 'Hide Space navigation'} aria-expanded={!channelNavCollapsed} title={channelNavCollapsed ? 'Show Space navigation' : 'Hide Space navigation'} onClick={() => setChannelNavCollapsed(value => !value)}><Icon name="chevron" size={16}/></button>}{activeWorkspace ? <><span className="topbar-symbol"><Icon name={view === 'notes' ? 'notes' : view === 'chat' ? 'hash' : navItems.find(item => item.view === view)?.icon ?? 'home'} size={18} /></span><div><strong>{view === 'chat' || view === 'notes' ? activeChannel?.name ?? activeWorkspace.name : navItems.find(item => item.view === view)?.label ?? 'Overview'}</strong><span>{cleanThreadDescription(activeChannel?.description) || activeWorkspace.description || 'Spaces'}</span></div></> : directCenterOpen ? <><span className="topbar-symbol"><Icon name={directPageTab === 'support' ? 'shield' : directPageTab === 'groups' ? 'chat' : directPageTab === 'requests' ? 'message' : directPageTab === 'add' ? 'plus' : 'members'} /></span><div><strong>{directConversationId ? (directSidebarCenter.conversations.find(item => item.id === directConversationId)?.person.displayName ?? 'Direct Message') : directGroupId ? (directSidebarCenter.groups.find(item => item.id === directGroupId)?.name ?? 'Group Chat') : directPageTab === 'support' ? 'Support Replys' : directPageTab === 'requests' ? 'Requests' : directPageTab === 'groups' ? 'Group Chats' : directPageTab === 'add' ? 'Add Friend' : 'Friends'}</strong><span>Friends & Messages</span></div></> : <><span className="topbar-symbol"><Icon name="home" /></span><div><strong>Home</strong><span>Everything, one layer up.</span></div></>}</div>
           <div className="topbar-actions">
             <button className="search-pill" onClick={() => setCommandOpen(true)}><Icon name="search" size={15} /><span>Search Spaces</span><kbd>Ctrl K</kbd></button>
-            <button className={`icon-button topbar-icon notification-button ${notificationOpen ? 'active' : ''}`} title="Notifications" onClick={() => { setMobileNavOpen(false); setNotificationOpen(value => !value) }}><Icon name="bell" size={17}/>{visibleNotifications.length > 0 && <i>{visibleNotifications.length > 9 ? '9+' : visibleNotifications.length}</i>}</button>
+            <button className={`icon-button topbar-icon notification-button badge-${notificationBadgeTone} ${notificationOpen ? 'active' : ''}`} title="Notifications" onClick={() => { setMobileNavOpen(false); setNotificationOpen(value => !value) }}><Icon name="bell" size={17}/>{visibleNotifications.length > 0 && <i>{visibleNotifications.length > 9 ? '9+' : visibleNotifications.length}</i>}</button>
             {activeWorkspace && <button className={`icon-button topbar-icon member-rail-toggle ${memberRailOpen ? 'active' : ''}`} title="Toggle member rail" onClick={() => setMemberRailOpen(!memberRailOpen)}><Icon name="members" /></button>}
           </div>
         </header>
@@ -1064,7 +1104,8 @@ function IncomingNotificationPeek({ item, onOpen, onClose }: { item: SpacesNotif
     : item.kind === 'role' ? `${item.authorName} pinged ${item.mentionLabel}`
     : item.kind === 'mention' ? `${item.authorName} mentioned you`
     : item.authorName
-  return <aside className={`incoming-notice page-enter ${item.kind === 'friend_request' ? 'incoming-request-v54' : ''}`} role="status">
+  const tone = item.kind === 'support' || item.kind === 'friend_request' ? 'orange' : 'blue'
+  return <aside className={`incoming-notice page-enter notice-tone-${tone} ${item.kind === 'friend_request' ? 'incoming-request-v54' : ''}`} role="status">
     <button className="incoming-notice-main" onClick={onOpen}><span className="incoming-notice-icon notification-spaces-mark"><SpacesLogo title="Spaces ping" /></span><span><small>{item.workspaceName}</small><strong>{title}</strong><p>{item.preview}</p></span></button>
     <button className="incoming-notice-close" onClick={onClose} aria-label="Dismiss"><Icon name="x" size={13}/></button>
   </aside>
@@ -1123,7 +1164,7 @@ function MemberRail({ onOpenMember, onHide }: { onOpenMember: (memberId: string)
 function MemberRailGroup({ workspaceId, title, members, roles, onOpenMember }: { workspaceId: string; title: string; members: NonNullable<ReturnType<typeof useSpaces>['data']>['members']; roles: NonNullable<ReturnType<typeof useSpaces>['data']>['roles']; onOpenMember: (memberId: string) => void }) {
   const { profile, data } = useSpaces()
   const { effectivePresence } = usePreferences()
-  return <section className="member-rail-group"><div className="member-rail-label">{title} — {members.length}</div>{members.map(member => { const topRole = roles.filter(role => member.customRoleIds.includes(role.id)).sort((a, b) => b.position - a.position)[0]; const baseRoleColorV44 = member.role === 'owner' ? data?.baseRoles?.owner?.color : data?.baseRoles?.member?.color; const roleColorV44 = member.role === 'owner' ? baseRoleColorV44 : (topRole?.color ?? baseRoleColorV44); const status = member.profileId === profile?.id ? effectivePresence : member.status === 'away' ? 'idle' : member.status; return <button className="member-rail-row" key={member.id} onClick={() => onOpenMember(member.id)}><div className="avatar-wrap"><Avatar name={member.displayName} initials={member.initials} src={member.avatarUrl} size={32} accent={roleColorV44} /><span className={`presence-symbol member-rail-presence presence-${status}`} /></div><div><strong style={roleColorV44 ? { color: roleColorV44 } : undefined}>{member.displayName}</strong><span>{member.platformRole ? platformRoleLabel(member.platformRole) : (topRole?.name ?? workspaceRoleDisplayName(workspaceId, member.role))}</span></div>{member.platformRole && <span className={`member-platform-rail platform-${member.platformRole} ${member.platformRole === 'founder' ? 'founder-distinct-v56' : ''}`}><Icon name={member.platformRole === 'founder' ? 'sparkle' : 'shield'} size={12}/>{platformRoleLabel(member.platformRole)}</span>}</button> })}</section>
+  return <section className="member-rail-group"><div className="member-rail-label">{title} — {members.length}</div>{members.map(member => { const topRole = roles.filter(role => member.customRoleIds.includes(role.id)).sort((a, b) => b.position - a.position)[0]; const baseRoleColorV44 = member.role === 'owner' ? data?.baseRoles?.owner?.color : data?.baseRoles?.member?.color; const roleColorV44 = member.role === 'owner' ? baseRoleColorV44 : (topRole?.color ?? baseRoleColorV44); const status = member.profileId === profile?.id ? effectivePresence : member.status === 'away' ? 'idle' : member.status; return <button className="member-rail-row" key={member.id} onClick={() => onOpenMember(member.id)}><div className="avatar-wrap"><Avatar name={member.displayName} initials={member.initials} src={member.avatarUrl} size={32} accent={roleColorV44} /><span className={`presence-symbol member-rail-presence presence-${status}`} /></div><div><strong style={roleColorV44 ? { color: roleColorV44 } : undefined}>{member.displayName}</strong><span>{member.customStatus || (member.platformRole ? platformRoleLabel(member.platformRole) : (topRole?.name ?? workspaceRoleDisplayName(workspaceId, member.role)))}</span></div>{member.platformRole && <span className={`member-platform-rail platform-${member.platformRole} ${member.platformRole === 'founder' ? 'founder-distinct-v56' : ''}`}><Icon name={member.platformRole === 'founder' ? 'sparkle' : 'shield'} size={12}/>{platformRoleLabel(member.platformRole)}</span>}</button> })}</section>
 }
 
 function AccountQuickMenu({ onSettings }: { onSettings: () => void }) {
