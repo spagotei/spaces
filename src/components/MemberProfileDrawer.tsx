@@ -182,13 +182,13 @@ export function MemberProfileDrawer({ memberId, onClose }: { memberId: string; o
             {preferences.developerMode && member.publicUserId && <button className="developer-id-chip-v21" onClick={() => { void navigator.clipboard?.writeText(member.publicUserId); pushToast(`Copied Spaces ID #${member.publicUserId}.`, 'success') }}><Icon name="copy" size={11}/> Spaces ID #{member.publicUserId}</button>}
             {customStatus && <p className="drawer-custom-status">{customStatus}</p>}
             {member.bio && <p className="drawer-bio">{member.bio}</p>}
-            {member.platformRole && <><span className={`founder-badge drawer-platform-badge platform-${member.platformRole}`}><Icon name="shield" size={12}/>{platformRoleLabel(member.platformRole)}</span><span className={`platform-verified-v55 drawer-verified-v55 platform-${member.platformRole}`} title={`${platformRoleLabel(member.platformRole)} · verified by Spaces`}><Icon name="shield" size={10}/>VERIFIED</span></>}
+            {member.platformRole && <><span className={`founder-badge drawer-platform-badge platform-${member.platformRole} ${member.platformRole === 'founder' ? 'founder-distinct-v56' : ''}`}><Icon name={member.platformRole === 'founder' ? 'sparkle' : 'shield'} size={12}/>{platformRoleLabel(member.platformRole)}</span><span className={`platform-verified-v55 drawer-verified-v55 platform-${member.platformRole}`} title={`${platformRoleLabel(member.platformRole)} · verified by Spaces`}><Icon name="check" size={10}/>VERIFIED</span></>}
           </div>
 
           <section className="drawer-section">
             <div className="drawer-section-heading"><span><Icon name="roles" size={14}/><strong>Roles</strong></span><small>{1 + memberRoles.length + (member.platformRole ? 1 : 0)}</small></div>
             <div className="drawer-role-chips">
-              {member.platformRole && <span className={`profile-role-chip platform-role-chip platform-${member.platformRole}`}><Icon name="shield" size={11}/>{platformRoleLabel(member.platformRole)}</span>}
+              {member.platformRole && <span className={`profile-role-chip platform-role-chip platform-${member.platformRole} ${member.platformRole === 'founder' ? 'founder-distinct-v56' : ''}`}><Icon name={member.platformRole === 'founder' ? 'sparkle' : 'shield'} size={11}/>{platformRoleLabel(member.platformRole)}</span>}
               <span className={`profile-role-chip base role-${member.role}`}><Icon name={member.role === 'owner' ? 'shield' : 'roles'} size={11}/>{data?.workspace.id ? workspaceRoleDisplayName(data.workspace.id, member.role) : member.role}</span>
               {memberRoles.map(role => <span className="profile-role-chip" key={role.id} style={{ color: role.color, borderColor: role.color }}><i style={{ background: role.color }}/>{role.name}</span>)}
             </div>

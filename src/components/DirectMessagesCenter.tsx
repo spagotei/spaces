@@ -1153,7 +1153,7 @@ function PlatformVerifiedBadge({
       className={`platform-verified-v55 platform-${role} ${compact ? 'compact' : ''}`}
       title={`${platformRoleLabel(role)} · verified by Spaces`}
     >
-      <Icon name="shield" size={compact ? 9 : 10} />
+      <Icon name="check" size={compact ? 9 : 10} />
       VERIFIED
     </span>
   )

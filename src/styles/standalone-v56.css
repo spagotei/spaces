@@ -1,0 +1,25 @@
+/* Spaces v56 — verified check + distinct Founder mark */
+
+.platform-verified-v55 svg{
+  flex:0 0 auto;
+  stroke-width:2.25;
+}
+.platform-verified-v55{
+  gap:4px;
+}
+.platform-verified-v55.platform-founder,
+.platform-verified-v55.platform-staff,
+.platform-verified-v55.platform-support{
+  color:#b8b1bf!important;
+}
+.founder-distinct-v56{
+  color:#d1b27b!important;
+}
+.founder-distinct-v56 svg{
+  stroke-width:1.7;
+}
+.member-platform-rail.platform-founder svg,
+.profile-role-chip.platform-founder svg,
+.drawer-platform-badge.platform-founder svg{
+  color:#d1b27b!important;
+}
