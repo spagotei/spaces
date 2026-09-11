@@ -182,7 +182,7 @@ export function MemberProfileDrawer({ memberId, onClose }: { memberId: string; o
             {preferences.developerMode && member.publicUserId && <button className="developer-id-chip-v21" onClick={() => { void navigator.clipboard?.writeText(member.publicUserId); pushToast(`Copied Spaces ID #${member.publicUserId}.`, 'success') }}><Icon name="copy" size={11}/> Spaces ID #{member.publicUserId}</button>}
             {customStatus && <p className="drawer-custom-status">{customStatus}</p>}
             {member.bio && <p className="drawer-bio">{member.bio}</p>}
-            {member.platformRole && <span className={`founder-badge drawer-platform-badge platform-${member.platformRole}`}><Icon name="shield" size={12}/>{platformRoleLabel(member.platformRole)}</span>}
+            {member.platformRole && <><span className={`founder-badge drawer-platform-badge platform-${member.platformRole}`}><Icon name="shield" size={12}/>{platformRoleLabel(member.platformRole)}</span><span className={`platform-verified-v55 drawer-verified-v55 platform-${member.platformRole}`} title={`${platformRoleLabel(member.platformRole)} · verified by Spaces`}><Icon name="shield" size={10}/>VERIFIED</span></>}
           </div>
 
           <section className="drawer-section">

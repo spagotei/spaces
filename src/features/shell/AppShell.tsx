@@ -7,7 +7,7 @@ import { Modal } from '../../components/Modal'
 import { ImageCropper } from '../../components/ImageCropper'
 import { MemberProfileDrawer } from '../../components/MemberProfileDrawer'
 import { NotificationCenter } from '../../components/NotificationCenter'
-import { DirectMessagesCenter } from '../../components/DirectMessagesCenter'
+import { DirectMessagesCenter, type DirectTab } from '../../components/DirectMessagesCenter'
 import { WorkspacePrivacyModal } from '../../components/WorkspacePrivacyModal'
 import { ContextMenu, useContextMenu, type ContextAction } from '../../components/ContextMenu'
 import { ChannelPermissionsEditor } from '../../components/ChannelPermissionsEditor'
@@ -41,6 +41,7 @@ import { clearDesktopAttention, requestDesktopAttention, syncDesktopUnread } fro
 import { hasWorkspacePermission, platformRoleLabel } from '../../utils/permissions'
 import type { WorkspaceChannel, WorkspaceSummary, WorkspaceDirectCenter } from '../../types/spaces'
 import '../../styles/standalone-v54.css'
+import '../../styles/standalone-v55.css'
 
 const navItems: { view: AppView; label: string; icon: IconName }[] = [
   { view: 'members', label: 'People', icon: 'members' },
@@ -118,6 +119,7 @@ export function AppShell() {
   const [directCenterOpen, setDirectCenterOpen] = useState(false)
   const [directConversationId, setDirectConversationId] = useState<string | null>(null)
   const [directGroupId, setDirectGroupId] = useState<string | null>(null)
+  const [directPageTab, setDirectPageTab] = useState<DirectTab>('friends')
   const [directSidebarCenter, setDirectSidebarCenter] = useState<WorkspaceDirectCenter>({ conversations: [], incomingRequests: [], outgoingRequests: [], groups: [] })
   const [supportSidebarSummary, setSupportSidebarSummary] = useState({ hasMessages: false, lastAt: 0, preview: '' })
   const [pinnedDirectKeys, setPinnedDirectKeys] = useState<string[]>(() => {
@@ -236,13 +238,34 @@ export function AppShell() {
   useEffect(() => {
     const open = (event: Event) => {
       const detail = (event as CustomEvent<{ conversationId?: string | null; groupId?: string | null }>).detail
-      setDirectConversationId(detail?.conversationId ?? null)
-      setDirectGroupId(detail?.groupId ?? null)
+      const conversationId = detail?.conversationId ?? null
+      const groupId = detail?.groupId ?? null
+      goHome()
+      setDirectConversationId(conversationId)
+      setDirectGroupId(groupId)
+      setDirectPageTab(conversationId ? 'friends' : groupId ? 'groups' : 'friends')
       setDirectCenterOpen(true)
+      setMobileNavOpen(false)
     }
     window.addEventListener('spaces-open-direct-center', open)
     return () => window.removeEventListener('spaces-open-direct-center', open)
-  }, [])
+  }, [goHome, setMobileNavOpen])
+
+  useEffect(() => {
+    const switchTab = (event: Event) => {
+      const requested = (event as CustomEvent<DirectTab | 'people'>).detail
+      const next: DirectTab = requested === 'people' ? 'friends' : requested
+      if (!['friends', 'support', 'requests', 'groups', 'add'].includes(next)) return
+      goHome()
+      setDirectConversationId(null)
+      setDirectGroupId(null)
+      setDirectPageTab(next)
+      setDirectCenterOpen(true)
+      setMobileNavOpen(false)
+    }
+    window.addEventListener('spaces-direct-tab', switchTab)
+    return () => window.removeEventListener('spaces-direct-tab', switchTab)
+  }, [goHome, setMobileNavOpen])
 
   useEffect(() => {
     if (!session?.token) {
@@ -277,6 +300,24 @@ export function AppShell() {
       return next
     })
   }
+
+  function openDirectPage(tab: DirectTab, conversationId: string | null = null, groupId: string | null = null) {
+    goHome()
+    setDirectConversationId(conversationId)
+    setDirectGroupId(groupId)
+    setDirectPageTab(tab)
+    setDirectCenterOpen(true)
+    setMobileNavOpen(false)
+  }
+
+  function openSpacesHome() {
+    setDirectCenterOpen(false)
+    setDirectConversationId(null)
+    setDirectGroupId(null)
+    setDirectPageTab('friends')
+    goHome()
+  }
+
   useEffect(() => {
     let timer = 0
     const show = (event: Event) => {
@@ -544,20 +585,20 @@ export function AppShell() {
     setNoticePeek(null)
     setNotificationOpen(false)
     if (item.kind === 'support') {
-      setDirectConversationId(null); setDirectGroupId(null); setDirectCenterOpen(true)
-      window.setTimeout(() => window.dispatchEvent(new CustomEvent('spaces-direct-tab', { detail: 'support' })), 0)
+      openDirectPage('support')
       return
     }
     if (item.kind === 'friend_request') {
-      setDirectConversationId(null); setDirectGroupId(null); setDirectCenterOpen(true)
-      window.setTimeout(() => window.dispatchEvent(new CustomEvent('spaces-direct-tab', { detail: 'requests' })), 0)
+      openDirectPage('requests')
       return
     }
     if (item.kind === 'direct' && item.conversationId) {
-      setDirectGroupId(null); setDirectConversationId(item.conversationId); setDirectCenterOpen(true); return
+      openDirectPage('friends', item.conversationId)
+      return
     }
     if (item.kind === 'group' && item.groupId) {
-      setDirectConversationId(null); setDirectGroupId(item.groupId); setDirectCenterOpen(true); return
+      openDirectPage('groups', null, item.groupId)
+      return
     }
     await chooseWorkspace(item.workspaceId)
     chooseChannel(item.channelId)
@@ -835,6 +876,9 @@ export function AppShell() {
   function openWorkspace(workspaceId: string) {
     // A Space should always open with its navigation visible. Collapsing is an
     // explicit user choice, never something a management page does for them.
+    setDirectCenterOpen(false)
+    setDirectConversationId(null)
+    setDirectGroupId(null)
     setChannelNavCollapsed(false)
     void chooseWorkspace(workspaceId)
   }
@@ -842,7 +886,7 @@ export function AppShell() {
   return (
     <div className={`spaces-app-shell bg-${background} ${activeWorkspaceId ? 'has-space' : 'home-mode'} ${showMemberRail ? 'with-member-rail' : ''} ${channelNavCollapsed && activeWorkspaceId ? 'channel-nav-collapsed' : ''} ${channelNavResizing ? 'channel-nav-resizing-v53' : ''}`} style={appStyle}>
       <aside className="server-rail">
-        <button className={`server-home ${!activeWorkspaceId ? 'active' : ''}`} onClick={goHome} title="Home"><div className="brand-mark brand-home"><Icon name="home" size={22} /></div><span className="server-pill" /></button>
+        <button className={`server-home ${!activeWorkspaceId && !directCenterOpen ? 'active' : ''}`} onClick={openSpacesHome} title="Home"><div className="brand-mark brand-home"><Icon name="home" size={22} /></div><span className="server-pill" /></button>
         <div className="server-divider" />
         <div className="server-list">
           {visibleWorkspaces.map(space => { const unread = workspaceUnreadCount(space.id); return <button {...contextMenu.bind(space.name, workspaceActions(space), space.id === 'spaces-hub' ? 'Permanent Spaces Hub' : 'Space actions')} key={space.id} className={`server-button ${activeWorkspaceId === space.id ? 'active' : ''} ${unread ? 'has-unread-v41' : ''}`} onClick={() => openWorkspace(space.id)} title={unread ? `${space.name} · ${unread > 9 ? '9+' : unread} unread` : space.name} style={{ '--server-accent': space.accentColor, '--server-accent2': localStorage.getItem(`spaces.theme2.${space.id}`) || '#342044' } as CSSProperties}><span className="server-pill" /><span className={`server-avatar-shell space-icon-decor icon-decor-${space.iconDecoration ?? 'ring'}`} style={{ '--decor-accent': space.accentColor } as CSSProperties}><Avatar name={space.name} initials={space.initials} src={space.avatarUrl} size={46} accent={space.accentColor} /></span>{unread > 0 && <span className="server-unread-count-v41" aria-label={`${unread} unread`}>{unread > 9 ? '9+' : unread}</span>}</button> })}
@@ -854,30 +898,35 @@ export function AppShell() {
         <button className="channel-sidebar-resize-v53" aria-label="Resize Space navigation" title="Drag to resize · drag left to collapse" onPointerDown={beginChannelNavResize} />
         <header className={`space-header ${activeWorkspace?.bannerUrl ? 'has-space-banner-v42' : ''}`}>
           {activeWorkspace?.bannerUrl && <AnimatedBackdrop src={activeWorkspace.bannerUrl} className="space-header-full-banner-v42" mode={channelNavCollapsed && !mobileNavOpen ? 'still' : 'always'}/>}
-          {activeWorkspace ? <><button {...contextMenu.bind(activeWorkspace.name, workspaceActions(activeWorkspace), 'Space actions')} className="space-header-identity-v16 space-header-menu-v18" title="Open Space menu" onClick={event => { const rect = event.currentTarget.getBoundingClientRect(); contextMenu.open(activeWorkspace.name, workspaceActions(activeWorkspace), rect.left + 14, rect.bottom + 8, 'Space actions') }}><span className={`space-icon-decor icon-decor-${activeWorkspace.iconDecoration ?? 'ring'}`} style={{ '--decor-accent': activeWorkspace.accentColor } as CSSProperties}><Avatar name={activeWorkspace.name} initials={activeWorkspace.initials} src={activeWorkspace.avatarUrl} size={34} accent={activeWorkspace.accentColor}/></span><div className="space-header-copy"><span className="eyebrow">SPACE</span><strong>{activeWorkspace.name}</strong><small>{canManageSpace ? 'Space menu · settings & tools' : 'Space menu'}</small></div><span className="space-header-menu-chevron-v18"><Icon name="chevron" size={13}/></span></button>{canManageSpace && <button className="icon-button" title="Space settings" onClick={() => setView('settings')}><Icon name="settings" size={16} /></button>}</> : <><div className="space-header-copy"><span className="eyebrow">SPACES</span><strong>Home</strong></div><div className="private-chip"><Icon name="lock" size={12} /> Private</div></>}
+          {activeWorkspace ? <><button {...contextMenu.bind(activeWorkspace.name, workspaceActions(activeWorkspace), 'Space actions')} className="space-header-identity-v16 space-header-menu-v18" title="Open Space menu" onClick={event => { const rect = event.currentTarget.getBoundingClientRect(); contextMenu.open(activeWorkspace.name, workspaceActions(activeWorkspace), rect.left + 14, rect.bottom + 8, 'Space actions') }}><span className={`space-icon-decor icon-decor-${activeWorkspace.iconDecoration ?? 'ring'}`} style={{ '--decor-accent': activeWorkspace.accentColor } as CSSProperties}><Avatar name={activeWorkspace.name} initials={activeWorkspace.initials} src={activeWorkspace.avatarUrl} size={34} accent={activeWorkspace.accentColor}/></span><div className="space-header-copy"><span className="eyebrow">SPACE</span><strong>{activeWorkspace.name}</strong><small>{canManageSpace ? 'Space menu · settings & tools' : 'Space menu'}</small></div><span className="space-header-menu-chevron-v18"><Icon name="chevron" size={13}/></span></button>{canManageSpace && <button className="icon-button" title="Space settings" onClick={() => setView('settings')}><Icon name="settings" size={16} /></button>}</> : <><div className="space-header-copy"><span className="eyebrow">SPACES</span><strong>{directCenterOpen ? 'Friends' : 'Home'}</strong></div><div className="private-chip"><Icon name={directCenterOpen ? 'message' : 'lock'} size={12} /> {directCenterOpen ? 'Direct' : 'Private'}</div></>}
         </header>
 
         <div className="sidebar-scroll" {...(activeWorkspace ? contextMenu.bind(activeWorkspace.name, sidebarActions(), 'Space sidebar actions') : {})}>
           {!activeWorkspace ? (
             <>
-              <div className="sidebar-section"><button className="sidebar-item active" onClick={goHome}><Icon name="home" /><span>Home</span></button><button className="sidebar-item" onClick={() => setCommandOpen(true)}><Icon name="search" /><span>Quick switcher</span><kbd>Ctrl K</kbd></button></div>
+              <div className="sidebar-section"><button className={`sidebar-item ${!directCenterOpen ? 'active' : ''}`} onClick={openSpacesHome}><Icon name="home" /><span>Home</span></button><button className="sidebar-item" onClick={() => setCommandOpen(true)}><Icon name="search" /><span>Quick switcher</span><kbd>Ctrl K</kbd></button></div>
               <div className="sidebar-section sidebar-friends-v54">
                 <div className="sidebar-section-label">FRIENDS</div>
-                <button className="sidebar-item sidebar-request-row-v54" onClick={() => { setDirectConversationId(null); setDirectGroupId(null); setDirectCenterOpen(true); window.setTimeout(() => window.dispatchEvent(new CustomEvent('spaces-direct-tab', { detail: 'requests' })), 0) }}><Icon name="message" /><span>Requests</span>{directSidebarCenter.incomingRequests.length > 0 && <b className="sidebar-request-badge-v54">{directSidebarCenter.incomingRequests.length > 99 ? '99+' : directSidebarCenter.incomingRequests.length}</b>}</button>
-                <button className="sidebar-item" onClick={() => { setDirectConversationId(null); setDirectGroupId(null); setDirectCenterOpen(true); window.setTimeout(() => window.dispatchEvent(new CustomEvent('spaces-direct-tab', { detail: 'add' })), 0) }}><Icon name="plus" /><span>Add Friend</span></button>
+                <button className={`sidebar-item ${directCenterOpen && directPageTab === 'friends' && !directConversationId && !directGroupId ? 'active' : ''}`} onClick={() => openDirectPage('friends')}><Icon name="members" /><span>Friends</span><small>{directSidebarCenter.conversations.length}</small></button>
+                <button className={`sidebar-item sidebar-request-row-v54 ${directCenterOpen && directPageTab === 'requests' ? 'active' : ''}`} onClick={() => openDirectPage('requests')}><Icon name="message" /><span>Requests</span>{directSidebarCenter.incomingRequests.length > 0 && <b className="sidebar-request-badge-v54">{directSidebarCenter.incomingRequests.length > 99 ? '99+' : directSidebarCenter.incomingRequests.length}</b>}</button>
+                <button className={`sidebar-item ${directCenterOpen && directPageTab === 'add' ? 'active' : ''}`} onClick={() => openDirectPage('add')}><Icon name="plus" /><span>Add Friend</span></button>
                 <div className="sidebar-dm-list-v54">
                   {sidebarDmItems.map(item => {
                     const unread = sidebarDmUnread(item)
                     const pinned = pinnedDirectKeys.includes(item.key)
-                    return <div className={`sidebar-dm-row-v54 ${item.kind === 'support' ? 'sidebar-support-dm-v54' : ''} ${pinned ? 'is-pinned-v54' : ''}`} key={item.key}>
+                    const active = directCenterOpen && (item.kind === 'support'
+                      ? directPageTab === 'support'
+                      : item.kind === 'direct'
+                        ? directConversationId === item.id
+                        : directGroupId === item.id)
+                    return <div className={`sidebar-dm-row-v54 ${item.kind === 'support' ? 'sidebar-support-dm-v54' : ''} ${pinned ? 'is-pinned-v54' : ''} ${active ? 'active-v55' : ''}`} key={item.key}>
                       <button className="sidebar-dm-open-v54" onClick={() => {
                         if (item.kind === 'support') {
-                          setDirectConversationId(null); setDirectGroupId(null); setDirectCenterOpen(true)
-                          window.setTimeout(() => window.dispatchEvent(new CustomEvent('spaces-direct-tab', { detail: 'support' })), 0)
+                          openDirectPage('support')
                         } else if (item.kind === 'direct') {
-                          setDirectGroupId(null); setDirectConversationId(item.id); setDirectCenterOpen(true)
+                          openDirectPage('friends', item.id)
                         } else {
-                          setDirectConversationId(null); setDirectGroupId(item.id); setDirectCenterOpen(true)
+                          openDirectPage('groups', null, item.id)
                         }
                       }}>
                         {item.kind === 'support' ? <span className="sidebar-support-avatar-v54"><Icon name="shield" size={14}/></span> : item.kind === 'group' ? <span className="sidebar-group-avatar-v54"><Icon name="chat" size={14}/></span> : <Avatar name={item.name} initials={item.initials} src={item.avatarUrl} size={30} accent={item.accent}/>}
@@ -914,7 +963,7 @@ export function AppShell() {
         <footer className="account-dock">
           <button className="account-identity" onClick={() => setAccountMenuOpen(value => !value)} title="Account">
             <span className="account-avatar-wrap"><Avatar name={profile?.displayName} initials={profile?.initials} src={profile?.avatarUrl} size={36} /><i className={`presence-symbol dock-presence presence-${effectivePresence}`} /></span>
-            <span><strong>{profile?.displayName}</strong><small>{preferences.customStatus ? `${preferences.customStatus}${profile?.platformRole ? ` · ${platformRoleLabel(profile.platformRole)}` : ''}` : `@${profile?.username}${profile?.platformRole ? ` · ${platformRoleLabel(profile.platformRole)}` : ''}`}</small></span>
+            <span><span className="account-name-line-v55"><strong>{profile?.displayName}</strong>{profile?.platformRole && <span className={`platform-verified-v55 compact platform-${profile.platformRole}`} title={`${platformRoleLabel(profile.platformRole)} · verified by Spaces`}><Icon name="shield" size={9}/>VERIFIED</span>}</span><small>{preferences.customStatus ? `${preferences.customStatus}${profile?.platformRole ? ` · ${platformRoleLabel(profile.platformRole)}` : ''}` : `@${profile?.username}${profile?.platformRole ? ` · ${platformRoleLabel(profile.platformRole)}` : ''}`}</small></span>
           </button>
           <button className="icon-button" title="Account settings" onClick={() => { setAccountMenuOpen(false); setProfileDialog('profile') }}><Icon name="settings" size={16} /></button>
         </footer>
@@ -923,7 +972,7 @@ export function AppShell() {
 
       <main className="main-stage">
         <header className="topbar">
-          <div className="topbar-left"><button className={`mobile-menu-button nav-arrow-toggle-v19 ${mobileNavOpen ? 'open' : 'closed'}`} aria-label={mobileNavOpen ? 'Close Space navigation' : 'Open Space navigation'} aria-expanded={mobileNavOpen} onClick={() => setMobileNavOpen(!mobileNavOpen)}><Icon name="chevron" size={17} /></button>{activeWorkspace && <button className={`desktop-nav-toggle nav-arrow-toggle-v19 ${channelNavCollapsed ? 'collapsed' : 'expanded'}`} aria-label={channelNavCollapsed ? 'Show Space navigation' : 'Hide Space navigation'} aria-expanded={!channelNavCollapsed} title={channelNavCollapsed ? 'Show Space navigation' : 'Hide Space navigation'} onClick={() => setChannelNavCollapsed(value => !value)}><Icon name="chevron" size={16}/></button>}{activeWorkspace ? <><span className="topbar-symbol"><Icon name={view === 'notes' ? 'notes' : view === 'chat' ? 'hash' : navItems.find(item => item.view === view)?.icon ?? 'home'} size={18} /></span><div><strong>{view === 'chat' || view === 'notes' ? activeChannel?.name ?? activeWorkspace.name : navItems.find(item => item.view === view)?.label ?? 'Overview'}</strong><span>{cleanThreadDescription(activeChannel?.description) || activeWorkspace.description || 'Spaces'}</span></div></> : <><span className="topbar-symbol"><Icon name="home" /></span><div><strong>Home</strong><span>Everything, one layer up.</span></div></>}</div>
+          <div className="topbar-left"><button className={`mobile-menu-button nav-arrow-toggle-v19 ${mobileNavOpen ? 'open' : 'closed'}`} aria-label={mobileNavOpen ? 'Close Space navigation' : 'Open Space navigation'} aria-expanded={mobileNavOpen} onClick={() => setMobileNavOpen(!mobileNavOpen)}><Icon name="chevron" size={17} /></button>{activeWorkspace && <button className={`desktop-nav-toggle nav-arrow-toggle-v19 ${channelNavCollapsed ? 'collapsed' : 'expanded'}`} aria-label={channelNavCollapsed ? 'Show Space navigation' : 'Hide Space navigation'} aria-expanded={!channelNavCollapsed} title={channelNavCollapsed ? 'Show Space navigation' : 'Hide Space navigation'} onClick={() => setChannelNavCollapsed(value => !value)}><Icon name="chevron" size={16}/></button>}{activeWorkspace ? <><span className="topbar-symbol"><Icon name={view === 'notes' ? 'notes' : view === 'chat' ? 'hash' : navItems.find(item => item.view === view)?.icon ?? 'home'} size={18} /></span><div><strong>{view === 'chat' || view === 'notes' ? activeChannel?.name ?? activeWorkspace.name : navItems.find(item => item.view === view)?.label ?? 'Overview'}</strong><span>{cleanThreadDescription(activeChannel?.description) || activeWorkspace.description || 'Spaces'}</span></div></> : directCenterOpen ? <><span className="topbar-symbol"><Icon name={directPageTab === 'support' ? 'shield' : directPageTab === 'groups' ? 'chat' : directPageTab === 'requests' ? 'message' : directPageTab === 'add' ? 'plus' : 'members'} /></span><div><strong>{directConversationId ? (directSidebarCenter.conversations.find(item => item.id === directConversationId)?.person.displayName ?? 'Direct Message') : directGroupId ? (directSidebarCenter.groups.find(item => item.id === directGroupId)?.name ?? 'Group Chat') : directPageTab === 'support' ? 'Support Replys' : directPageTab === 'requests' ? 'Requests' : directPageTab === 'groups' ? 'Group Chats' : directPageTab === 'add' ? 'Add Friend' : 'Friends'}</strong><span>Friends & Messages</span></div></> : <><span className="topbar-symbol"><Icon name="home" /></span><div><strong>Home</strong><span>Everything, one layer up.</span></div></>}</div>
           <div className="topbar-actions">
             <button className="search-pill" onClick={() => setCommandOpen(true)}><Icon name="search" size={15} /><span>Search Spaces</span><kbd>Ctrl K</kbd></button>
             <button className={`icon-button topbar-icon notification-button ${notificationOpen ? 'active' : ''}`} title="Notifications" onClick={() => { setMobileNavOpen(false); setNotificationOpen(value => !value) }}><Icon name="bell" size={17}/>{visibleNotifications.length > 0 && <i>{visibleNotifications.length > 9 ? '9+' : visibleNotifications.length}</i>}</button>
@@ -932,14 +981,14 @@ export function AppShell() {
         </header>
 
         <section className="view-host">
-          <div className="view-transition-frame" key={`${activeWorkspaceId || 'spaces-home'}:${view}:${activeChannel?.id ?? 'none'}`}>
-            {workspaceLoading ? <div className="space-loading-placeholder-v44"><div><div className="space-loading-brand-v44"><SpacesLogo/><strong>{activeWorkspace?.name ?? 'Spaces'}</strong></div><div className="space-loading-lines-v44"><i/><i/><i/></div></div></div> : renderView(view, Boolean(activeWorkspaceId))}
+          <div className="view-transition-frame" key={`${activeWorkspaceId || 'spaces-home'}:${directCenterOpen && !activeWorkspaceId ? 'direct' : view}:${activeChannel?.id ?? 'none'}`}>
+            {workspaceLoading ? <div className="space-loading-placeholder-v44"><div><div className="space-loading-brand-v44"><SpacesLogo/><strong>{activeWorkspace?.name ?? 'Spaces'}</strong></div><div className="space-loading-lines-v44"><i/><i/><i/></div></div></div> : directCenterOpen && !activeWorkspaceId ? <DirectMessagesCenter embedded initialTab={directPageTab} initialConversationId={directConversationId} initialGroupId={directGroupId} onClose={openSpacesHome} /> : renderView(view, Boolean(activeWorkspaceId))}
           </div>
         </section>
       </main>
 
       <nav className="mobile-homebar" aria-label="Spaces navigation">
-        <button className={!activeWorkspaceId ? 'active' : ''} onClick={goHome}><Icon name="home" size={19} /><span>Home</span></button>
+        <button className={!activeWorkspaceId && !directCenterOpen ? 'active' : ''} onClick={openSpacesHome}><Icon name="home" size={19} /><span>Home</span></button>
         <button className={mobileNavOpen || Boolean(activeWorkspaceId) ? 'active' : ''} onClick={() => setMobileNavOpen(!mobileNavOpen)}><Icon name="grid" size={19} /><span>Spaces</span></button>
         <button className={profileDialog ? 'active' : ''} onClick={() => setProfileDialog('profile')}><Icon name="settings" size={19} /><span>Settings</span></button>
       </nav>
@@ -953,7 +1002,6 @@ export function AppShell() {
 
       {profileDialog && <PersonalSettings initialTab={profileDialog} onClose={() => setProfileDialog(null)} />}
       {supportConsoleOpen && <SupportConsole onClose={() => setSupportConsoleOpen(false)} onOpenSecurity={() => { setSupportConsoleOpen(false); setProfileDialog('security') }} />}
-      {directCenterOpen && <DirectMessagesCenter initialConversationId={directConversationId} initialGroupId={directGroupId} onClose={() => { setDirectCenterOpen(false); setDirectConversationId(null); setDirectGroupId(null) }} />}
       {workspacePrivacyOpen && <WorkspacePrivacyModal workspaceId={workspacePrivacyOpen.id} workspaceName={workspacePrivacyOpen.name} onClose={() => setWorkspacePrivacyOpen(null)} />}
       {selectedRailMember && <MemberProfileDrawer memberId={selectedRailMember} onClose={() => setSelectedRailMember(null)} />}
 

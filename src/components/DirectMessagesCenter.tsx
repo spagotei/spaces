@@ -11,10 +11,12 @@ import type {
   WorkspaceDirectGroup,
   WorkspaceDirectGroupMessage,
   WorkspaceDirectMessage,
+  WorkspacePlatformRole,
 } from '../types/spaces'
 import { timeAgo } from '../utils/format'
+import { platformRoleLabel } from '../utils/permissions'
 
-type DirectTab = 'friends' | 'support' | 'requests' | 'groups' | 'add'
+export type DirectTab = 'friends' | 'support' | 'requests' | 'groups' | 'add'
 
 type SupportInboxMessage = {
   id: string
@@ -42,10 +44,14 @@ export function DirectMessagesCenter({
   onClose,
   initialConversationId = null,
   initialGroupId = null,
+  initialTab = 'friends',
+  embedded = false,
 }: {
   onClose: () => void
   initialConversationId?: string | null
   initialGroupId?: string | null
+  initialTab?: DirectTab
+  embedded?: boolean
 }) {
   const {
     apiUrl,
@@ -64,7 +70,7 @@ export function DirectMessagesCenter({
   } = useSpaces()
   const { preferences } = usePreferences()
   const [center, setCenter] = useState<WorkspaceDirectCenter>(emptyCenter)
-  const [tab, setTab] = useState<DirectTab>('friends')
+  const [tab, setTab] = useState<DirectTab>(initialTab)
   const [selectedId, setSelectedId] = useState<string | null>(initialConversationId)
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(initialGroupId)
   const [messages, setMessages] = useState<WorkspaceDirectMessage[]>([])
@@ -98,6 +104,14 @@ export function DirectMessagesCenter({
   const supportUnread = supportMessages.filter(
     item => item.direction === 'incoming' && !item.readAt,
   ).length
+
+  useEffect(() => {
+    setSelectedId(initialConversationId)
+    setSelectedGroupId(initialGroupId)
+    if (initialConversationId) setTab('friends')
+    else if (initialGroupId) setTab('groups')
+    else setTab(initialTab)
+  }, [initialConversationId, initialGroupId, initialTab])
 
   async function supportRequest<T>(path: string, init?: RequestInit): Promise<T> {
     const headers = new Headers(init?.headers)
@@ -417,9 +431,11 @@ export function DirectMessagesCenter({
       subtitle="Friends, requests, direct messages, Support replies, and private group chats."
       onClose={onClose}
       wide
+      embedded={embedded}
+      hideHeader={embedded}
     >
-      <div className="direct-center-v23 direct-center-v43 direct-center-v53">
-        <aside className="direct-center-sidebar-v23 direct-center-sidebar-v43">
+      <div className={`direct-center-v23 direct-center-v43 direct-center-v53 ${embedded ? 'direct-center-embedded-v55' : ''}`}>
+        {!embedded && <aside className="direct-center-sidebar-v23 direct-center-sidebar-v43">
           <button
             className={tab === 'friends' ? 'active' : ''}
             onClick={() => selectTab('friends')}
@@ -461,7 +477,7 @@ export function DirectMessagesCenter({
             <Icon name="plus" size={16} />
             <span>Add Friend</span>
           </button>
-        </aside>
+        </aside>}
 
         <section className="direct-center-main-v23">
           {tab === 'support' ? (
@@ -488,6 +504,7 @@ export function DirectMessagesCenter({
                 initials: profile?.initials ?? 'Y',
                 avatarUrl: profile?.avatarUrl ?? null,
                 accent: profile?.profileAccent,
+                platformRole: profile?.platformRole ?? null,
               }}
               onAccept={() => void accept(selected)}
               onDecline={() => void decline(selected)}
@@ -619,7 +636,7 @@ export function DirectMessagesCenter({
                             accent={item.person.profileAccent}
                           />
                           <div>
-                            <strong>{item.person.displayName}</strong>
+                            <span className="direct-name-with-badge-v55"><strong>{item.person.displayName}</strong><PlatformVerifiedBadge role={item.person.platformRole} compact /></span>
                             <span>@{item.person.username}</span>
                             <small>Requested {timeAgo(item.updatedAt)}</small>
                           </div>
@@ -662,7 +679,7 @@ export function DirectMessagesCenter({
                             accent={item.person.profileAccent}
                           />
                           <span>
-                            <strong>{item.person.displayName}</strong>
+                            <span className="direct-name-with-badge-v55"><strong>{item.person.displayName}</strong><PlatformVerifiedBadge role={item.person.platformRole} compact /></span>
                             <small>@{item.person.username}</small>
                           </span>
                           <em>Pending</em>
@@ -698,7 +715,7 @@ export function DirectMessagesCenter({
                         accent={item.person.profileAccent}
                       />
                       <span>
-                        <strong>{item.person.displayName}</strong>
+                        <span className="direct-name-with-badge-v55"><strong>{item.person.displayName}</strong><PlatformVerifiedBadge role={item.person.platformRole} compact /></span>
                         <small>
                           @{item.person.username}
                           {item.lastMessage ? ` · ${item.lastMessage}` : ''}
@@ -948,7 +965,7 @@ function GroupThread({
                   accent={sender?.profileAccent}
                 />
                 <div className="direct-message-copy-v28">
-                  <strong>{message.senderName}</strong>
+                  <div className="direct-message-author-v55"><strong>{message.senderName}</strong><PlatformVerifiedBadge role={sender?.platformRole ?? null} compact /></div>
                   <p>{message.body}</p>
                   <time>{timeAgo(message.createdAt)}</time>
                 </div>
@@ -1012,6 +1029,7 @@ function DirectThread({
     initials: string
     avatarUrl: string | null
     accent?: string
+    platformRole: WorkspacePlatformRole
   }
   onAccept: () => void
   onDecline: () => void
@@ -1038,6 +1056,7 @@ function DirectThread({
               : ''}
           </span>
         </div>
+        <PlatformVerifiedBadge role={conversation.person.platformRole} />
       </header>
       {incoming ? (
         <div className="direct-request-hero-v23">
@@ -1078,7 +1097,7 @@ function DirectThread({
                       accent={own ? currentUser.accent : conversation.person.profileAccent}
                     />
                     <div className="direct-message-copy-v28">
-                      <strong>{message.senderName}</strong>
+                      <div className="direct-message-author-v55"><strong>{message.senderName}</strong><PlatformVerifiedBadge role={own ? currentUser.platformRole : conversation.person.platformRole} compact /></div>
                       <p>{message.body}</p>
                       <time>{timeAgo(message.createdAt)}</time>
                     </div>
@@ -1117,5 +1136,25 @@ function DirectThread({
         </>
       )}
     </div>
+  )
+}
+
+
+function PlatformVerifiedBadge({
+  role,
+  compact = false,
+}: {
+  role: WorkspacePlatformRole | undefined
+  compact?: boolean
+}) {
+  if (!role) return null
+  return (
+    <span
+      className={`platform-verified-v55 platform-${role} ${compact ? 'compact' : ''}`}
+      title={`${platformRoleLabel(role)} · verified by Spaces`}
+    >
+      <Icon name="shield" size={compact ? 9 : 10} />
+      VERIFIED
+    </span>
   )
 }
