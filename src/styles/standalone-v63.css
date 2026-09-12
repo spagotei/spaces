@@ -1,0 +1,487 @@
+/* Spaces v63 — Discord-like role/member/DM ergonomics without copying Discord's visuals */
+
+.roles-view-v63 .roles-list-panel {
+  width: min(285px, 26vw);
+}
+
+.role-base-row-v63 {
+  border: 1px solid transparent;
+  border-radius: 10px;
+  min-height: 50px;
+}
+
+.role-base-row-v63.active {
+  border-color: color-mix(in srgb, var(--app-accent) 44%, transparent);
+  background: color-mix(in srgb, var(--app-accent) 10%, transparent);
+}
+
+.base-role-standard-editor-v63 .role-identity-card,
+.base-role-standard-editor-v63 .role-toggle-row,
+.base-role-standard-editor-v63 .permission-matrix > section {
+  animation: v63-soft-in 160ms ease both;
+}
+
+.base-role-note-v63 {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin: 10px 0 14px;
+  padding: 10px 12px;
+  border: 1px solid rgba(255,255,255,.065);
+  border-radius: 10px;
+  color: var(--muted);
+  background: rgba(255,255,255,.025);
+  font-size: 12px;
+}
+
+.base-role-members-v63 {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.base-role-member-v63 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 54px;
+  padding: 9px 11px;
+  border: 1px solid rgba(255,255,255,.055);
+  border-radius: 11px;
+  background: rgba(255,255,255,.02);
+}
+
+.base-role-member-v63 > span {
+  min-width: 0;
+  display: grid;
+}
+
+.base-role-member-v63 strong,
+.base-role-member-v63 small {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.base-role-member-v63 small {
+  color: var(--muted);
+}
+
+.members-view-v63 {
+  overflow-x: clip;
+}
+
+.people-grid-v63 {
+  align-items: start;
+}
+
+.people-card-v63 {
+  position: relative;
+  display: block;
+  padding: 0;
+  overflow: visible;
+}
+
+.people-card-main-v63 {
+  width: 100%;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: auto minmax(0,1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 12px 8px;
+  text-align: left;
+  color: inherit;
+  background: transparent;
+  border: 0;
+}
+
+.people-card-main-v63:hover .people-bubble-avatar {
+  transform: translateY(-1px);
+}
+
+.people-name-line-v63 {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 7px;
+}
+
+.people-name-line-v63 strong {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.people-platform-v63 {
+  flex: 0 0 auto;
+  font-size: 8px;
+  font-style: normal;
+  font-weight: 700;
+  letter-spacing: .05em;
+  opacity: .74;
+}
+
+.people-role-line-v63 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 10px 10px 70px;
+  min-height: 30px;
+}
+
+.people-role-chips-v63 {
+  min-width: 0;
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  overflow: hidden;
+}
+
+.people-role-chip-v63,
+.people-role-more-v63 {
+  flex: 0 1 auto;
+  max-width: 120px;
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 7px;
+  border: 1px solid rgba(255,255,255,.065);
+  border-radius: 999px;
+  font-size: 10px;
+  color: var(--muted);
+  background: rgba(255,255,255,.025);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.people-role-chip-v63 i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex: 0 0 auto;
+}
+
+.people-role-add-v63 {
+  flex: 0 0 auto;
+  width: 27px;
+  height: 27px;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,.08);
+  background: rgba(255,255,255,.035);
+  color: var(--muted);
+}
+
+.people-role-add-v63:hover {
+  color: var(--text);
+  border-color: rgba(255,255,255,.16);
+  background: rgba(255,255,255,.07);
+  transform: translateY(-1px);
+}
+
+.people-role-picker-scrim-v63 {
+  position: fixed;
+  inset: 0;
+  z-index: 139;
+  border: 0;
+  background: transparent;
+}
+
+.people-role-picker-v63 {
+  position: absolute;
+  z-index: 140;
+  right: 9px;
+  top: calc(100% - 6px);
+  width: min(300px, calc(100vw - 24px));
+  max-height: 340px;
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,.09);
+  border-radius: 13px;
+  background: color-mix(in srgb, var(--panel) 96%, #000 4%);
+  box-shadow: 0 24px 70px rgba(0,0,0,.42);
+  animation: v63-pop 150ms cubic-bezier(.2,.8,.2,1);
+}
+
+.people-role-picker-v63 > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 9px;
+  padding: 10px 11px;
+  border-bottom: 1px solid rgba(255,255,255,.06);
+}
+
+.people-role-picker-v63 > header > div {
+  display: grid;
+}
+
+.people-role-picker-v63 > header button {
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+}
+
+.people-role-picker-v63 > div {
+  max-height: 280px;
+  overflow: auto;
+  padding: 6px;
+}
+
+.people-role-picker-v63 > div > button {
+  width: 100%;
+  display: grid;
+  grid-template-columns: auto minmax(0,1fr) auto;
+  align-items: center;
+  gap: 9px;
+  padding: 8px 9px;
+  border: 1px solid transparent;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--text);
+  text-align: left;
+}
+
+.people-role-picker-v63 > div > button:hover:not(:disabled),
+.people-role-picker-v63 > div > button.active {
+  background: rgba(255,255,255,.045);
+  border-color: rgba(255,255,255,.06);
+}
+
+.people-role-picker-v63 > div > button > i {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+}
+
+.people-role-picker-v63 > div > button > span {
+  min-width: 0;
+  display: grid;
+}
+
+.people-role-picker-v63 small {
+  color: var(--muted);
+}
+
+.member-profile-drawer.profile-clean-v63 {
+  width: min(376px, calc(100vw - 24px));
+}
+
+.profile-clean-v63 .drawer-role-picker,
+.profile-clean-v63 .platform-access-section-v16 {
+  display: none !important;
+}
+
+.profile-clean-v63 .drawer-actions {
+  position: sticky;
+  bottom: 0;
+  z-index: 3;
+  padding: 10px 0 2px;
+  background: linear-gradient(180deg, transparent, color-mix(in srgb, var(--panel) 96%, #000 4%) 24%);
+}
+
+.direct-thread-v63 > header {
+  position: sticky;
+  top: 0;
+  z-index: 4;
+  min-height: 62px;
+  backdrop-filter: blur(18px);
+  background: color-mix(in srgb, var(--panel) 87%, transparent);
+}
+
+.direct-thread-tools-v63 {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.direct-thread-tool-v63 {
+  position: relative;
+  min-width: 34px;
+  height: 34px;
+  display: inline-grid;
+  place-items: center;
+  border: 1px solid transparent;
+  border-radius: 9px;
+  color: var(--muted);
+  background: transparent;
+}
+
+.direct-thread-tool-v63:hover,
+.direct-thread-tool-v63.active {
+  color: var(--text);
+  background: rgba(255,255,255,.05);
+  border-color: rgba(255,255,255,.07);
+}
+
+.direct-thread-tool-v63 > small {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  min-width: 15px;
+  height: 15px;
+  display: grid;
+  place-items: center;
+  border-radius: 99px;
+  padding: 0 4px;
+  background: var(--app-accent);
+  color: #fff;
+  font-size: 8px;
+  font-weight: 800;
+}
+
+.direct-pins-popover-v63 {
+  position: absolute;
+  z-index: 12;
+  top: 56px;
+  right: 10px;
+  width: min(360px, calc(100vw - 30px));
+  max-height: min(430px, 60vh);
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,.09);
+  border-radius: 13px;
+  background: color-mix(in srgb, var(--panel) 97%, #000 3%);
+  box-shadow: 0 24px 80px rgba(0,0,0,.46);
+  animation: v63-pop 150ms cubic-bezier(.2,.8,.2,1);
+}
+
+.direct-pins-popover-v63 > header {
+  position: static;
+  min-height: unset;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 11px;
+  border-bottom: 1px solid rgba(255,255,255,.06);
+  background: transparent;
+}
+
+.direct-pins-popover-v63 > header > div {
+  display: grid;
+}
+
+.direct-pins-list-v63 {
+  max-height: 360px;
+  overflow: auto;
+  padding: 7px;
+}
+
+.direct-pin-item-v63 {
+  display: grid;
+  grid-template-columns: auto minmax(0,1fr) auto;
+  gap: 9px;
+  align-items: start;
+  padding: 9px;
+  border-radius: 10px;
+}
+
+.direct-pin-item-v63:hover {
+  background: rgba(255,255,255,.035);
+}
+
+.direct-pin-item-v63 > div {
+  min-width: 0;
+}
+
+.direct-pin-item-v63 strong,
+.direct-pin-item-v63 p {
+  overflow-wrap: anywhere;
+}
+
+.direct-pin-item-v63 p {
+  margin: 3px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.direct-message-row-v28 {
+  position: relative;
+}
+
+.dm-message-pin-v63 {
+  position: absolute;
+  right: 8px;
+  top: 7px;
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(255,255,255,.06);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--panel) 92%, transparent);
+  color: var(--muted);
+  opacity: 0;
+  transform: translateY(-2px);
+}
+
+.direct-message-row-v28:hover .dm-message-pin-v63,
+.dm-message-pin-v63.pinned {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.dm-message-pin-v63.pinned {
+  color: var(--app-accent);
+}
+
+.support-v48-team-row .remove-team-v63 {
+  border-color: rgba(239,68,68,.22);
+}
+
+@keyframes v63-pop {
+  from { opacity: 0; transform: translateY(-5px) scale(.985); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes v63-soft-in {
+  from { opacity: 0; transform: translateY(3px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (max-width: 900px) {
+  .roles-view-v63 .roles-list-panel {
+    width: 100%;
+  }
+
+  .people-role-line-v63 {
+    padding-left: 12px;
+  }
+
+  .people-role-picker-v63 {
+    position: fixed;
+    left: 10px;
+    right: 10px;
+    top: auto;
+    bottom: max(10px, env(safe-area-inset-bottom));
+    width: auto;
+    max-height: min(65vh, 520px);
+  }
+
+  .direct-pins-popover-v63 {
+    position: fixed;
+    left: 10px;
+    right: 10px;
+    top: auto;
+    bottom: max(10px, env(safe-area-inset-bottom));
+    width: auto;
+    max-height: min(65vh, 520px);
+  }
+}
+
+html[data-motion='reduced'] .people-role-picker-v63,
+html[data-motion='reduced'] .direct-pins-popover-v63,
+html[data-motion='reduced'] .base-role-standard-editor-v63 * {
+  animation: none !important;
+  transition: none !important;
+}

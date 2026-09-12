@@ -331,7 +331,7 @@ export function RolesView() {
   const dragSourceIndex = roles.findIndex(role => role.id === dragRoleId)
 
   return (
-    <div className="roles-view roles-view-v2 roles-view-v9 roles-view-v14 roles-view-v40 page-enter">
+    <div className="roles-view roles-view-v2 roles-view-v9 roles-view-v14 roles-view-v40 roles-view-v63 page-enter">
       <aside className="roles-list-panel">
         <header><div><span className="eyebrow">ROLE HIERARCHY</span><h2>Roles</h2></div></header>
 
@@ -343,9 +343,9 @@ export function RolesView() {
         )}
 
         <div className="hierarchy-stack role-hierarchy-v14">
-          <button className={`protected-role-row owner ${baseRole === 'owner' ? 'active' : ''}`} onClick={() => selectBase('owner')}>
-            <i className="role-swatch owner" style={{ background: data?.baseRoles?.owner.color ?? '#b58ad8' }}/>
-            <span><strong>{baseLabels.owner}</strong></span><Icon name="lock" size={13}/>
+          <button className={`custom-hierarchy-row role-base-row-v63 ${baseRole === 'owner' ? 'active' : ''}`} onClick={() => selectBase('owner')}>
+            <span className="role-swatch" style={{ background: data?.baseRoles?.owner.color ?? '#b58ad8' }}/>
+            <span><strong>{baseLabels.owner}</strong><small>Base role · Space owner</small></span><Icon name="chevron" size={14}/>
           </button>
 
           {roles.map((role, roleIndex) => {
@@ -368,45 +368,64 @@ export function RolesView() {
 
           <button
             data-role-member-drop="true"
-            className={`protected-role-row member ${baseRole === 'member' ? 'active' : ''} ${dragOverRoleId === '__member__' ? 'drag-over-v33' : ''}`}
+            className={`custom-hierarchy-row role-base-row-v63 ${baseRole === 'member' ? 'active' : ''} ${dragOverRoleId === '__member__' ? 'drag-over-v33' : ''}`}
             onClick={() => { if (roleClickSuppressed()) return; selectBase('member') }}
           >
-            <i className="role-swatch member"/>
-            <span><strong>{baseLabels.member}</strong></span><Icon name="lock" size={12}/>
+            <span className="role-swatch" style={{ background: data?.baseRoles?.member.color ?? '#8b6ca8' }}/>
+            <span><strong>{baseLabels.member}</strong><small>Base role · Everyone else</small></span><Icon name="chevron" size={14}/>
           </button>
         </div>
       </aside>
 
       <section className="role-editor-panel">
         {baseRole ? (
-          <>
-            <div className="content-heading compact-heading">
-              <div><span className="eyebrow">BASE ROLE</span><h1>{baseLabel}</h1></div>
-              <span className="protected-role-badge"><Icon name="lock" size={13}/>Protected</span>
+          <div className="base-role-standard-editor-v63">
+            <div className="content-heading compact-heading role-heading-v14">
+              <div><span className="eyebrow">EDIT ROLE</span><h1>{baseLabel}</h1></div>
             </div>
 
-            {actorIsOwner && <section className="base-role-presentation-v44">
-              <label className="role-color-field"><span>COLOR</span><input type="color" value={basePresentationDraft.color} onChange={event => setBasePresentationDraft(current => ({ ...current, color: event.target.value }))}/><code>{basePresentationDraft.color}</code></label>
-              <button className="primary-button compact" disabled={basePresentationSaving} onClick={() => void saveBasePresentation()}>{basePresentationSaving ? 'Saving…' : 'Save'}</button>
+            <div className="role-editor-tabs" role="tablist" aria-label="Base role editor">
+              <button className={editorTab === 'permissions' ? 'active' : ''} onClick={() => setEditorTab('permissions')}><Icon name="settings" size={14}/><span>Permissions</span></button>
+              <button className={editorTab === 'members' ? 'active' : ''} onClick={() => setEditorTab('members')}><Icon name="members" size={14}/><span>Manage members</span><small>{members.filter(member => baseRole === 'owner' ? member.role === 'owner' : member.role !== 'owner').length}</small></button>
+            </div>
+
+            {editorTab === 'permissions' && <>
+              <section className="role-identity-card role-identity-card-v14">
+                <div className="role-preview-orb" style={{ background: basePresentationDraft.color }}/>
+                <label><span>ROLE NAME</span><input className="text-input" disabled={!actorIsOwner} value={baseLabelDraft || baseLabel} maxLength={32} onFocus={() => !baseLabelDraft && setBaseLabelDraft(baseLabel)} onChange={event => setBaseLabelDraft(event.target.value)}/></label>
+                <label className="role-color-field"><span>COLOR</span><input type="color" disabled={!actorIsOwner} value={basePresentationDraft.color} onChange={event => setBasePresentationDraft(current => ({ ...current, color: event.target.value }))}/><code>{basePresentationDraft.color}</code></label>
+              </section>
+
+              <div className="role-toggle-row">
+                <label><input type="checkbox" disabled={!actorIsOwner} checked={basePresentationDraft.hoist} onChange={event => setBasePresentationDraft(current => ({ ...current, hoist: event.target.checked }))}/><span><strong>Display members separately</strong></span></label>
+                <label><input type="checkbox" disabled={!actorIsOwner} checked={basePresentationDraft.mentionable} onChange={event => setBasePresentationDraft(current => ({ ...current, mentionable: event.target.checked }))}/><span><strong>Allow role mentions</strong></span></label>
+              </div>
+
+              <div className="base-role-note-v63"><Icon name="lock" size={13}/><span>{baseRole === 'owner' ? 'Owner behaves like the other roles in the editor, but it stays permanent and always keeps every Space permission.' : 'Member is the permanent default role. Its core permissions stay protected.'}</span></div>
+
+              <div className="permission-matrix">
+                {groups.map(group => (
+                  <section key={group.title}>
+                    <header><div><strong>{group.title}</strong></div><small>{group.permissions.filter(permission => basePermissions.includes(permission)).length}/{group.permissions.length}</small></header>
+                    <div>{group.permissions.map(permission => {
+                      const [label] = permissionLabels[permission]
+                      const checked = basePermissions.includes(permission)
+                      return <div className={`permission-line ${checked ? 'enabled' : ''}`} key={permission}><div><strong>{label}</strong></div><button type="button" className={`permission-toggle ${checked ? 'on' : ''} locked`} disabled aria-pressed={checked}><i/></button></div>
+                    })}</div>
+                  </section>
+                ))}
+              </div>
+
+              {actorIsOwner && <div className="sticky-save"><span>{baseRole === 'owner' ? 'Owner is permanent · all permissions stay enabled' : 'Base role changes apply to the whole Space'}</span><button className="primary-button" disabled={basePresentationSaving || !(baseLabelDraft || baseLabel).trim()} onClick={() => { saveBaseLabel(); void saveBasePresentation() }}>{basePresentationSaving ? 'Saving…' : 'Save role'}</button></div>}
+            </>}
+
+            {editorTab === 'members' && <section className="role-member-manager">
+              <div className="role-member-manager-head"><div><span className="eyebrow">ROLE MEMBERS</span><h2>{baseLabel}</h2></div></div>
+              <div className="base-role-members-v63">
+                {members.filter(member => baseRole === 'owner' ? member.role === 'owner' : member.role !== 'owner').map(member => <div className="base-role-member-v63" key={member.id}><Avatar name={member.displayName} initials={member.initials} src={member.avatarUrl} size={36}/><span><strong>{member.displayName}</strong><small>@{member.username}</small></span><Icon name="check" size={13}/></div>)}
+              </div>
             </section>}
-
-            {actorIsOwner && <section className="base-role-name-editor-v29"><div><span className="eyebrow">DISPLAY NAME</span><strong>Rename this base role</strong></div><div><input className="text-input" value={baseLabelDraft || baseLabel} maxLength={32} onFocus={() => !baseLabelDraft && setBaseLabelDraft(baseLabel)} onChange={event => setBaseLabelDraft(event.target.value)}/><button className="primary-button compact" disabled={!baseLabelDraft.trim() || baseLabelDraft.trim() === baseLabel} onClick={saveBaseLabel}>Save name</button></div></section>}
-
-            <div className="owner-role-callout"><Icon name="shield" size={22}/><div><strong>{baseRole === 'owner' ? `${baseLabels.owner} stays above every role` : `${baseLabels.member} stays below every role`}</strong></div></div>
-
-            <div className="permission-matrix protected-permission-matrix">
-              {groups.map(group => (
-                <section key={group.title}>
-                  <header><div><strong>{group.title}</strong></div><small>{group.permissions.filter(permission => basePermissions.includes(permission)).length}/{group.permissions.length}</small></header>
-                  <div>{group.permissions.map(permission => {
-                    const [label] = permissionLabels[permission]
-                    const checked = basePermissions.includes(permission)
-                    return <div className={`permission-line ${checked ? 'enabled' : ''}`} key={permission}><div><strong>{label}</strong></div><span className={`permission-toggle ${checked ? 'on' : ''} locked`}><i/></span></div>
-                  })}</div>
-                </section>
-              ))}
-            </div>
-          </>
+          </div>
         ) : (
           <>
             <div className="content-heading compact-heading role-heading-v14">

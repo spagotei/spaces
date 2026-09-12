@@ -2,10 +2,12 @@ import { useEffect, useMemo, useState } from 'react'
 import { Avatar } from './Avatar'
 import { Icon } from './Icon'
 import { Modal } from './Modal'
+import { useAppDialog } from './AppDialog'
 import { ContextMenu, useContextMenu } from './ContextMenu'
 import { useSpaces } from '../state/SpacesContext'
 import { usePreferences } from '../state/PreferencesContext'
 import { useBlockedUserIds } from '../hooks/useBlockedUsers'
+import { blockUser, unblockUser } from '../api/social-api'
 import { dismissNotifications } from '../utils/notification-read'
 import { playSpacesSupportSound } from '../utils/notification-sound'
 import type {
@@ -40,6 +42,16 @@ type DirectCenterV59 = Omit<WorkspaceDirectCenter, 'conversations' | 'groups'> &
   conversations: DirectConversationV59[]
   groups: DirectGroupV59[]
   supportThread: SupportDirectThreadV59 | null
+}
+
+type PinnedDirectMessage = {
+  id: string
+  senderUserId: string
+  senderName: string
+  body: string
+  createdAt: number
+  pinnedBy: string
+  pinnedAt: number
 }
 
 type SupportInboxMessage = {
@@ -78,6 +90,7 @@ export function DirectMessagesCenter({
   initialTab?: DirectTab
   embedded?: boolean
 }) {
+  const dialog = useAppDialog()
   const {
     apiUrl,
     session,
@@ -91,6 +104,7 @@ export function DirectMessagesCenter({
     createDirectGroup,
     listDirectGroupMessages,
     sendDirectGroupMessage,
+    reportUser,
     pushToast,
   } = useSpaces()
   const { preferences } = usePreferences()
@@ -112,6 +126,8 @@ export function DirectMessagesCenter({
   const [creatingGroup, setCreatingGroup] = useState(false)
   const [busy, setBusy] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [pinnedMessages, setPinnedMessages] = useState<PinnedDirectMessage[]>([])
+  const [pinsOpen, setPinsOpen] = useState(false)
   const threadMenu = useContextMenu()
 
   const selected = useMemo(() => {
@@ -141,11 +157,20 @@ export function DirectMessagesCenter({
   }, [initialConversationId, initialGroupId, initialTab])
 
   useEffect(() => {
-    if (selectedId) dismissNotifications({ conversationId: selectedId, kind: 'direct' })
+    if (selectedId) {
+      dismissNotifications({ conversationId: selectedId, kind: 'direct' })
+      void loadPins('dm', selectedId)
+    } else if (!selectedGroupId) {
+      setPinnedMessages([])
+      setPinsOpen(false)
+    }
   }, [selectedId])
 
   useEffect(() => {
-    if (selectedGroupId) dismissNotifications({ groupId: selectedGroupId, kind: 'group' })
+    if (selectedGroupId) {
+      dismissNotifications({ groupId: selectedGroupId, kind: 'group' })
+      void loadPins('group', selectedGroupId)
+    }
   }, [selectedGroupId])
 
   useEffect(() => {
@@ -464,6 +489,82 @@ export function DirectMessagesCenter({
   }
 
 
+  async function loadPins(kind: 'dm' | 'group', threadId: string) {
+    try {
+      setPinnedMessages(await supportRequest<PinnedDirectMessage[]>(`/v1/direct/pins/${kind}/${encodeURIComponent(threadId)}`))
+    } catch {
+      setPinnedMessages([])
+    }
+  }
+
+  async function toggleMessagePin(kind: 'dm' | 'group', threadId: string, messageId: string) {
+    const pinned = pinnedMessages.some(item => item.id === messageId)
+    try {
+      await supportRequest(`/v1/direct/pins/${kind}/${encodeURIComponent(threadId)}/${encodeURIComponent(messageId)}`, {
+        method: pinned ? 'DELETE' : 'PUT',
+      })
+      await loadPins(kind, threadId)
+      pushToast(pinned ? 'Message unpinned.' : 'Message pinned.', 'success')
+    } catch (error) {
+      pushToast(error instanceof Error ? error.message : 'Could not update the pin.', 'danger')
+    }
+  }
+
+  async function reportDirectPerson(userId: string, displayName: string) {
+    const reason = await dialog.prompt({
+      title: `Report ${displayName}`,
+      message: 'Tell Spaces what happened. Reports are reviewed by the Support team.',
+      label: 'Reason',
+      placeholder: 'Harassment, spam, impersonation…',
+      maxLength: 120,
+      confirmText: 'Continue',
+      danger: true,
+    })
+    if (!reason) return
+
+    const details = await dialog.prompt({
+      title: 'Add details',
+      message: 'Include any context that would help review this report.',
+      label: 'Details',
+      placeholder: 'What happened?',
+      maxLength: 900,
+      confirmText: 'Send report',
+      danger: true,
+    })
+    if (!details) return
+
+    try {
+      await reportUser(userId, reason, details)
+      pushToast('Report sent to Spaces moderation.', 'success')
+    } catch (error) {
+      pushToast(error instanceof Error ? error.message : 'Could not send report.', 'danger')
+    }
+  }
+
+  async function toggleDirectBlock(userId: string, displayName: string) {
+    if (!session?.token) return
+    const blocked = blockedUserIds.includes(userId)
+
+    if (!blocked) {
+      const confirmed = await dialog.confirm({
+        title: `Block ${displayName}?`,
+        message: 'Their shared-Space messages stay hidden unless you reveal them. Direct contact and friend requests stop until you unblock them.',
+        confirmText: 'Block',
+        danger: true,
+      })
+      if (!confirmed) return
+    }
+
+    try {
+      if (blocked) await unblockUser(session.token, userId)
+      else await blockUser(session.token, userId)
+      await reload()
+      pushToast(blocked ? `${displayName} unblocked.` : `${displayName} blocked.`, 'success')
+    } catch (error) {
+      pushToast(error instanceof Error ? error.message : 'Could not update block.', 'danger')
+    }
+  }
+
   async function updateThreadPreference(
     kind: 'dm' | 'group' | 'support',
     id: string,
@@ -493,6 +594,11 @@ export function DirectMessagesCenter({
     item: ThreadPreferenceV59,
   ) {
     const muted = Boolean(item.mutedUntil && item.mutedUntil > Date.now())
+    const conversation = kind === 'dm'
+      ? [...center.conversations, ...center.incomingRequests, ...center.outgoingRequests].find(row => row.id === id)
+      : null
+    const blocked = Boolean(conversation && blockedUserIds.includes(conversation.person.id))
+
     return [
       {
         id: 'pin',
@@ -508,38 +614,84 @@ export function DirectMessagesCenter({
             icon: 'bell' as const,
             onSelect: () => updateThreadPreference(kind, id, { unmute: true }),
           }]
-        : [
-            {
-              id: 'mute-1h',
-              label: 'Mute for 1 hour',
-              icon: 'bell' as const,
-              onSelect: () => updateThreadPreference(kind, id, { muteMinutes: 60 }),
-            },
-            {
-              id: 'mute-8h',
-              label: 'Mute for 8 hours',
-              icon: 'bell' as const,
-              onSelect: () => updateThreadPreference(kind, id, { muteMinutes: 480 }),
-            },
-            {
-              id: 'mute-24h',
-              label: 'Mute for 24 hours',
-              icon: 'bell' as const,
-              onSelect: () => updateThreadPreference(kind, id, { muteMinutes: 1440 }),
-            },
-            {
-              id: 'mute-forever',
-              label: 'Mute until I turn it back on',
-              icon: 'bell' as const,
-              onSelect: () => updateThreadPreference(kind, id, { muteMinutes: -1 }),
-            },
-          ]),
+        : [{
+            id: 'mute-1h',
+            label: 'Mute for 1 hour',
+            icon: 'bell' as const,
+            onSelect: () => updateThreadPreference(kind, id, { muteMinutes: 60 }),
+          }, {
+            id: 'mute-8h',
+            label: 'Mute for 8 hours',
+            icon: 'bell' as const,
+            onSelect: () => updateThreadPreference(kind, id, { muteMinutes: 480 }),
+          }, {
+            id: 'mute-24h',
+            label: 'Mute for 24 hours',
+            icon: 'bell' as const,
+            onSelect: () => updateThreadPreference(kind, id, { muteMinutes: 1440 }),
+          }, {
+            id: 'mute-forever',
+            label: 'Mute until I turn it back on',
+            icon: 'bell' as const,
+            onSelect: () => updateThreadPreference(kind, id, { muteMinutes: -1 }),
+          }]),
+      ...(conversation ? [{
+        id: 'report',
+        label: 'Report user',
+        note: 'Send this account to Spaces moderation',
+        icon: 'shield' as const,
+        onSelect: () => reportDirectPerson(conversation.person.id, conversation.person.displayName),
+      }, {
+        id: 'block',
+        label: blocked ? 'Unblock user' : 'Block user',
+        note: blocked ? 'Allow direct contact again' : 'Hide messages and stop direct contact',
+        icon: 'lock' as const,
+        danger: !blocked,
+        checked: blocked,
+        onSelect: () => toggleDirectBlock(conversation.person.id, conversation.person.displayName),
+      }] : []),
       {
         id: 'close',
         label: kind === 'group' ? 'Close group DM' : 'Close DM',
         note: 'It returns if a new message arrives.',
         icon: 'x' as const,
         onSelect: () => updateThreadPreference(kind, id, { closed: true }),
+      },
+    ]
+  }
+
+  function directHeaderActions(conversation: {
+    id: string
+    person: {
+      id: string
+      displayName: string
+      username: string
+    }
+  }) {
+    const blocked = blockedUserIds.includes(conversation.person.id)
+    return [
+      {
+        id: 'report',
+        label: 'Report user',
+        note: 'Send this account to Spaces moderation',
+        icon: 'shield' as const,
+        onSelect: () => reportDirectPerson(conversation.person.id, conversation.person.displayName),
+      },
+      {
+        id: 'block',
+        label: blocked ? 'Unblock user' : 'Block user',
+        note: blocked ? 'Allow direct contact again' : 'Hide messages and stop direct contact',
+        icon: 'lock' as const,
+        danger: !blocked,
+        checked: blocked,
+        onSelect: () => toggleDirectBlock(conversation.person.id, conversation.person.displayName),
+      },
+      {
+        id: 'close',
+        label: 'Close DM',
+        note: 'It returns if a new message arrives.',
+        icon: 'x' as const,
+        onSelect: () => updateThreadPreference('dm', conversation.id, { closed: true }),
       },
     ]
   }
@@ -628,6 +780,13 @@ export function DirectMessagesCenter({
               onAccept={() => void accept(selected)}
               onDecline={() => void decline(selected)}
               blocked={blockedUserIds.includes(selected.person.id)}
+              pinnedMessages={pinnedMessages}
+              pinsOpen={pinsOpen}
+              onPinsOpen={() => setPinsOpen(value => !value)}
+              onPinsClose={() => setPinsOpen(false)}
+              onTogglePin={messageId => void toggleMessagePin('dm', selected.id, messageId)}
+              onReport={() => void reportDirectPerson(selected.person.id, selected.person.displayName)}
+              onMore={(x, y) => threadMenu.open(selected.person.displayName, directHeaderActions(selected), x, y, `@${selected.person.username}`)}
             />
           ) : selectedGroup ? (
             <GroupThread
@@ -1165,6 +1324,13 @@ function DirectThread({
   onAccept,
   onDecline,
   blocked,
+  pinnedMessages,
+  pinsOpen,
+  onPinsOpen,
+  onPinsClose,
+  onTogglePin,
+  onReport,
+  onMore,
 }: {
   conversation: WorkspaceDirectConversation
   messages: WorkspaceDirectMessage[]
@@ -1183,12 +1349,19 @@ function DirectThread({
   onAccept: () => void
   onDecline: () => void
   blocked: boolean
+  pinnedMessages: PinnedDirectMessage[]
+  pinsOpen: boolean
+  onPinsOpen: () => void
+  onPinsClose: () => void
+  onTogglePin: (messageId: string) => void
+  onReport: () => void
+  onMore: (x: number, y: number) => void
 }) {
   const incoming = conversation.status === 'pending' && !conversation.requestedByMe
   const outgoing = conversation.status === 'pending' && conversation.requestedByMe
 
   return (
-    <div className="direct-thread-v23">
+    <div className="direct-thread-v23 direct-thread-v63">
       <header>
         <Avatar
           name={conversation.person.displayName}
@@ -1207,6 +1380,17 @@ function DirectThread({
           </span>
         </div>
         <PlatformVerifiedBadge role={conversation.person.platformRole} />
+        <div className="direct-thread-tools-v63">
+          <button className={`direct-thread-tool-v63 ${pinsOpen ? 'active' : ''}`} title="Pinned messages" onClick={onPinsOpen}><Icon name="pin" size={15}/>{pinnedMessages.length > 0 && <small>{pinnedMessages.length > 9 ? '9+' : pinnedMessages.length}</small>}</button>
+          <button className="direct-thread-tool-v63" title="Report" onClick={onReport}><Icon name="shield" size={15}/></button>
+          <button className="direct-thread-tool-v63" title="More" onClick={event => onMore(event.clientX, event.clientY)}><Icon name="more" size={16}/></button>
+        </div>
+        {pinsOpen && <aside className="direct-pins-popover-v63">
+          <header><div><span className="eyebrow">PINNED</span><strong>Pinned messages</strong></div><button className="icon-button" onClick={onPinsClose}><Icon name="x" size={13}/></button></header>
+          <div className="direct-pins-list-v63">
+            {pinnedMessages.length ? pinnedMessages.map(message => <article className="direct-pin-item-v63" key={message.id}><span className="context-action-icon"><Icon name="pin" size={14}/></span><div><strong>{message.senderName}</strong><p>{message.body}</p></div><button className="icon-button" title="Unpin" onClick={() => onTogglePin(message.id)}><Icon name="x" size={12}/></button></article>) : <div className="direct-empty-v23"><Icon name="pin" size={18}/><strong>No pinned messages</strong><span>Pin an important DM and it will show here.</span></div>}
+          </div>
+        </aside>}
       </header>
       {incoming ? (
         <div className="direct-request-hero-v23">
@@ -1251,6 +1435,7 @@ function DirectThread({
                       <p>{blocked && !own ? <BlockedMessageText body={message.body} /> : message.body}</p>
                       <time>{timeAgo(message.createdAt)}</time>
                     </div>
+                    <button className={`dm-message-pin-v63 ${pinnedMessages.some(item => item.id === message.id) ? 'pinned' : ''}`} title={pinnedMessages.some(item => item.id === message.id) ? 'Unpin message' : 'Pin message'} onClick={() => onTogglePin(message.id)}><Icon name="pin" size={13}/></button>
                   </div>
                 )
               })

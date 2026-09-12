@@ -194,12 +194,20 @@ export function SupportOperationsV48({ mode }: { mode: 'accounts' | 'restriction
   }
 
   async function setTeamRole(user: WorkspaceSupportUser | TeamEntry, role: 'staff' | 'support' | null) {
+    const removing = role === null
     const label = role === 'staff' ? 'Staff' : role === 'support' ? 'Support' : 'Member'
-    if (!await dialog.confirm({ title: `Set ${user.displayName} to ${label}?`, message: 'Only the Founder can change platform team roles. This action is audit logged.', confirmText: `Set ${label}`, danger: role === null })) return
+    if (!await dialog.confirm({
+      title: removing ? `Remove ${user.displayName} from Team?` : `Set ${user.displayName} to ${label}?`,
+      message: removing
+        ? 'This removes Staff/Support platform access and clears their custom Support capabilities. Their normal Spaces account stays intact.'
+        : 'Only the Founder can change platform team roles. This action is audit logged.',
+      confirmText: removing ? 'Remove from Team' : `Set ${label}`,
+      danger: removing,
+    })) return
     setBusy(`role-${user.id}`)
     try {
       await request(`/v1/support/team/${encodeURIComponent(user.id)}`, { method: 'PATCH', body: JSON.stringify({ role }) })
-      pushToast(`${user.displayName} is now ${label}.`, 'success')
+      pushToast(removing ? `${user.displayName} removed from Team.` : `${user.displayName} is now ${label}.`, 'success')
       await loadTeam()
     } catch (error) { pushToast(error instanceof Error ? error.message : 'Could not change team role.', 'danger') }
     finally { setBusy('') }
@@ -263,7 +271,7 @@ export function SupportOperationsV48({ mode }: { mode: 'accounts' | 'restriction
 
       <section className="support-v48-panel">
         <header><div><span className="eyebrow">CURRENT TEAM</span><h4>{team.length} platform team account{team.length === 1 ? '' : 's'}</h4></div></header>
-        <div className="support-v48-team-list">{team.map(member => <article key={member.id} className="support-v48-team-row"><Avatar name={member.displayName} src={member.avatarUrl} size={42}/><div className="support-v48-grow"><strong>{member.displayName}</strong><span>@{member.username} · {formatPublicUserId(member.publicUserId)}</span>{member.email && <small>{member.email} · verified</small>}</div><span className={`support-role-badge platform-${member.platformRole ?? 'support'}`}>{platformRoleLabel(member.platformRole)}</span>{member.platformRole !== 'founder' && <div className="support-v48-actions"><button disabled={busy === `id-${member.id}`} onClick={() => void assignReservedId(member)}><Icon name="copy" size={12}/>Reserved ID</button><button onClick={() => { setPermissionTarget(member); setPermissionDraft(member.permissions) }}><Icon name="shield" size={12}/>Permissions</button><button onClick={() => void setTeamRole(member, member.platformRole === 'staff' ? 'support' : 'staff')}>{member.platformRole === 'staff' ? 'Set Support' : 'Set Staff'}</button><button className="danger-soft" onClick={() => void setTeamRole(member, null)}>Remove team role</button></div>}</article>)}</div>
+        <div className="support-v48-team-list">{team.map(member => <article key={member.id} className="support-v48-team-row"><Avatar name={member.displayName} src={member.avatarUrl} size={42}/><div className="support-v48-grow"><strong>{member.displayName}</strong><span>@{member.username} · {formatPublicUserId(member.publicUserId)}</span>{member.email && <small>{member.email} · verified</small>}</div><span className={`support-role-badge platform-${member.platformRole ?? 'support'}`}>{platformRoleLabel(member.platformRole)}</span>{member.platformRole !== 'founder' && <div className="support-v48-actions"><button disabled={busy === `id-${member.id}`} onClick={() => void assignReservedId(member)}><Icon name="copy" size={12}/>Reserved ID</button><button onClick={() => { setPermissionTarget(member); setPermissionDraft(member.permissions) }}><Icon name="shield" size={12}/>Permissions</button><button onClick={() => void setTeamRole(member, member.platformRole === 'staff' ? 'support' : 'staff')}>{member.platformRole === 'staff' ? 'Set Support' : 'Set Staff'}</button><button className="danger-soft remove-team-v63" onClick={() => void setTeamRole(member, null)}>Remove from Team</button></div>}</article>)}</div>
       </section>
 
       {permissionTarget && <section className="support-v48-panel support-v48-permission-editor"><header><div><span className="eyebrow">PERMISSIONS</span><h4>{permissionTarget.displayName}</h4><p>These are checked on the Worker for every sensitive Support action.</p></div><button className="icon-button" onClick={() => setPermissionTarget(null)} aria-label="Close"><Icon name="x" size={14}/></button></header><div className="support-v48-permission-grid">{ALL_CAPABILITIES.map(item => { const checked = permissionDraft.includes(item.id); return <label key={item.id} className={checked ? 'enabled' : ''}><input type="checkbox" checked={checked} onChange={() => setPermissionDraft(current => checked ? current.filter(id => id !== item.id) : [...current, item.id])}/><span><strong>{item.label}</strong><small>{item.note}</small></span></label> })}</div><div className="support-v48-save"><button className="primary-button" disabled={busy === `perms-${permissionTarget.id}`} onClick={() => void savePermissions()}>Save permissions</button></div></section>}

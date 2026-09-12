@@ -15,12 +15,11 @@ import { blockUser, unblockUser } from '../api/social-api'
 export function MemberProfileDrawer({ memberId, onClose }: { memberId: string; onClose: () => void }) {
   const dialog = useAppDialog()
   const {
-    data, profile, session, setMemberRoles, removeMember, reportUser,
-    pushToast, chooseChannel, setPlatformSupportRole, requestDirectConversation,
+    data, profile, session, removeMember, reportUser,
+    pushToast, chooseChannel, requestDirectConversation,
     getDirectCenter, acceptDirectConversation,
   } = useSpaces()
   const { preferences, effectivePresence } = usePreferences()
-  const [savingRoles, setSavingRoles] = useState(false)
   const [savingAccess, setSavingAccess] = useState(false)
   const [reporting, setReporting] = useState(false)
   const [relationship, setRelationship] = useState<'none' | 'friend' | 'incoming' | 'outgoing'>('none')
@@ -34,9 +33,7 @@ export function MemberProfileDrawer({ memberId, onClose }: { memberId: string; o
   const memberRoles = useMemo(() => roles.filter(role => member?.customRoleIds.includes(role.id)), [member?.customRoleIds, roles])
   const currentMember = members.find(item => item.profileId === profile?.id) ?? null
   const isHubFounder = data?.workspace.id === 'spaces-hub' && profile?.platformRole === 'founder'
-  const canManageRoles = isHubFounder || hasWorkspacePermission(data, profile?.id, 'manage_roles')
   const canManageMembers = isHubFounder || hasWorkspacePermission(data, profile?.id, 'manage_members')
-  const canManagePlatformSupport = profile?.platformRole === 'founder'
   const actorIsOwner = Boolean(currentMember?.role === 'owner' || data?.workspace.ownerId === profile?.id || isHubFounder)
   const actorHighestRolePosition = actorIsOwner
     ? Number.POSITIVE_INFINITY
@@ -53,9 +50,6 @@ export function MemberProfileDrawer({ memberId, onClose }: { memberId: string; o
   const targetIsBelowActor = actorIsOwner || actorHighestRolePosition > targetHighestRolePosition
   const canManageSelected = Boolean(
     member && member.profileId !== profile?.id && member.role !== 'owner' && canManageMembers && targetIsBelowActor,
-  )
-  const canAssignRolesToSelected = Boolean(
-    member && member.profileId !== profile?.id && member.role !== 'owner' && canManageRoles && targetIsBelowActor,
   )
 
   const contributions = useMemo(() => {
@@ -120,22 +114,6 @@ export function MemberProfileDrawer({ memberId, onClose }: { memberId: string; o
     : member.customStatus?.trim() ?? ''
   const isBlocked = blockedUserIds.includes(member.profileId)
   const topRole = memberRoles[0]
-
-  async function toggleRole(roleId: string) {
-    if (!member || !canAssignRolesToSelected) return
-    const role = roles.find(item => item.id === roleId)
-    if (!role || (!actorIsOwner && role.position >= actorHighestRolePosition)) {
-      pushToast('You can only assign roles below your highest role.', 'danger')
-      return
-    }
-    const next = member.customRoleIds.includes(roleId)
-      ? member.customRoleIds.filter(id => id !== roleId)
-      : [...member.customRoleIds, roleId]
-    setSavingRoles(true)
-    try { await setMemberRoles(member.id, next) }
-    catch (error) { pushToast(error instanceof Error ? error.message : 'Could not update roles.', 'danger') }
-    finally { setSavingRoles(false) }
-  }
 
   async function reportMember() {
     if (!member || member.profileId === profile?.id) return
@@ -281,27 +259,11 @@ export function MemberProfileDrawer({ memberId, onClose }: { memberId: string; o
         },
       ]
 
-  async function togglePlatformSupport() {
-    if (!member || !canManagePlatformSupport || member.platformRole === 'founder') return
-    const granting = member.platformRole !== 'support'
-    const confirmed = await dialog.confirm({
-      title: granting ? `Grant Support to ${member.displayName}?` : `Remove Support from ${member.displayName}?`,
-      message: granting ? 'Support can open the platform Support Console and help with non-destructive support tools. Founder and Staff moderation powers remain separate.' : 'Their platform Support Console access will be removed.',
-      confirmText: granting ? 'Grant Support' : 'Remove Support',
-      danger: false,
-    })
-    if (!confirmed) return
-    setSavingAccess(true)
-    try { await setPlatformSupportRole(member.profileId, granting ? 'support' : null) }
-    catch (error) { pushToast(error instanceof Error ? error.message : 'Could not update platform access.', 'danger') }
-    finally { setSavingAccess(false) }
-  }
-
   return (
     <>
       <button className="member-profile-scrim" aria-label="Close profile" onPointerDown={onClose} />
       <aside
-        className="member-profile-drawer"
+        className="member-profile-drawer profile-clean-v63"
         role="dialog"
         aria-modal="true"
         aria-label={`${member.displayName} profile`}
@@ -357,15 +319,8 @@ export function MemberProfileDrawer({ memberId, onClose }: { memberId: string; o
               <span className={`profile-role-chip base role-${member.role}`}><Icon name={member.role === 'owner' ? 'shield' : 'roles'} size={11}/>{data?.workspace.id ? workspaceRoleDisplayName(data.workspace.id, member.role) : member.role}</span>
               {memberRoles.map(role => <span className="profile-role-chip" key={role.id} style={{ color: role.color, borderColor: role.color }}><i style={{ background: role.color }}/>{role.name}</span>)}
             </div>
-            {canManageRoles && roles.length > 0 && member.role !== 'owner' && <div className="drawer-role-picker">
-              {roles.map(role => { const roleAllowed = canAssignRolesToSelected && (actorIsOwner || role.position < actorHighestRolePosition); return <label key={role.id} className={!roleAllowed ? 'hierarchy-locked-v35' : undefined}><input type="checkbox" disabled={savingRoles || !roleAllowed} checked={member.customRoleIds.includes(role.id)} onChange={() => void toggleRole(role.id)} /><span className="role-swatch" style={{ background: role.color }}/><span>{role.name}</span>{member.customRoleIds.includes(role.id) && <Icon name="check" size={13}/>}</label> })}
-            </div>}
-          </section>
 
-          {canManagePlatformSupport && member.profileId !== profile?.id && (member.platformRole === null || member.platformRole === 'support') && <section className="drawer-section platform-access-section-v16">
-            <div className="drawer-section-heading"><span><Icon name="shield" size={14}/><strong>Platform access</strong></span><small>Founder only</small></div>
-            <div className="platform-support-control-v16"><div><strong>Support</strong><span>Lets this account open the Support Console without granting full platform moderation.</span></div><button className={member.platformRole === 'support' ? 'secondary-button compact' : 'primary-button compact'} disabled={savingAccess} onClick={() => void togglePlatformSupport()}>{member.platformRole === 'support' ? 'Remove Support' : 'Grant Support'}</button></div>
-          </section>}
+          </section>
 
           <section className="drawer-section">
             <div className="drawer-section-heading"><span><Icon name="notes" size={14}/><strong>Recent contributions</strong></span></div>
