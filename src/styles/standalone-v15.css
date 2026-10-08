@@ -1,4 +1,4 @@
-/* Spaces 0.0.15 — polish, people bubbles, responsive drawers, motion + background cleanup */
+/* Spaces 0.2.24 — polish, people bubbles, responsive drawers, motion + background cleanup */
 
 /* ---------- remove the old wire/grid overlay everywhere ---------- */
 .spaces-app-shell::after{display:none!important;content:none!important;background:none!important}

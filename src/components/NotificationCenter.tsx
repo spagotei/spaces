@@ -18,7 +18,10 @@ export function NotificationCenter({ open, onClose }: { open: boolean; onClose: 
   const { preferences } = usePreferences()
   const visible = notifications.filter(item => {
     if (item.kind === 'support') return preferences.supportNotifications
-    if (item.kind === 'direct' || item.kind === 'group' || item.kind === 'friend_request') return true
+    if (item.kind === 'direct') return preferences.directNotifications
+    if (item.kind === 'group') return preferences.groupNotifications
+    if (item.kind === 'friend_request') return preferences.friendRequestNotifications
+    if (item.kind === 'comment') return preferences.commentNotifications
     if (preferences.mutedWorkspaceIds.includes(item.workspaceId) || preferences.mutedChannelIds.includes(item.channelId)) return false
     if (item.kind === 'message') return preferences.notificationLevel === 'all'
     if (preferences.notificationLevel === 'none') return false
@@ -60,6 +63,7 @@ export function NotificationCenter({ open, onClose }: { open: boolean; onClose: 
     if (item.kind === 'friend_request') return 'Friend request'
     if (item.kind === 'direct') return 'Direct message'
     if (item.kind === 'group') return item.channelName || 'Group chat'
+    if (item.kind === 'comment') return `New Comment on ${item.noteTitle || 'note'}`
     return `${item.workspaceName} · #${item.channelName} · ${item.kind === 'message' ? 'message' : item.mentionLabel}`
   }
 
@@ -68,6 +72,7 @@ export function NotificationCenter({ open, onClose }: { open: boolean; onClose: 
     if (item.kind === 'friend_request') return <Icon name="members" size={15}/>
     if (item.kind === 'direct') return <Icon name="message" size={15}/>
     if (item.kind === 'group') return <Icon name="chat" size={15}/>
+    if (item.kind === 'comment') return <Icon name="notes" size={15}/>
     return <SpacesLogo title="Spaces notification" />
   }
 

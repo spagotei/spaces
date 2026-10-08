@@ -2,7 +2,8 @@
   "identifier": "default",
   "description": "Default permissions for the Spaces desktop window",
   "windows": [
-    "main"
+    "main",
+    "launcher"
   ],
   "permissions": [
     "core:default",
@@ -12,6 +13,9 @@
     "core:window:allow-start-dragging",
     "updater:default",
     "process:default",
-    "core:window:allow-set-overlay-icon"
+    "core:window:allow-set-overlay-icon",
+    "core:window:allow-show",
+    "core:window:allow-set-focus",
+    "notification:default"
   ]
 }

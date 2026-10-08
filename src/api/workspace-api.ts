@@ -29,6 +29,7 @@ import type {
   WorkspaceBetaAccessInviteResult,
   WorkspaceEmailVerificationStart,
   WorkspaceTwoFactorSetup,
+  WorkspaceTypingUser,
   WorkspaceTwoFactorEnableResult,
   WorkspaceSessionInfo,
   WorkspaceSummary,
@@ -718,6 +719,23 @@ export class WorkspaceApi {
   }
 
 
+  markNotificationRead(scopeKind: 'all' | 'channel' | 'dm' | 'group' | 'support' | 'friend_request', scopeId: string, readAt = Date.now()): Promise<{ scopeKind: string; scopeId: string; readAt: number }> {
+    return this.request('/v1/notifications/read', {
+      method: 'PUT',
+      body: JSON.stringify({ scopeKind, scopeId, readAt }),
+    })
+  }
+
+  listTypingPresence(kind: 'channel' | 'dm' | 'group' | 'support', id: string): Promise<WorkspaceTypingUser[]> {
+    return this.request(`/v1/typing/${encodeURIComponent(kind)}/${encodeURIComponent(id)}`)
+  }
+
+  setTypingPresence(kind: 'channel' | 'dm' | 'group' | 'support', id: string, active: boolean): Promise<void> {
+    return this.request(`/v1/typing/${encodeURIComponent(kind)}/${encodeURIComponent(id)}`, {
+      method: active ? 'PUT' : 'DELETE',
+    })
+  }
+
   listPingNotifications(
     since: number,
   ): Promise<WorkspacePingNotification[]> {
@@ -1062,12 +1080,13 @@ export class WorkspaceApi {
     channelId: string,
     body: string,
     attachment: WorkspaceMessageAttachment | null = null,
+    replyToMessageId: string | null = null,
   ): Promise<WorkspaceChatMessage> {
     return this.request(
       `/v1/workspaces/${encodeURIComponent(workspaceId)}/channels/${encodeURIComponent(channelId)}/messages`,
       {
         method: 'POST',
-        body: JSON.stringify({ body, attachment }),
+        body: JSON.stringify({ body, attachment, replyToMessageId }),
       },
     )
   }
@@ -1200,10 +1219,11 @@ export class WorkspaceApi {
     workspaceId: string,
     noteId: string,
     body: string,
+    parentCommentId: string | null = null,
   ): Promise<WorkspaceNoteComment> {
     return this.request(
       `/v1/workspaces/${encodeURIComponent(workspaceId)}/notes/${encodeURIComponent(noteId)}/comments`,
-      { method: 'POST', body: JSON.stringify({ body }) },
+      { method: 'POST', body: JSON.stringify({ body, parentCommentId }) },
     )
   }
 

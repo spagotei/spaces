@@ -1,15 +1,14 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Avatar } from './Avatar'
 import { Icon } from './Icon'
 import { Modal } from './Modal'
 import { useAppDialog } from './AppDialog'
 import { ContextMenu, useContextMenu } from './ContextMenu'
+import { ContentSearchPanel, type ContentSearchItem } from './ContentSearchPanel'
 import { useSpaces } from '../state/SpacesContext'
-import { usePreferences } from '../state/PreferencesContext'
 import { useBlockedUserIds } from '../hooks/useBlockedUsers'
 import { blockUser, unblockUser } from '../api/social-api'
 import { dismissNotifications } from '../utils/notification-read'
-import { playSpacesSupportSound } from '../utils/notification-sound'
 import type {
   WorkspaceDirectCenter,
   WorkspaceDirectConversation,
@@ -17,9 +16,13 @@ import type {
   WorkspaceDirectGroupMessage,
   WorkspaceDirectMessage,
   WorkspacePlatformRole,
+  WorkspaceTypingUser,
 } from '../types/spaces'
 import { timeAgo } from '../utils/format'
 import { platformRoleLabel } from '../utils/permissions'
+import { SupportGlyphV73 } from '../features/support/SupportTicketsV73'
+import { SupportMemberV77 } from '../features/support/v77/SupportMemberV77'
+import { dispatchSupportIntakeV77, openProfileV77 } from '../features/support/v77/support-v77-api'
 
 export type DirectTab = 'friends' | 'support' | 'requests' | 'groups' | 'add'
 
@@ -33,13 +36,14 @@ type DirectConversationV59 = WorkspaceDirectConversation & ThreadPreferenceV59
 type DirectGroupV59 = WorkspaceDirectGroup & ThreadPreferenceV59
 type SupportDirectThreadV59 = ThreadPreferenceV59 & {
   id: 'support'
-  title: 'Support Replys'
+  title: 'Support Tickets'
   lastMessage: string | null
   lastMessageAt: number | null
   unreadCount: number
 }
-type DirectCenterV59 = Omit<WorkspaceDirectCenter, 'conversations' | 'groups'> & {
+type DirectCenterV59 = Omit<WorkspaceDirectCenter, 'conversations' | 'friends' | 'groups'> & {
   conversations: DirectConversationV59[]
+  friends: DirectConversationV59[]
   groups: DirectGroupV59[]
   supportThread: SupportDirectThreadV59 | null
 }
@@ -71,6 +75,7 @@ type SupportInboxMessage = {
 
 const emptyCenter: DirectCenterV59 = {
   conversations: [],
+  friends: [],
   incomingRequests: [],
   outgoingRequests: [],
   groups: [],
@@ -104,10 +109,10 @@ export function DirectMessagesCenter({
     createDirectGroup,
     listDirectGroupMessages,
     sendDirectGroupMessage,
-    reportUser,
     pushToast,
+    listTypingPresence,
+    setTypingPresence,
   } = useSpaces()
-  const { preferences } = usePreferences()
   const blockedUserIds = useBlockedUserIds(session?.token)
   const [center, setCenter] = useState<DirectCenterV59>(emptyCenter)
   const [tab, setTab] = useState<DirectTab>(initialTab)
@@ -116,8 +121,8 @@ export function DirectMessagesCenter({
   const [messages, setMessages] = useState<WorkspaceDirectMessage[]>([])
   const [groupMessages, setGroupMessages] = useState<WorkspaceDirectGroupMessage[]>([])
   const [supportMessages, setSupportMessages] = useState<SupportInboxMessage[]>([])
-  const [supportDraft, setSupportDraft] = useState('')
-  const [supportLoading, setSupportLoading] = useState(false)
+  const [, setSupportLoading] = useState(false)
+  const [directSearchOpenV71, setDirectSearchOpenV71] = useState(false)
   const [username, setUsername] = useState('')
   const [draft, setDraft] = useState('')
   const [groupDraft, setGroupDraft] = useState('')
@@ -128,7 +133,15 @@ export function DirectMessagesCenter({
   const [loading, setLoading] = useState(true)
   const [pinnedMessages, setPinnedMessages] = useState<PinnedDirectMessage[]>([])
   const [pinsOpen, setPinsOpen] = useState(false)
+  const [typingUsersV72, setTypingUsersV72] = useState<WorkspaceTypingUser[]>([])
+  const typingLastSignalV72 = useRef(0)
+  const typingStopTimerV72 = useRef<number | null>(null)
+  const [directProfilePerson, setDirectProfilePerson] = useState<WorkspaceDirectConversation['person'] | null>(null)
+  const [groupMembersOpen, setGroupMembersOpen] = useState(false)
+  const [groupInviteOpen, setGroupInviteOpen] = useState(false)
+  const [groupInviteBusy, setGroupInviteBusy] = useState('')
   const threadMenu = useContextMenu()
+  const [profilePersonV76, setProfilePersonV76] = useState<WorkspaceDirectConversation['person'] | null>(null)
 
   const selected = useMemo(() => {
     const all = [
@@ -143,6 +156,51 @@ export function DirectMessagesCenter({
     () => center.groups.find(item => item.id === selectedGroupId) ?? null,
     [center.groups, selectedGroupId],
   )
+
+  const typingScopeV72 = tab === 'support'
+    ? { kind: 'support' as const, id: 'support' }
+    : selected
+      ? { kind: 'dm' as const, id: selected.id }
+      : selectedGroup
+        ? { kind: 'group' as const, id: selectedGroup.id }
+        : null
+
+  function updateDirectDraftV72(value: string, kind: 'dm' | 'group' | 'support', id: string, setter: (value: string) => void) {
+    setter(value)
+    if (typingStopTimerV72.current) window.clearTimeout(typingStopTimerV72.current)
+    if (!value.trim()) {
+      void setTypingPresence(kind, id, false).catch(() => undefined)
+      return
+    }
+    const now = Date.now()
+    if (now - typingLastSignalV72.current > 1200) {
+      typingLastSignalV72.current = now
+      void setTypingPresence(kind, id, true).catch(() => undefined)
+    }
+    typingStopTimerV72.current = window.setTimeout(() => {
+      void setTypingPresence(kind, id, false).catch(() => undefined)
+    }, 2800)
+  }
+
+  useEffect(() => {
+    if (!typingScopeV72 || !session?.token) {
+      setTypingUsersV72([])
+      return
+    }
+    let cancelled = false
+    const scope = typingScopeV72
+    const load = () => void listTypingPresence(scope.kind, scope.id)
+      .then(items => { if (!cancelled) setTypingUsersV72(items) })
+      .catch(() => undefined)
+    load()
+    const timer = window.setInterval(load, 1400)
+    return () => {
+      cancelled = true
+      window.clearInterval(timer)
+      if (typingStopTimerV72.current) window.clearTimeout(typingStopTimerV72.current)
+      void setTypingPresence(scope.kind, scope.id, false).catch(() => undefined)
+    }
+  }, [typingScopeV72?.kind, typingScopeV72?.id, listTypingPresence, session?.token, setTypingPresence])
 
   const supportUnread = supportMessages.filter(
     item => item.direction === 'incoming' && !item.readAt,
@@ -178,6 +236,52 @@ export function DirectMessagesCenter({
     if (tab === 'requests') dismissNotifications({ kind: 'friend_request' })
   }, [tab])
 
+  const directSearchItemsV71 = useMemo<ContentSearchItem[]>(() => {
+    const items: ContentSearchItem[] = []
+    const linkPattern = /https?:\/\/[^\s<>()]+/giu
+    const append = (id: string, sender: string, body: string, createdAt: number) => {
+      items.push({ id: `message:${id}`, kind: 'message', title: sender, preview: body, createdAt })
+      for (const [index, link] of [...body.matchAll(linkPattern)].entries()) {
+        items.push({ id: `link:${id}:${index}`, kind: 'link', title: link[0], subtitle: sender, preview: body, createdAt })
+      }
+    }
+
+    if (tab === 'support') {
+      for (const item of supportMessages) append(item.id, item.direction === 'outgoing' ? 'You' : item.senderName || 'Spaces Support', item.body, item.createdAt)
+    } else if (selectedGroup) {
+      for (const item of groupMessages) append(item.id, item.senderUserId === profile?.id ? 'You' : item.senderName, item.body, item.createdAt)
+    } else {
+      for (const item of messages) append(item.id, item.senderUserId === profile?.id ? 'You' : item.senderName, item.body, item.createdAt)
+    }
+    return items
+  }, [groupMessages, messages, profile?.id, selectedGroup, supportMessages, tab])
+
+  const directSearchTitleV71 = tab === 'support'
+    ? 'Search Support Tickets'
+    : selectedGroup
+      ? `Search ${selectedGroup.name}`
+      : selected
+        ? `Search ${selected.person.displayName}`
+        : 'Search conversation'
+
+  function openThreadSearchV71(kind: 'dm' | 'group' | 'support', id: string) {
+    if (kind === 'dm') {
+      setSelectedId(id)
+      setSelectedGroupId(null)
+      setTab('friends')
+    } else if (kind === 'group') {
+      setSelectedGroupId(id)
+      setSelectedId(null)
+      setTab('groups')
+    } else {
+      setSelectedId(null)
+      setSelectedGroupId(null)
+      setTab('support')
+      void reloadSupport(true)
+    }
+    setDirectSearchOpenV71(true)
+  }
+
   async function supportRequest<T>(path: string, init?: RequestInit): Promise<T> {
     const headers = new Headers(init?.headers)
     headers.set('Content-Type', 'application/json')
@@ -205,6 +309,7 @@ export function DirectMessagesCenter({
         ...emptyCenter,
         ...next,
         conversations: (next.conversations ?? []) as DirectConversationV59[],
+        friends: ((next as DirectCenterV59).friends ?? next.conversations ?? []) as DirectConversationV59[],
         groups: (next.groups ?? []) as DirectGroupV59[],
         supportThread: (next as DirectCenterV59).supportThread ?? null,
       } as DirectCenterV59
@@ -212,6 +317,7 @@ export function DirectMessagesCenter({
       if (
         selectedId &&
         ![
+          ...normalized.friends,
           ...normalized.conversations,
           ...normalized.incomingRequests,
           ...normalized.outgoingRequests,
@@ -359,6 +465,10 @@ export function DirectMessagesCenter({
       setSelectedId(next.id)
       setSelectedGroupId(null)
       setTab('friends')
+      window.dispatchEvent(new CustomEvent('spaces-direct-activity-v69', {
+        detail: { kind: 'direct', id: next.id, at: Date.now() },
+      }))
+      window.dispatchEvent(new Event('spaces-direct-sidebar-refresh'))
       pushToast(`${next.person.displayName} added to Your Friends.`, 'success')
     } catch (error) {
       pushToast(
@@ -394,40 +504,14 @@ export function DirectMessagesCenter({
       const sent = await sendDirectMessage(selected.id, body)
       setMessages(current => [...current, sent])
       setDraft('')
+      window.dispatchEvent(new CustomEvent('spaces-direct-activity-v69', {
+        detail: { kind: 'direct', id: selected.id, preview: body, at: Number(sent.createdAt ?? Date.now()) },
+      }))
+      window.dispatchEvent(new Event('spaces-direct-sidebar-refresh'))
       await reload()
     } catch (error) {
       pushToast(
         error instanceof Error ? error.message : 'Could not send message.',
-        'danger',
-      )
-    } finally {
-      setBusy(false)
-    }
-  }
-
-  async function sendSupportReply() {
-    const body = supportDraft.trim()
-    const lastIncoming = [...supportMessages]
-      .reverse()
-      .find(item => item.direction === 'incoming')
-    if (!body || !lastIncoming || busy) return
-    setBusy(true)
-    try {
-      const sent = await supportRequest<SupportInboxMessage>('/v1/support/reply', {
-        method: 'POST',
-        body: JSON.stringify({
-          body,
-          replyToMessageId: lastIncoming.id,
-        }),
-      })
-      setSupportMessages(current => [...current, sent])
-      setSupportDraft('')
-      if (preferences.desktopSounds && preferences.supportOutgoingSounds) {
-        playSpacesSupportSound('outgoing')
-      }
-    } catch (error) {
-      pushToast(
-        error instanceof Error ? error.message : 'Could not send Support reply.',
         'danger',
       )
     } finally {
@@ -458,6 +542,10 @@ export function DirectMessagesCenter({
       setSelectedId(null)
       setSelectedGroupId(group.id)
       setTab('groups')
+      window.dispatchEvent(new CustomEvent('spaces-direct-activity-v69', {
+        detail: { kind: 'group', id: group.id, at: Date.now() },
+      }))
+      window.dispatchEvent(new Event('spaces-direct-sidebar-refresh'))
       pushToast(`${group.name} created.`, 'success')
     } catch (error) {
       pushToast(
@@ -477,6 +565,10 @@ export function DirectMessagesCenter({
       const sent = await sendDirectGroupMessage(selectedGroup.id, body)
       setGroupMessages(current => [...current, sent])
       setGroupDraft('')
+      window.dispatchEvent(new CustomEvent('spaces-direct-activity-v69', {
+        detail: { kind: 'group', id: selectedGroup.id, preview: body, at: Number(sent.createdAt ?? Date.now()) },
+      }))
+      window.dispatchEvent(new Event('spaces-direct-sidebar-refresh'))
       await reload()
     } catch (error) {
       pushToast(
@@ -511,34 +603,8 @@ export function DirectMessagesCenter({
   }
 
   async function reportDirectPerson(userId: string, displayName: string) {
-    const reason = await dialog.prompt({
-      title: `Report ${displayName}`,
-      message: 'Tell Spaces what happened. Reports are reviewed by the Support team.',
-      label: 'Reason',
-      placeholder: 'Harassment, spam, impersonation…',
-      maxLength: 120,
-      confirmText: 'Continue',
-      danger: true,
-    })
-    if (!reason) return
-
-    const details = await dialog.prompt({
-      title: 'Add details',
-      message: 'Include any context that would help review this report.',
-      label: 'Details',
-      placeholder: 'What happened?',
-      maxLength: 900,
-      confirmText: 'Send report',
-      danger: true,
-    })
-    if (!details) return
-
-    try {
-      await reportUser(userId, reason, details)
-      pushToast('Report sent to Spaces moderation.', 'success')
-    } catch (error) {
-      pushToast(error instanceof Error ? error.message : 'Could not send report.', 'danger')
-    }
+    const conversation = [...center.conversations, ...center.incomingRequests, ...center.outgoingRequests].find(item => item.person.id === userId)
+    dispatchSupportIntakeV77({ type: 'user_report', targetUserId: userId, targetUsername: conversation?.person.username ?? null, targetDisplayName: displayName, source: 'dm_context' })
   }
 
   async function toggleDirectBlock(userId: string, displayName: string) {
@@ -565,6 +631,43 @@ export function DirectMessagesCenter({
     }
   }
 
+  // SPACES_GROUP_PANEL_STATE_V67
+  useEffect(() => {
+    if (selectedGroupId) {
+      setGroupMembersOpen(true)
+      setGroupInviteOpen(false)
+    } else {
+      setGroupMembersOpen(false)
+      setGroupInviteOpen(false)
+    }
+  }, [selectedGroupId])
+
+  async function inviteDirectGroupMember(
+    groupId: string,
+    userId: string,
+    displayName: string,
+  ) {
+    setGroupInviteBusy(userId)
+    try {
+      await supportRequest(
+        `/v1/direct/groups/${encodeURIComponent(groupId)}/members`,
+        {
+          method: 'POST',
+          body: JSON.stringify({ userId }),
+        },
+      )
+      await reload()
+      pushToast(`${displayName} added to the group DM.`, 'success')
+    } catch (error) {
+      pushToast(
+        error instanceof Error ? error.message : 'Could not invite that person.',
+        'danger',
+      )
+    } finally {
+      setGroupInviteBusy('')
+    }
+  }
+
   async function updateThreadPreference(
     kind: 'dm' | 'group' | 'support',
     id: string,
@@ -588,6 +691,19 @@ export function DirectMessagesCenter({
     }
   }
 
+  const friendListV68 = center.friends.length ? center.friends : center.conversations
+
+  async function openFriendConversationV68(item: DirectConversationV59) {
+    if (item.closedAt) {
+      await updateThreadPreference('dm', item.id, { closed: false })
+    }
+    window.dispatchEvent(new CustomEvent('spaces-direct-activity-v69', {
+      detail: { kind: 'direct', id: item.id, at: Date.now() },
+    }))
+    window.dispatchEvent(new Event('spaces-direct-sidebar-refresh'))
+    setSelectedId(item.id)
+  }
+
   function threadActions(
     kind: 'dm' | 'group' | 'support',
     id: string,
@@ -598,53 +714,47 @@ export function DirectMessagesCenter({
       ? [...center.conversations, ...center.incomingRequests, ...center.outgoingRequests].find(row => row.id === id)
       : null
     const blocked = Boolean(conversation && blockedUserIds.includes(conversation.person.id))
+    const noun = kind === 'group' ? 'Group DM' : kind === 'support' ? 'Support Tickets' : 'DM'
 
     return [
+      ...(conversation ? [{
+        id: 'view-profile-thread-v77',
+        label: 'View Profile',
+        note: 'Open this member profile',
+        icon: 'user' as const,
+        onSelect: () => openProfileV77(conversation.person.id, conversation.person),
+      }] : []),
+      {
+        id: 'search-v71',
+        label: 'Search conversation',
+        note: 'Messages, media, files, and links',
+        icon: 'search' as const,
+        onSelect: () => openThreadSearchV71(kind, id),
+      },
       {
         id: 'pin',
-        label: item.pinnedAt ? 'Unpin conversation' : 'Pin conversation',
+        label: item.pinnedAt ? `Unpin ${noun}` : `Pin ${noun}`,
         icon: 'pin' as const,
         checked: Boolean(item.pinnedAt),
         onSelect: () => updateThreadPreference(kind, id, { pinned: !item.pinnedAt }),
       },
       ...(muted
-        ? [{
-            id: 'unmute',
-            label: 'Unmute',
-            icon: 'bell' as const,
-            onSelect: () => updateThreadPreference(kind, id, { unmute: true }),
-          }]
-        : [{
-            id: 'mute-1h',
-            label: 'Mute for 1 hour',
-            icon: 'bell' as const,
-            onSelect: () => updateThreadPreference(kind, id, { muteMinutes: 60 }),
-          }, {
-            id: 'mute-8h',
-            label: 'Mute for 8 hours',
-            icon: 'bell' as const,
-            onSelect: () => updateThreadPreference(kind, id, { muteMinutes: 480 }),
-          }, {
-            id: 'mute-24h',
-            label: 'Mute for 24 hours',
-            icon: 'bell' as const,
-            onSelect: () => updateThreadPreference(kind, id, { muteMinutes: 1440 }),
-          }, {
-            id: 'mute-forever',
-            label: 'Mute until I turn it back on',
-            icon: 'bell' as const,
-            onSelect: () => updateThreadPreference(kind, id, { muteMinutes: -1 }),
-          }]),
+        ? [{ id: 'unmute', label: 'Unmute', icon: 'bell' as const, onSelect: () => updateThreadPreference(kind, id, { unmute: true }) }]
+        : [{ id: 'mute-v70', label: kind === 'dm' ? 'Mute DM' : kind === 'group' ? 'Mute group' : 'Mute Support', icon: 'bell' as const, onSelect: () => updateThreadPreference(kind, id, { muteMinutes: -1 }), submenu: [
+            { id: 'mute-1h', label: '1 hour', onSelect: () => updateThreadPreference(kind, id, { muteMinutes: 60 }) },
+            { id: 'mute-8h', label: '8 hours', onSelect: () => updateThreadPreference(kind, id, { muteMinutes: 480 }) },
+            { id: 'mute-24h', label: '24 hours', onSelect: () => updateThreadPreference(kind, id, { muteMinutes: 1440 }) },
+            { id: 'mute-forever', label: 'Until I turn it back on', onSelect: () => updateThreadPreference(kind, id, { muteMinutes: -1 }) },
+          ] }]),
       ...(conversation ? [{
         id: 'report',
         label: 'Report user',
-        note: 'Send this account to Spaces moderation',
         icon: 'shield' as const,
+        separatorBefore: true,
         onSelect: () => reportDirectPerson(conversation.person.id, conversation.person.displayName),
       }, {
         id: 'block',
         label: blocked ? 'Unblock user' : 'Block user',
-        note: blocked ? 'Allow direct contact again' : 'Hide messages and stop direct contact',
         icon: 'lock' as const,
         danger: !blocked,
         checked: blocked,
@@ -652,9 +762,9 @@ export function DirectMessagesCenter({
       }] : []),
       {
         id: 'close',
-        label: kind === 'group' ? 'Close group DM' : 'Close DM',
-        note: 'It returns if a new message arrives.',
+        label: kind === 'group' ? 'Close Group DM' : kind === 'support' ? 'Close Support Tickets' : 'Close DM',
         icon: 'x' as const,
+        separatorBefore: true,
         onSelect: () => updateThreadPreference(kind, id, { closed: true }),
       },
     ]
@@ -670,6 +780,20 @@ export function DirectMessagesCenter({
   }) {
     const blocked = blockedUserIds.includes(conversation.person.id)
     return [
+      {
+        id: 'view-profile-v77',
+        label: 'View Profile',
+        note: 'Open this member without leaving the conversation',
+        icon: 'user' as const,
+        onSelect: () => openProfileV77(conversation.person.id, conversation.person),
+      },
+      {
+        id: 'search-v71-header',
+        label: 'Search conversation',
+        note: 'Messages and links',
+        icon: 'search' as const,
+        onSelect: () => openThreadSearchV71('dm', conversation.id),
+      },
       {
         id: 'report',
         label: 'Report user',
@@ -745,28 +869,19 @@ export function DirectMessagesCenter({
             className={tab === 'add' ? 'active' : ''}
             onClick={() => selectTab('add')}
           >
-            <Icon name="plus" size={16} />
-            <span>Add Friend</span>
+            <span className="person-plus-icon-v68" aria-hidden="true"><Icon name="members" size={14}/><i>+</i></span><span>Add Friend</span>
           </button>
         </aside>}
 
         <section className="direct-center-main-v23">
           {tab === 'support' ? (
-            <SupportReplyThread
-              messages={supportMessages}
-              draft={supportDraft}
-              setDraft={setSupportDraft}
-              onSend={sendSupportReply}
-              busy={busy}
-              loading={supportLoading}
-              currentUserId={profile?.id ?? ''}
-            />
+            <div className="direct-thread-v23 direct-support-v77"><SupportMemberV77 /></div>
           ) : selected ? (
             <DirectThread
               conversation={selected}
               messages={messages}
               draft={draft}
-              setDraft={setDraft}
+              setDraft={value => selected && updateDirectDraftV72(value, 'dm', selected.id, setDraft)}
               onSend={send}
               busy={busy}
               currentUserId={profile?.id ?? ''}
@@ -786,19 +901,125 @@ export function DirectMessagesCenter({
               onPinsClose={() => setPinsOpen(false)}
               onTogglePin={messageId => void toggleMessagePin('dm', selected.id, messageId)}
               onReport={() => void reportDirectPerson(selected.person.id, selected.person.displayName)}
+              onProfile={() => openProfileV77(selected.person.id, selected.person)}
               onMore={(x, y) => threadMenu.open(selected.person.displayName, directHeaderActions(selected), x, y, `@${selected.person.username}`)}
+              onOpenProfile={() => setDirectProfilePerson(selected.person)}
             />
           ) : selectedGroup ? (
-            <GroupThread
+            <div className={`direct-group-shell-v67 ${groupMembersOpen ? 'members-open' : ''}`}>
+              <GroupThread
               group={selectedGroup}
               messages={groupMessages}
               draft={groupDraft}
-              setDraft={setGroupDraft}
+              setDraft={value => selectedGroup && updateDirectDraftV72(value, 'group', selectedGroup.id, setGroupDraft)}
               onSend={sendGroup}
               busy={busy}
               currentUserId={profile?.id ?? ''}
               blockedUserIds={blockedUserIds}
             />
+
+              {!groupMembersOpen && (
+                <button
+                  type="button"
+                  className="direct-group-members-toggle-v67"
+                  title="Show group members"
+                  aria-label="Show group members"
+                  onClick={() => setGroupMembersOpen(true)}
+                >
+                  <Icon name="members" size={15}/>
+                </button>
+              )}
+
+              {groupMembersOpen && (
+                <aside className="direct-group-members-v67" aria-label="Group DM members">
+                  <header>
+                    <div>
+                      <strong>Members</strong>
+                      <small>{selectedGroup.members.length} in this group</small>
+                    </div>
+                    <button
+                      type="button"
+                      className="icon-button"
+                      aria-label="Close members"
+                      onClick={() => {
+                        setGroupMembersOpen(false)
+                        setGroupInviteOpen(false)
+                      }}
+                    >
+                      <Icon name="x" size={13}/>
+                    </button>
+                  </header>
+
+                  <div className="direct-group-member-list-v67">
+                    {selectedGroup.members.map(member => (
+                      <div className="direct-group-member-row-v67" key={member.id}>
+                        <Avatar
+                          name={member.displayName}
+                          initials={member.initials}
+                          src={member.avatarUrl}
+                          size={30}
+                          accent={member.profileAccent}
+                        />
+                        <span>
+                          <strong>{member.displayName}</strong>
+                          <small>@{member.username}</small>
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+
+                  <button
+                    type="button"
+                    className="direct-group-invite-v67"
+                    onClick={() => setGroupInviteOpen(value => !value)}
+                  >
+                    <Icon name="plus" size={14}/>
+                    <span>Invite to Group DM</span>
+                  </button>
+
+                  {groupInviteOpen && (
+                    <div className="direct-group-invite-picker-v67">
+                      {center.conversations
+                        .filter(conversation =>
+                          !selectedGroup.members.some(member => member.id === conversation.person.id),
+                        )
+                        .map(conversation => (
+                          <button
+                            type="button"
+                            className="direct-group-invite-person-v67"
+                            key={conversation.person.id}
+                            disabled={groupInviteBusy === conversation.person.id}
+                            onClick={() => void inviteDirectGroupMember(
+                              selectedGroup.id,
+                              conversation.person.id,
+                              conversation.person.displayName,
+                            )}
+                          >
+                            <Avatar
+                              name={conversation.person.displayName}
+                              initials={conversation.person.initials}
+                              src={conversation.person.avatarUrl}
+                              size={28}
+                              accent={conversation.person.profileAccent}
+                            />
+                            <span>
+                              <strong>{conversation.person.displayName}</strong>
+                              <small>@{conversation.person.username}</small>
+                            </span>
+                            <Icon name="plus" size={12}/>
+                          </button>
+                        ))}
+
+                      {!center.conversations.some(conversation =>
+                        !selectedGroup.members.some(member => member.id === conversation.person.id),
+                      ) && (
+                        <small>Everyone you can invite is already here.</small>
+                      )}
+                    </div>
+                  )}
+                </aside>
+              )}
+            </div>
           ) : tab === 'add' ? (
             <div className="direct-add-person-v23">
               <span className="direct-big-icon-v23">
@@ -870,6 +1091,11 @@ export function DirectMessagesCenter({
                         className={`${group.pinnedAt ? 'thread-pinned-v59' : ''} ${group.mutedUntil && group.mutedUntil > Date.now() ? 'thread-muted-v59' : ''}`}
                         onClick={() => setSelectedGroupId(group.id)}
                         {...threadMenu.bind(group.name, threadActions('group', group.id, group), `${group.members.length} members`)}
+                        onContextMenu={event => {
+                          event.preventDefault()
+                          event.stopPropagation()
+                          threadMenu.open(group.name, threadActions('group', group.id, group), event.clientX, event.clientY, `${group.members.length} members`)
+                        }}
                       >
                         <span className="direct-group-avatar-v43">
                           <Icon name="members" size={18} />
@@ -982,34 +1208,59 @@ export function DirectMessagesCenter({
                   <span className="eyebrow">YOUR FRIENDS</span>
                   <h2>Friends & direct messages</h2>
                 </div>
-                <button className="primary-button compact" onClick={() => setTab('add')}>
-                  <Icon name="plus" size={13} /> Add Friend
+                <div className="direct-friends-actions-v73">
+                  <button className="secondary-button compact direct-support-launch-v73" onClick={() => selectTab('support')}>
+                    <SupportGlyphV73 kind="robot" size={13} /> Support
+                  </button>
+                  <button className="primary-button compact" onClick={() => setTab('add')}>
+                  <span className="person-plus-icon-v68" aria-hidden="true"><Icon name="members" size={14}/><i>+</i></span> Add Friend
                 </button>
+                </div>
               </header>
               {loading ? (
                 <div className="settings-loading">Loading friends…</div>
-              ) : (center.supportThread || center.conversations.length) ? (
+              ) : (center.supportThread || friendListV68.length) ? (
                 <div className="direct-people-grid-v23">
                   {center.supportThread && (
                     <button
                       className={`direct-support-dm-v59 ${center.supportThread.pinnedAt ? 'thread-pinned-v59' : ''} ${center.supportThread.mutedUntil && center.supportThread.mutedUntil > Date.now() ? 'thread-muted-v59' : ''}`}
                       onClick={() => selectTab('support')}
-                      {...threadMenu.bind('Support Replys', threadActions('support', 'support', center.supportThread), 'Spaces Support')}
+                      {...threadMenu.bind('Support Tickets', threadActions('support', 'support', center.supportThread), 'Spaces Support')}
+                      onContextMenu={event => {
+                        event.preventDefault()
+                        event.stopPropagation()
+                        threadMenu.open(
+                          'Support Tickets',
+                          threadActions(
+                            'support',
+                            'support',
+                            center.supportThread ?? { pinnedAt: null, mutedUntil: null, closedAt: null },
+                          ),
+                          event.clientX,
+                          event.clientY,
+                          'Spaces Support',
+                        )
+                      }}
                     >
                       <span className="support-reply-avatar-v53"><Icon name="shield" size={18} /></span>
                       <span>
-                        <strong>Support Replys</strong>
+                        <strong>Support Tickets</strong>
                         <small>{center.supportThread.lastMessage || 'Official Spaces Support conversation'}</small>
                       </span>
                       {supportUnread > 0 ? <small>{supportUnread > 99 ? '99+' : supportUnread}</small> : <Icon name="chevron" size={13} />}
                     </button>
                   )}
-                  {center.conversations.map(item => (
+                  {friendListV68.map(item => (
                     <button
                       key={item.id}
-                      className={`${item.pinnedAt ? 'thread-pinned-v59' : ''} ${item.mutedUntil && item.mutedUntil > Date.now() ? 'thread-muted-v59' : ''}`}
-                      onClick={() => setSelectedId(item.id)}
+                      className={`friend-relationship-v68 ${item.closedAt ? 'direct-friend-closed-v68' : ''} ${item.pinnedAt ? 'thread-pinned-v59' : ''} ${item.mutedUntil && item.mutedUntil > Date.now() ? 'thread-muted-v59' : ''}`}
+                      onClick={() => void openFriendConversationV68(item)}
                       {...threadMenu.bind(item.person.displayName, threadActions('dm', item.id, item), `@${item.person.username}`)}
+                      onContextMenu={event => {
+                        event.preventDefault()
+                        event.stopPropagation()
+                        threadMenu.open(item.person.displayName, threadActions('dm', item.id, item), event.clientX, event.clientY, `@${item.person.username}`)
+                      }}
                     >
                       <Avatar
                         name={item.person.displayName}
@@ -1030,114 +1281,59 @@ export function DirectMessagesCenter({
                   ))}
                 </div>
               ) : (
-                <div className="direct-empty-v23">
+                <div className="direct-empty-v23 direct-empty-v76">
                   <Icon name="members" size={23} />
-                  <strong>Your Friends is empty</strong>
-                  <span>Add someone by username to start messaging.</span>
-                  <button className="primary-button compact" onClick={() => setTab('add')}>
-                    Add a friend
-                  </button>
+                  <strong>Start a conversation</strong>
+                  <span>Messages, group chats, and Support all live here.</span>
+                  <div className="direct-empty-actions-v76">
+                    <button className="secondary-button compact" onClick={() => setTab('add')}><Icon name="message" size={12}/> New Message</button>
+                    <button className="secondary-button compact" onClick={() => setTab('add')}><Icon name="plus" size={12}/> Add Friend</button>
+                    <button className="secondary-button compact" onClick={() => { setTab('groups'); setCreatingGroup(true) }} disabled={!center.conversations.length}><Icon name="members" size={12}/> New Group DM</button>
+                    <button className="secondary-button compact" onClick={() => selectTab('support')}><Icon name="shield" size={12}/> Open Support Ticket</button>
+                  </div>
                 </div>
               )}
             </div>
           )}
+        <DirectTypingIndicatorV72 users={typingUsersV72}/>
         </section>
       </div>
+      {directProfilePerson && (
+        <DirectPersonProfileCard
+          person={directProfilePerson}
+          onClose={() => setDirectProfilePerson(null)}
+          onMore={(x, y) => {
+            const conversation = center.conversations.find(item => item.person.id === directProfilePerson.id)
+            if (!conversation) return
+            threadMenu.open(
+              directProfilePerson.displayName,
+              directHeaderActions(conversation),
+              x,
+              y,
+              `@${directProfilePerson.username}`,
+            )
+          }}
+        />
+      )}
+      {directSearchOpenV71 && <ContentSearchPanel title={directSearchTitleV71} subtitle="Search this conversation" items={directSearchItemsV71} onClose={() => setDirectSearchOpenV71(false)} />}
+      {profilePersonV76 && (
+        <div className="direct-profile-drawer-v76" role="dialog" aria-label={`Profile for ${profilePersonV76.displayName}`}>
+          <button className="direct-profile-backdrop-v76" aria-label="Close profile" onClick={() => setProfilePersonV76(null)} />
+          <aside>
+            <button className="direct-profile-close-v76" aria-label="Close profile" onClick={() => setProfilePersonV76(null)}><Icon name="x" size={14}/></button>
+            <Avatar name={profilePersonV76.displayName} initials={profilePersonV76.initials} src={profilePersonV76.avatarUrl} size={74} accent={profilePersonV76.profileAccent} />
+            <h2>{profilePersonV76.displayName}</h2>
+            <span>@{profilePersonV76.username}</span>
+            {profilePersonV76.publicUserId && <code>#{profilePersonV76.publicUserId}</code>}
+            {profilePersonV76.platformRole && <b>{platformRoleLabel(profilePersonV76.platformRole)}</b>}
+            <div className="direct-profile-actions-v76">
+              <button className="secondary-button compact" onClick={() => setProfilePersonV76(null)}><Icon name="message" size={12}/> Back to DM</button>
+            </div>
+          </aside>
+        </div>
+      )}
       <ContextMenu menu={threadMenu.menu} onClose={threadMenu.close} />
     </Modal>
-  )
-}
-
-function SupportReplyThread({
-  messages,
-  draft,
-  setDraft,
-  onSend,
-  busy,
-  loading,
-  currentUserId,
-}: {
-  messages: SupportInboxMessage[]
-  draft: string
-  setDraft: (value: string) => void
-  onSend: () => Promise<void>
-  busy: boolean
-  loading: boolean
-  currentUserId: string
-}) {
-  const canReply = messages.some(item => item.direction === 'incoming')
-  return (
-    <div className="direct-thread-v23 support-reply-thread-v53">
-      <header>
-        <span className="support-reply-avatar-v53">
-          <Icon name="shield" size={18} />
-        </span>
-        <div>
-          <strong>Spaces Support</strong>
-          <span>Support Replys · official platform conversation</span>
-        </div>
-        <em>VERIFIED</em>
-      </header>
-      <div className="direct-message-feed-v23 direct-message-feed-v28 support-reply-feed-v53">
-        {loading && !messages.length ? (
-          <div className="settings-loading">Loading Support conversation…</div>
-        ) : messages.length ? (
-          messages.map(message => {
-            const own = message.senderUserId === currentUserId || message.direction === 'outgoing'
-            return (
-              <div
-                key={message.id}
-                className={own ? 'own direct-message-row-v28 support-message-v53' : 'direct-message-row-v28 support-message-v53'}
-              >
-                <span className={`support-message-mark-v53 ${own ? 'own' : ''}`}>
-                  <Icon name={own ? 'reply' : 'shield'} size={14} />
-                </span>
-                <div className="direct-message-copy-v28">
-                  <strong>{own ? 'You' : message.senderName || 'Spaces Support'}</strong>
-                  <small>{message.messageKind === 'reply' ? 'Support Replys' : message.subject}</small>
-                  <p>{message.body}</p>
-                  <time>{timeAgo(message.createdAt)}</time>
-                </div>
-              </div>
-            )
-          })
-        ) : (
-          <div className="direct-empty-v23">
-            <Icon name="shield" size={24} />
-            <strong>No Support conversation yet</strong>
-            <span>
-              Official Spaces Support messages will appear here even if normal DMs are disabled.
-            </span>
-          </div>
-        )}
-      </div>
-      <div className="direct-compose-v23 support-reply-compose-v53">
-        <textarea
-          value={draft}
-          onChange={event => setDraft(event.target.value)}
-          onKeyDown={event => {
-            if (event.key === 'Enter' && !event.shiftKey && canReply) {
-              event.preventDefault()
-              void onSend()
-            }
-          }}
-          placeholder={
-            canReply
-              ? 'Reply to Spaces Support…'
-              : 'A Support message is required before you can reply.'
-          }
-          maxLength={2400}
-          disabled={!canReply}
-        />
-        <button
-          className="primary-button"
-          disabled={busy || !draft.trim() || !canReply}
-          onClick={() => void onSend()}
-        >
-          <Icon name="send" size={14} /> Reply
-        </button>
-      </div>
-    </div>
   )
 }
 
@@ -1312,6 +1508,83 @@ function GroupThread({
   )
 }
 
+function DirectPersonProfileCard({
+  person,
+  onClose,
+  onMore,
+}: {
+  person: WorkspaceDirectConversation['person']
+  onClose: () => void
+  onMore: (x: number, y: number) => void
+}) {
+  return (
+    <>
+      <button
+        className="direct-person-card-scrim-v66"
+        aria-label="Close profile"
+        onClick={onClose}
+      />
+      <aside
+        className="direct-person-card-v66"
+        aria-label={`${person.displayName} profile`}
+      >
+        <div
+          className="direct-profile-banner-v66"
+          style={{
+            background: `radial-gradient(circle at 20% 20%, ${person.profileAccent ?? '#8b6ca8'}55, transparent 60%), rgba(255,255,255,.025)`,
+          }}
+        />
+        <button
+          className="icon-button direct-profile-close-v66"
+          onClick={onClose}
+          aria-label="Close"
+        >
+          <Icon name="x" size={13}/>
+        </button>
+
+        <div className="direct-profile-body-v66">
+          <div className="direct-profile-avatar-v66">
+            <Avatar
+              name={person.displayName}
+              initials={person.initials}
+              src={person.avatarUrl}
+              size={64}
+              accent={person.profileAccent}
+            />
+          </div>
+
+          <div className="direct-profile-copy-v66">
+            <div className="direct-name-with-badge-v55">
+              <strong>{person.displayName}</strong>
+              <PlatformVerifiedBadge role={person.platformRole} compact />
+            </div>
+            <small>@{person.username}</small>
+          </div>
+
+          <div className="direct-profile-actions-v66">
+            <button type="button" onClick={onClose}>
+              <Icon name="message" size={14}/>
+              <span>Message</span>
+            </button>
+
+            <button
+              type="button"
+              title="More actions"
+              aria-label="More actions"
+              onClick={event => {
+                const rect = event.currentTarget.getBoundingClientRect()
+                onMore(rect.right - 8, rect.bottom + 6)
+              }}
+            >
+              <span aria-hidden="true" style={{ fontSize: 16, lineHeight: 1 }}>•••</span>
+            </button>
+          </div>
+        </div>
+      </aside>
+    </>
+  )
+}
+
 function DirectThread({
   conversation,
   messages,
@@ -1330,7 +1603,9 @@ function DirectThread({
   onPinsClose,
   onTogglePin,
   onReport,
+  onProfile,
   onMore,
+  onOpenProfile,
 }: {
   conversation: WorkspaceDirectConversation
   messages: WorkspaceDirectMessage[]
@@ -1355,7 +1630,9 @@ function DirectThread({
   onPinsClose: () => void
   onTogglePin: (messageId: string) => void
   onReport: () => void
+  onProfile: () => void
   onMore: (x: number, y: number) => void
+  onOpenProfile: () => void
 }) {
   const incoming = conversation.status === 'pending' && !conversation.requestedByMe
   const outgoing = conversation.status === 'pending' && conversation.requestedByMe
@@ -1363,15 +1640,18 @@ function DirectThread({
   return (
     <div className="direct-thread-v23 direct-thread-v63">
       <header>
-        <Avatar
-          name={conversation.person.displayName}
-          initials={conversation.person.initials}
-          src={conversation.person.avatarUrl}
-          size={38}
-          accent={conversation.person.profileAccent}
-        />
+        <button className="direct-profile-avatar-button-v77" title="View profile" onClick={onProfile} onContextMenu={event => { event.preventDefault(); onMore(event.clientX, event.clientY) }}>
+          <Avatar name={conversation.person.displayName} initials={conversation.person.initials} src={conversation.person.avatarUrl} size={38} accent={conversation.person.profileAccent} />
+        </button>
         <div>
+          <button
+          type="button"
+          className="direct-profile-name-v66"
+          onClick={onOpenProfile}
+          title="View profile"
+        >
           <strong>{conversation.person.displayName}</strong>
+        </button>
           <span>
             @{conversation.person.username}
             {conversation.person.publicUserId
@@ -1422,6 +1702,7 @@ function DirectThread({
                   <div
                     key={message.id}
                     className={own ? 'own direct-message-row-v28' : 'direct-message-row-v28'}
+                    onContextMenu={event => { if (!own) { event.preventDefault(); onMore(event.clientX, event.clientY) } }}
                   >
                     <Avatar
                       name={own ? currentUser.name : conversation.person.displayName}
@@ -1506,4 +1787,15 @@ function PlatformVerifiedBadge({
       VERIFIED
     </span>
   )
+}
+
+
+function DirectTypingIndicatorV72({ users }: { users: WorkspaceTypingUser[] }) {
+  if (!users.length) return null
+  const text = users.length === 1
+    ? `${users[0].displayName} is typing...`
+    : users.length === 2
+      ? `${users[0].displayName} and ${users[1].displayName} are typing...`
+      : 'Multiple People are Talking'
+  return <div className="typing-indicator-v72 direct-typing-v72"><span aria-hidden="true"><i/><i/><i/></span><span>{text}</span></div>
 }

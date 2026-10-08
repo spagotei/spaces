@@ -1,0 +1,58 @@
+{
+  "version": 1,
+  "brand": "Spaces",
+  "docsStyle": true,
+  "effectiveDate": "2026-10-07",
+  "sections": [
+    {
+      "slug": "terms",
+      "title": "Terms of Service",
+      "path": "/tos/"
+    },
+    {
+      "slug": "privacy",
+      "title": "Privacy Policy",
+      "path": "/tos/privacy/"
+    },
+    {
+      "slug": "community-guidelines",
+      "title": "Community Guidelines",
+      "path": "/tos/community-guidelines/"
+    },
+    {
+      "slug": "safety-and-enforcement",
+      "title": "Safety & Enforcement",
+      "path": "/tos/safety/"
+    },
+    {
+      "slug": "partner-program",
+      "title": "Partner Program",
+      "path": "/partner/"
+    },
+    {
+      "slug": "partner-code-of-conduct",
+      "title": "Partner Code of Conduct",
+      "path": "/partner/code-of-conduct/"
+    },
+    {
+      "slug": "copyright-and-ip",
+      "title": "Copyright & IP",
+      "path": "/tos/copyright/"
+    },
+    {
+      "slug": "cookie-policy",
+      "title": "Cookie Policy",
+      "path": "/tos/cookies/"
+    },
+    {
+      "slug": "beta-program",
+      "title": "Beta Program Terms",
+      "path": "/tos/beta/"
+    },
+    {
+      "slug": "contact",
+      "title": "Contact & Legal Requests",
+      "path": "/tos/contact/"
+    }
+  ]
+}

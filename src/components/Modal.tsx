@@ -1,4 +1,5 @@
 import { useEffect, type ReactNode } from 'react'
+import { createPortal } from 'react-dom'
 import { Icon } from './Icon'
 
 export function Modal({
@@ -53,7 +54,7 @@ export function Modal({
 
   if (embedded) return panel
 
-  return (
+  return createPortal(
     <div
       className="modal-backdrop modal-backdrop-v16 modal-backdrop-v28"
       onPointerDown={event => event.stopPropagation()}
@@ -64,6 +65,7 @@ export function Modal({
       }}
     >
       {panel}
-    </div>
+    </div>,
+    document.body,
   )
 }

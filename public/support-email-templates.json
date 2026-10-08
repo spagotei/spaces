@@ -1,0 +1,95 @@
+{
+  "version": 1,
+  "templates": [
+    {
+      "id": "ticket-reply",
+      "name": "Support — Ticket Reply",
+      "from": "support",
+      "subject": "Spaces Support — Update on ticket {{ticket.id}}",
+      "preheader": "There is a new reply from Spaces Support.",
+      "imageSlot": "hero",
+      "body": "Hi {{user.displayName}},\\n\\nA Spaces Support agent replied to your ticket.\\n\\n{{ticket.reply}}\\n\\nView your ticket: {{support.url}}\\n\\n— Spaces Support"
+    },
+    {
+      "id": "ticket-created",
+      "name": "Support — Ticket Created",
+      "from": "support",
+      "subject": "Spaces Support — Ticket {{ticket.id}} received",
+      "preheader": "We received your support request.",
+      "imageSlot": "hero",
+      "body": "Hi {{user.displayName}},\\n\\nWe received your support request and created ticket {{ticket.id}}.\\n\\nCategory: {{ticket.category}}\\n\\nWe will update you through Spaces and email when a response is available.\\n\\nView ticket: {{support.url}}"
+    },
+    {
+      "id": "ticket-closed",
+      "name": "Support — Ticket Closed",
+      "from": "support",
+      "subject": "Spaces Support — Ticket {{ticket.id}} closed",
+      "preheader": "Your support ticket has been closed.",
+      "imageSlot": "hero",
+      "body": "Hi {{user.displayName}},\\n\\nTicket {{ticket.id}} has been closed.\\n\\nReason: {{ticket.closeReason}}\\n\\nIf you still need help, you can open a new request from Spaces Support."
+    },
+    {
+      "id": "security-alert",
+      "name": "Security — Account Alert",
+      "from": "security",
+      "subject": "Spaces Security — Account security alert",
+      "preheader": "We noticed an important security event on your Spaces account.",
+      "imageSlot": "hero",
+      "body": "Hi {{user.displayName}},\\n\\nWe detected a security event on your account.\\n\\nEvent: {{security.event}}\\nTime: {{security.time}}\\nLocation/device: {{security.context}}\\n\\nIf this was not you, secure your account immediately: {{security.url}}\\n\\nSpaces Security will never ask for your password or one-time code."
+    },
+    {
+      "id": "moderation-action",
+      "name": "Trust & Safety — Moderation Notice",
+      "from": "support",
+      "subject": "Spaces — Moderation notice for your account",
+      "preheader": "There is an update regarding a Spaces moderation action.",
+      "imageSlot": "hero",
+      "body": "Hi {{user.displayName}},\\n\\nA moderation action was applied to your account.\\n\\nAction: {{action.type}}\\nReason: {{action.reason}}\\nDuration: {{action.duration}}\\nCase: {{case.id}}\\n\\nIf an appeal is available, use Spaces Support: {{support.url}}"
+    },
+    {
+      "id": "partner-approved",
+      "name": "Partners — Application Approved",
+      "from": "support",
+      "subject": "Spaces Partners — {{space.name}} is now a Partner",
+      "preheader": "Your Space has been accepted into the Spaces Partner Program.",
+      "imageSlot": "hero",
+      "body": "Hi {{user.displayName}},\\n\\nWe are excited to let you know that {{space.name}} has been approved for the Spaces Partner Program.\\n\\nPartner status is now active. Please review the Partner Code of Conduct: {{partner.codeUrl}}\\n\\nWelcome to the Spaces Partner community."
+    },
+    {
+      "id": "partner-warning",
+      "name": "Partners — Program Warning",
+      "from": "support",
+      "subject": "Spaces Partners — Action required for {{space.name}}",
+      "preheader": "Your Partner Space needs attention.",
+      "imageSlot": "hero",
+      "body": "Hi {{user.displayName}},\\n\\nYour Partner Space {{space.name}} currently needs attention to remain in good standing.\\n\\nIssue: {{partner.issue}}\\nRequired action: {{partner.action}}\\nDeadline: {{partner.deadline}}\\n\\nPartner policies: {{partner.policyUrl}}"
+    },
+    {
+      "id": "partner-removed",
+      "name": "Partners — Status Removed",
+      "from": "support",
+      "subject": "Spaces Partners — Partner status update for {{space.name}}",
+      "preheader": "Your Space Partner status has changed.",
+      "imageSlot": "hero",
+      "body": "Hi {{user.displayName}},\\n\\nPartner status for {{space.name}} has been removed.\\n\\nReason: {{partner.reason}}\\n\\nIf an appeal is available, contact Spaces Support: {{support.url}}"
+    },
+    {
+      "id": "partner-application",
+      "name": "Partners — Application Received",
+      "from": "support",
+      "subject": "Spaces Partners — Application received",
+      "preheader": "We received your Partner Program application.",
+      "imageSlot": "hero",
+      "body": "Hi {{user.displayName}},\\n\\nWe received the Partner Program application for {{space.name}}.\\n\\nApplication: {{application.id}}\\n\\nOur team will review the application and contact you if additional information is needed."
+    },
+    {
+      "id": "beta-invite",
+      "name": "Beta — Invitation",
+      "from": "noreply",
+      "subject": "Spaces Beta — You are invited",
+      "preheader": "Your Spaces beta access is ready.",
+      "imageSlot": "hero",
+      "body": "Hi {{user.displayName}},\\n\\nYou have been invited to the Spaces beta.\\n\\nStart here: {{beta.url}}\\n\\nPlease review the Beta Program Terms before participating: {{beta.termsUrl}}"
+    }
+  ]
+}

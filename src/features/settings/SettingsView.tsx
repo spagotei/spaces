@@ -12,6 +12,7 @@ import { hasWorkspacePermission } from '../../utils/permissions'
 import { gifFileToDataUrl, imageFileToRawDataUrl, isGifDataUrl, isGifFile } from '../../utils/image'
 import { getWorkspaceNumber } from '../../utils/workspace-local-meta'
 import type { WorkspaceBackgroundPreset, WorkspaceChannel, WorkspaceIconDecoration } from '../../types/spaces'
+import { LegalSettingsEntryV80 } from '../legal/v80/LegalSettingsEntryV80' // SPACES_V80_LEGAL_SETTINGS
 
 type SpaceSettingsTab = 'profile' | 'appearance' | 'notifications' | 'channels' | 'access' | 'advanced'
 
@@ -121,6 +122,15 @@ export function SettingsView({ initialTab }: { initialTab?: SpaceSettingsTab }) 
     setBannerUrl(currentWorkspace.bannerUrl)
     setIconDecoration(currentWorkspace.iconDecoration === 'badge' ? 'ring' : (currentWorkspace.iconDecoration ?? 'ring'))
     window.dispatchEvent(new CustomEvent('spaces-background-preview', { detail: currentWorkspace.background }))
+  }
+
+  async function changeTabV70(next: SpaceSettingsTab) {
+    if (next === tab) return
+    if (dirty) {
+      pushToast('Save or reset your changes before leaving this section.', 'info')
+      return
+    }
+    setTab(next)
   }
 
   async function uploadImage(event: ChangeEvent<HTMLInputElement>, kind: 'avatar' | 'banner') {
@@ -247,6 +257,8 @@ export function SettingsView({ initialTab }: { initialTab?: SpaceSettingsTab }) 
 
   return (
     <div className="view-scroll space-settings-v32 space-settings-v36 page-enter">
+<LegalSettingsEntryV80 />
+
       <header className="space-settings-v32-heading space-settings-heading-v36">
         <div>
           <span className="eyebrow">SPACE SETTINGS</span>
@@ -265,7 +277,7 @@ export function SettingsView({ initialTab }: { initialTab?: SpaceSettingsTab }) 
 
       <nav className="space-settings-tabs-v36" aria-label="Space settings sections">
         {tabs.filter(item => !item.hidden).map(item => (
-          <button type="button" key={item.id} className={tab === item.id ? 'active' : ''} onClick={() => setTab(item.id)}>
+          <button type="button" key={item.id} className={tab === item.id ? 'active' : ''} onClick={() => void changeTabV70(item.id)}>
             <Icon name={item.icon} size={14}/><span>{item.label}</span>
             {item.id === 'notifications' && (spaceMuted || mutedChannelCount > 0) && <small>{spaceMuted ? 'Muted' : mutedChannelCount}</small>}
           </button>
@@ -394,8 +406,8 @@ export function SettingsView({ initialTab }: { initialTab?: SpaceSettingsTab }) 
 
       {dirty && (
         <div className="space-settings-v32-savebar">
-          <span>You have unsaved Space changes.</span>
-          <div><button type="button" className="secondary-button" disabled={busy} onClick={resetChanges}>Reset</button><button type="button" className="primary-button" disabled={busy || !name.trim()} onClick={() => void save()}>{busy ? 'Saving…' : 'Save changes'}</button></div>
+          <span>You have unsaved changes</span>
+          <div><button type="button" className="secondary-button" disabled={busy} onClick={resetChanges}>Reset</button><button type="button" className="primary-button" disabled={busy || !name.trim()} onClick={() => void save()}>{busy ? 'Saving...' : 'Save Changes'}</button></div>
         </div>
       )}
     </div>

@@ -4,6 +4,8 @@ import { LogicalSize } from '@tauri-apps/api/dpi'
 import { check } from '@tauri-apps/plugin-updater'
 import { relaunch } from '@tauri-apps/plugin-process'
 import { Icon } from './Icon'
+import { getVersion } from '@tauri-apps/api/app'
+import packageInfo from '../../package.json'
 
 type AvailableUpdate = NonNullable<Awaited<ReturnType<typeof check>>>
 type UpdateState = 'idle' | 'checking' | 'ready' | 'downloading' | 'installing' | 'error'
@@ -23,7 +25,13 @@ export function DesktopTitlebar() {
   const [panelOpen, setPanelOpen] = useState(false)
   const [progress, setProgress] = useState(0)
   const [error, setError] = useState('')
+  const [currentVersionV77, setCurrentVersionV77] = useState(packageInfo.version)
   const lastCheck = useRef(0)
+
+  useEffect(() => {
+    if (!isDesktop) return
+    void getVersion().then(setCurrentVersionV77).catch(() => undefined)
+  }, [isDesktop])
 
   useEffect(() => {
     if (!isDesktop) return
@@ -115,7 +123,7 @@ export function DesktopTitlebar() {
         <div className="desktop-titlebar-brand" data-tauri-drag-region>
           <span className="titlebar-mark titlebar-letter" data-tauri-drag-region aria-label="Spaces">S</span>
           <strong data-tauri-drag-region>Spaces</strong>
-          <small data-tauri-drag-region>0.0.15</small>
+          <small data-tauri-drag-region>{currentVersionV77}</small>
         </div>
         <div className="desktop-window-controls" onDoubleClick={event => event.stopPropagation()}>
           {available && (

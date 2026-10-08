@@ -1,0 +1,63 @@
+/* Spaces V75.5 — ticket lifecycle, Discord chat flow, counts */
+
+/* Discord-style message flow: every message begins on the left. */
+.direct-message-row-v28,
+.direct-message-row-v28.own{
+  width:100%!important;
+  max-width:none!important;
+  align-self:stretch!important;
+  justify-content:flex-start!important;
+  flex-direction:row!important;
+  text-align:left!important;
+  margin-left:0!important;
+  margin-right:0!important;
+}
+.direct-message-row-v28.own .direct-message-copy-v28,
+.direct-message-row-v28 .direct-message-copy-v28{
+  align-items:flex-start!important;
+  text-align:left!important;
+  margin-left:0!important;
+  margin-right:0!important;
+}
+.ticket-message-v73,
+.ticket-message-v73.own{
+  align-self:flex-start!important;
+  margin-left:0!important;
+  margin-right:auto!important;
+  text-align:left!important;
+}
+
+.ticket-reply-verified-v755{
+  display:inline-flex;
+  align-items:center;
+  gap:3px;
+  min-height:16px;
+  padding:0 6px;
+  border:1px solid rgba(151,116,219,.24);
+  border-radius:999px;
+  background:rgba(116,82,174,.12);
+  color:rgba(218,197,240,.9);
+  font-size:8px;
+  font-weight:800;
+  letter-spacing:.035em;
+  text-transform:uppercase;
+}
+.ticket-reply-verified-v755>span{font-size:10px;line-height:1}
+
+.ticket-user-header-actions-v755{display:flex;align-items:center;gap:7px}
+.ticket-archive-open-v755 small{min-width:16px;height:16px;display:inline-grid;place-items:center;margin-left:4px;padding:0 4px;border-radius:999px;background:rgba(255,255,255,.06);font-size:8px}
+.ticket-user-close-v755{margin-left:auto;border-color:rgba(225,105,116,.16)!important;color:rgba(244,185,191,.88)!important}
+.ticket-archive-v755{min-height:0;display:flex;flex:1;flex-direction:column;padding:14px 16px;overflow:auto;animation:v755SoftIn .18s ease both}
+.ticket-archive-v755>header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:5px}.ticket-archive-v755 h2{margin:2px 0 0;font-size:16px}.ticket-archive-v755>p{margin:0 0 12px;color:var(--muted);font-size:10px}
+.ticket-archive-list-v755{display:grid;gap:5px}.ticket-archive-list-v755>button{width:100%;min-height:52px;display:grid;grid-template-columns:10px minmax(0,1fr) auto;align-items:center;gap:9px;padding:8px 10px;border:1px solid rgba(255,255,255,.055);border-radius:9px;background:rgba(255,255,255,.018);color:var(--text);text-align:left;font:inherit;cursor:pointer;transition:background .14s ease,border-color .14s ease,transform .14s ease}.ticket-archive-list-v755>button:hover{background:rgba(255,255,255,.035);border-color:rgba(255,255,255,.08);transform:translateY(-1px)}.ticket-archive-list-v755>button>div{min-width:0;display:grid;gap:2px}.ticket-archive-list-v755 strong{font-size:10px}.ticket-archive-list-v755 span,.ticket-archive-list-v755 small{color:var(--muted);font-size:9px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+.support-console-launcher-badge-v755{min-width:19px;height:19px;display:grid;place-items:center;padding:0 5px;border-radius:999px;background:#d84b5f;color:#fff;font-size:9px;font-weight:850;box-shadow:0 0 0 1px rgba(255,255,255,.08),0 0 12px rgba(216,75,95,.22)}
+
+@keyframes v755SoftIn{from{opacity:0;transform:translateY(3px)}to{opacity:1;transform:none}}
+@media(max-width:720px){.ticket-user-header-actions-v755{gap:4px}.ticket-user-close-v755{margin-left:0}.ticket-archive-list-v755>button{grid-template-columns:10px minmax(0,1fr)}.ticket-archive-list-v755>button>small{grid-column:2}}
+@media(prefers-reduced-motion:reduce){.ticket-archive-v755,.ticket-archive-list-v755>button{animation:none;transition:none}}
+
+/* The boot experience is the exact MP4. No CSS-drawn replacement animation. */
+.spaces-boot-v75{position:fixed!important;inset:0!important;display:grid!important;place-items:center!important;background:#08060e!important;overflow:hidden!important;pointer-events:none!important}
+.spaces-boot-video-v75{display:block!important;width:100%!important;height:100%!important;object-fit:contain!important;opacity:1!important;transition:none!important;background:#08060e!important}
+.spaces-boot-fallback-v75{display:none!important}

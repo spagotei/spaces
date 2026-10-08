@@ -1,0 +1,371 @@
+{
+  "name": "SPACES Call & Streaming Sound Pack",
+  "version": 1,
+  "created": "2026-10-08",
+  "sample_rate_hz": 48000,
+  "channels": 1,
+  "source_palette": "Measured from the supplied SPACES ding and earlier call/support cues. New synthesized arrangements; the existing master ding was not modified.",
+  "playback_notes": [
+    "Assets are already mastered at quiet relative levels. recommended_volume is an additional linear gain, not a target loudness.",
+    "Use decoded WAV buffers for exact loops; the full file includes intentional silence. MP3 is supplied for convenience.",
+    "Stop ringtone and outgoing/reconnecting loops immediately on the corresponding state transition; fade out over about 20 ms.",
+    "Honor per-category sound controls and existing Do Not Disturb settings.",
+    "Do not play both entered_call and reconnected for the same transition, or both left_call and call_ended for one local departure.",
+    "Suppress duplicate events and keep participant/viewer cues rate-limited in busy rooms.",
+    "Audio assets only. This pack is not installed in the SPACES application."
+  ],
+  "sounds": [
+    {
+      "id": "ringtone",
+      "label": "Incoming call",
+      "category": "CALLS",
+      "duration_seconds": 6.4,
+      "loop": true,
+      "default_enabled": true,
+      "recommended_volume": 1.0,
+      "description": "Two soft melodic phrases, followed by breathing room. Repeat the full 6.4-second cycle.",
+      "files": {
+        "wav": "wav/spaces-ringtone.wav",
+        "mp3": "mp3/spaces-ringtone.mp3",
+        "ogg": "ogg/spaces-ringtone.ogg"
+      },
+      "peak_dbfs": -13.0
+    },
+    {
+      "id": "outgoing_call",
+      "label": "Calling\u2026",
+      "category": "CALLS",
+      "duration_seconds": 3.2,
+      "loop": true,
+      "default_enabled": true,
+      "recommended_volume": 1.0,
+      "description": "Restrained rising ringback for the caller. Repeat until answered or ended.",
+      "files": {
+        "wav": "wav/spaces-outgoing-call.wav",
+        "mp3": "mp3/spaces-outgoing-call.mp3",
+        "ogg": "ogg/spaces-outgoing-call.ogg"
+      },
+      "peak_dbfs": -19.0
+    },
+    {
+      "id": "entered_call",
+      "label": "Entered call",
+      "category": "CALLS",
+      "duration_seconds": 0.84,
+      "loop": false,
+      "default_enabled": true,
+      "recommended_volume": 1.0,
+      "description": "Rising connection chime for your successful join.",
+      "files": {
+        "wav": "wav/spaces-entered-call.wav",
+        "mp3": "mp3/spaces-entered-call.mp3",
+        "ogg": "ogg/spaces-entered-call.ogg"
+      },
+      "peak_dbfs": -18.0
+    },
+    {
+      "id": "left_call",
+      "label": "Left call",
+      "category": "CALLS",
+      "duration_seconds": 0.72,
+      "loop": false,
+      "default_enabled": true,
+      "recommended_volume": 1.0,
+      "description": "Warm descending pair for your own departure.",
+      "files": {
+        "wav": "wav/spaces-left-call.wav",
+        "mp3": "mp3/spaces-left-call.mp3",
+        "ogg": "ogg/spaces-left-call.ogg"
+      },
+      "peak_dbfs": -19.0
+    },
+    {
+      "id": "member_joined",
+      "label": "Someone joined",
+      "category": "CALLS",
+      "duration_seconds": 0.55,
+      "loop": false,
+      "default_enabled": true,
+      "recommended_volume": 1.0,
+      "description": "Shorter and quieter than your own join.",
+      "files": {
+        "wav": "wav/spaces-member-joined.wav",
+        "mp3": "mp3/spaces-member-joined.mp3",
+        "ogg": "ogg/spaces-member-joined.ogg"
+      },
+      "peak_dbfs": -22.0
+    },
+    {
+      "id": "member_left",
+      "label": "Someone left",
+      "category": "CALLS",
+      "duration_seconds": 0.51,
+      "loop": false,
+      "default_enabled": true,
+      "recommended_volume": 1.0,
+      "description": "Quiet falling counterpart to member joined.",
+      "files": {
+        "wav": "wav/spaces-member-left.wav",
+        "mp3": "mp3/spaces-member-left.mp3",
+        "ogg": "ogg/spaces-member-left.ogg"
+      },
+      "peak_dbfs": -23.0
+    },
+    {
+      "id": "call_ended",
+      "label": "Call ended",
+      "category": "CALLS",
+      "duration_seconds": 0.77,
+      "loop": false,
+      "default_enabled": true,
+      "recommended_volume": 1.0,
+      "description": "Three settled descending notes when the call finishes.",
+      "files": {
+        "wav": "wav/spaces-call-ended.wav",
+        "mp3": "mp3/spaces-call-ended.mp3",
+        "ogg": "ogg/spaces-call-ended.ogg"
+      },
+      "peak_dbfs": -19.0
+    },
+    {
+      "id": "call_declined",
+      "label": "Call declined",
+      "category": "CALLS",
+      "duration_seconds": 0.59,
+      "loop": false,
+      "default_enabled": true,
+      "recommended_volume": 1.0,
+      "description": "Two low, closed pulses. Use only when a decline is actually signaled.",
+      "files": {
+        "wav": "wav/spaces-call-declined.wav",
+        "mp3": "mp3/spaces-call-declined.mp3",
+        "ogg": "ogg/spaces-call-declined.ogg"
+      },
+      "peak_dbfs": -20.0
+    },
+    {
+      "id": "missed_call",
+      "label": "Missed call",
+      "category": "CALLS",
+      "duration_seconds": 0.91,
+      "loop": false,
+      "default_enabled": true,
+      "recommended_volume": 1.0,
+      "description": "Gentle descending reminder; one shot.",
+      "files": {
+        "wav": "wav/spaces-missed-call.wav",
+        "mp3": "mp3/spaces-missed-call.mp3",
+        "ogg": "ogg/spaces-missed-call.ogg"
+      },
+      "peak_dbfs": -19.0
+    },
+    {
+      "id": "started_streaming",
+      "label": "Started streaming",
+      "category": "STREAMING",
+      "duration_seconds": 0.98,
+      "loop": false,
+      "default_enabled": true,
+      "recommended_volume": 1.0,
+      "description": "Bright opening arpeggio for a stream going live.",
+      "files": {
+        "wav": "wav/spaces-started-streaming.wav",
+        "mp3": "mp3/spaces-started-streaming.mp3",
+        "ogg": "ogg/spaces-started-streaming.ogg"
+      },
+      "peak_dbfs": -18.0
+    },
+    {
+      "id": "stopped_streaming",
+      "label": "Stopped streaming",
+      "category": "STREAMING",
+      "duration_seconds": 0.81,
+      "loop": false,
+      "default_enabled": true,
+      "recommended_volume": 1.0,
+      "description": "Soft descending closure for a stream ending.",
+      "files": {
+        "wav": "wav/spaces-stopped-streaming.wav",
+        "mp3": "mp3/spaces-stopped-streaming.mp3",
+        "ogg": "ogg/spaces-stopped-streaming.ogg"
+      },
+      "peak_dbfs": -20.0
+    },
+    {
+      "id": "viewer_joined",
+      "label": "Viewer joined",
+      "category": "STREAMING",
+      "duration_seconds": 0.46,
+      "loop": false,
+      "default_enabled": false,
+      "recommended_volume": 1.0,
+      "description": "Optional quiet viewer arrival; disabled by default for busy streams.",
+      "files": {
+        "wav": "wav/spaces-viewer-joined.wav",
+        "mp3": "mp3/spaces-viewer-joined.mp3",
+        "ogg": "ogg/spaces-viewer-joined.ogg"
+      },
+      "peak_dbfs": -25.0
+    },
+    {
+      "id": "viewer_left",
+      "label": "Viewer left",
+      "category": "STREAMING",
+      "duration_seconds": 0.43,
+      "loop": false,
+      "default_enabled": false,
+      "recommended_volume": 1.0,
+      "description": "Optional quiet viewer departure; disabled by default.",
+      "files": {
+        "wav": "wav/spaces-viewer-left.wav",
+        "mp3": "mp3/spaces-viewer-left.mp3",
+        "ogg": "ogg/spaces-viewer-left.ogg"
+      },
+      "peak_dbfs": -26.0
+    },
+    {
+      "id": "mute",
+      "label": "Microphone muted",
+      "category": "CONTROLS",
+      "duration_seconds": 0.29,
+      "loop": false,
+      "default_enabled": true,
+      "recommended_volume": 1.0,
+      "description": "Short low closing gesture after mute succeeds.",
+      "files": {
+        "wav": "wav/spaces-mute.wav",
+        "mp3": "mp3/spaces-mute.mp3",
+        "ogg": "ogg/spaces-mute.ogg"
+      },
+      "peak_dbfs": -23.0
+    },
+    {
+      "id": "unmute",
+      "label": "Microphone on",
+      "category": "CONTROLS",
+      "duration_seconds": 0.33,
+      "loop": false,
+      "default_enabled": true,
+      "recommended_volume": 1.0,
+      "description": "Short rising counterpart after unmute succeeds.",
+      "files": {
+        "wav": "wav/spaces-unmute.wav",
+        "mp3": "mp3/spaces-unmute.mp3",
+        "ogg": "ogg/spaces-unmute.ogg"
+      },
+      "peak_dbfs": -22.0
+    },
+    {
+      "id": "deafen",
+      "label": "Deafened",
+      "category": "CONTROLS",
+      "duration_seconds": 0.41,
+      "loop": false,
+      "default_enabled": true,
+      "recommended_volume": 1.0,
+      "description": "Three low steps distinguish deafen from mute.",
+      "files": {
+        "wav": "wav/spaces-deafen.wav",
+        "mp3": "mp3/spaces-deafen.mp3",
+        "ogg": "ogg/spaces-deafen.ogg"
+      },
+      "peak_dbfs": -23.0
+    },
+    {
+      "id": "undeafen",
+      "label": "Audio restored",
+      "category": "CONTROLS",
+      "duration_seconds": 0.46,
+      "loop": false,
+      "default_enabled": true,
+      "recommended_volume": 1.0,
+      "description": "Three rising steps when received audio is restored.",
+      "files": {
+        "wav": "wav/spaces-undeafen.wav",
+        "mp3": "mp3/spaces-undeafen.mp3",
+        "ogg": "ogg/spaces-undeafen.ogg"
+      },
+      "peak_dbfs": -22.0
+    },
+    {
+      "id": "camera_on",
+      "label": "Camera on",
+      "category": "CONTROLS",
+      "duration_seconds": 0.43,
+      "loop": false,
+      "default_enabled": true,
+      "recommended_volume": 1.0,
+      "description": "Optional higher two-note camera cue.",
+      "files": {
+        "wav": "wav/spaces-camera-on.wav",
+        "mp3": "mp3/spaces-camera-on.mp3",
+        "ogg": "ogg/spaces-camera-on.ogg"
+      },
+      "peak_dbfs": -24.0
+    },
+    {
+      "id": "camera_off",
+      "label": "Camera off",
+      "category": "CONTROLS",
+      "duration_seconds": 0.42,
+      "loop": false,
+      "default_enabled": true,
+      "recommended_volume": 1.0,
+      "description": "Descending counterpart to camera on.",
+      "files": {
+        "wav": "wav/spaces-camera-off.wav",
+        "mp3": "mp3/spaces-camera-off.mp3",
+        "ogg": "ogg/spaces-camera-off.ogg"
+      },
+      "peak_dbfs": -25.0
+    },
+    {
+      "id": "reconnecting",
+      "label": "Reconnecting\u2026",
+      "category": "CONNECTION",
+      "duration_seconds": 2.4,
+      "loop": true,
+      "default_enabled": true,
+      "recommended_volume": 1.0,
+      "description": "Quiet spaced pulses while a connection is being recovered.",
+      "files": {
+        "wav": "wav/spaces-reconnecting.wav",
+        "mp3": "mp3/spaces-reconnecting.mp3",
+        "ogg": "ogg/spaces-reconnecting.ogg"
+      },
+      "peak_dbfs": -23.0
+    },
+    {
+      "id": "reconnected",
+      "label": "Reconnected",
+      "category": "CONNECTION",
+      "duration_seconds": 0.82,
+      "loop": false,
+      "default_enabled": true,
+      "recommended_volume": 1.0,
+      "description": "Resolved upward phrase when the connection returns.",
+      "files": {
+        "wav": "wav/spaces-reconnected.wav",
+        "mp3": "mp3/spaces-reconnected.mp3",
+        "ogg": "ogg/spaces-reconnected.ogg"
+      },
+      "peak_dbfs": -19.0
+    },
+    {
+      "id": "connection_lost",
+      "label": "Connection lost",
+      "category": "CONNECTION",
+      "duration_seconds": 0.89,
+      "loop": false,
+      "default_enabled": true,
+      "recommended_volume": 1.0,
+      "description": "Distinct descending warning without a harsh alarm.",
+      "files": {
+        "wav": "wav/spaces-connection-lost.wav",
+        "mp3": "mp3/spaces-connection-lost.mp3",
+        "ogg": "ogg/spaces-connection-lost.ogg"
+      },
+      "peak_dbfs": -18.0
+    }
+  ]
+}

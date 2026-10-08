@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "note": "Display metadata only. Never authorize permissions from this file.",
+  "classifications": [
+    "community",
+    "partner",
+    "official"
+  ],
+  "spaces": {}
+}

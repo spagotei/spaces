@@ -16,11 +16,14 @@ import { platformRoleLabel } from '../../utils/permissions'
 import { SupportOperationsV48, useSupportV48Access } from './SupportOperationsV48'
 import { formatPublicUserId } from '../../utils/public-id'
 import { playSpacesSupportSound } from '../../utils/notification-sound'
+import { SupportGlyphV73, SupportTicketConsoleV73 } from './SupportTicketsV73'
 import '../../styles/standalone-v53.css'
 import '../../styles/standalone-v57.css'
 
 type SupportTab =
   | 'queue'
+  | 'reviewing'
+  | 'resolved'
   | 'players'
   | 'spaces'
   | 'bugs'
@@ -137,6 +140,15 @@ export function SupportConsole({
 
   const access = useSupportV48Access()
   const [tab, setTab] = useState<SupportTab>('queue')
+  const [supportTicketSummaryV755, setSupportTicketSummaryV755] = useState({ active: 0, waiting: 0, reviewing: 0, resolving: 0, resolved: 0 })
+  const [collapsedSupportGroupsV728, setCollapsedSupportGroupsV728] = useState<Record<string, boolean>>(() => {
+    try {
+      return JSON.parse(localStorage.getItem('spaces.support.navGroups.v728') || '{}') as Record<string, boolean>
+    } catch {
+      return {}
+    }
+  })
+  const [caseBucketV72, setCaseBucketV72] = useState<'reports' | 'bugs'>('reports')
   const [reports, setReports] = useState<ReportV53[]>([])
   const [cases, setCases] = useState<CaseV53[]>([])
   const [messages, setMessages] = useState<SupportMessageV53[]>([])
@@ -274,19 +286,21 @@ export function SupportConsole({
     () => cases.filter(item => Boolean(item.archivedAt)),
     [cases],
   )
-  const openReports = activeReports.filter(item =>
-    ['open', 'reviewed'].includes(item.status),
-  )
-  const openCases = activeCases.filter(item =>
-    ['open', 'reviewed'].includes(item.status),
-  )
+  const openReports = activeReports.filter(item => item.status === 'open')
+  const openCases = activeCases.filter(item => item.status === 'open')
+  const reviewingReportsV72 = activeReports.filter(item => item.status === 'reviewed')
+  const reviewingCasesV72 = activeCases.filter(item => item.status === 'reviewed')
+  const resolvedReportsV72 = activeReports.filter(item => ['actioned', 'dismissed'].includes(item.status))
+  const resolvedCasesV72 = activeCases.filter(item => ['resolved', 'actioned', 'dismissed'].includes(item.status))
 
   const search = query.trim().toLowerCase()
   const visibleReports = useMemo(
     () =>
       activeReports.filter(item => {
-        if (tab === 'queue' && !['open', 'reviewed'].includes(item.status)) return false
-        if (tab !== 'queue' && tab !== 'players') return false
+        if (tab === 'queue' && item.status !== 'open') return false
+        if (tab === 'reviewing' && (caseBucketV72 !== 'reports' || item.status !== 'reviewed')) return false
+        if (tab === 'resolved' && (caseBucketV72 !== 'reports' || !['actioned', 'dismissed'].includes(item.status))) return false
+        if (!['queue', 'players', 'reviewing', 'resolved'].includes(tab)) return false
         if (!search) return true
         const target = item.snapshot.reported
         const reporter = item.snapshot.reporter
@@ -294,22 +308,32 @@ export function SupportConsole({
           .toLowerCase()
           .includes(search)
       }),
-    [activeReports, search, tab],
+    [activeReports, caseBucketV72, search, tab],
   )
 
   const visibleCases = useMemo(
     () =>
       activeCases.filter(item => {
-        if (tab === 'queue' && !['open', 'reviewed'].includes(item.status)) return false
-        if (tab === 'spaces' && item.kind !== 'space') return false
-        if (tab === 'bugs' && item.kind !== 'bug') return false
-        if (!['queue', 'spaces', 'bugs'].includes(tab)) return false
+        if (tab === 'queue' && item.status !== 'open') return false
+        if (tab === 'reviewing') {
+          if (item.status !== 'reviewed') return false
+          if (caseBucketV72 === 'bugs' && item.kind !== 'bug') return false
+          if (caseBucketV72 === 'reports' && item.kind === 'bug') return false
+        } else if (tab === 'resolved') {
+          if (!['resolved', 'actioned', 'dismissed'].includes(item.status)) return false
+          if (caseBucketV72 === 'bugs' && item.kind !== 'bug') return false
+          if (caseBucketV72 === 'reports' && item.kind === 'bug') return false
+        } else {
+          if (tab === 'spaces' && item.kind !== 'space') return false
+          if (tab === 'bugs' && item.kind !== 'bug') return false
+          if (!['queue', 'spaces', 'bugs'].includes(tab)) return false
+        }
         if (!search) return true
         return `${item.subject} ${item.details} ${item.reporterName} ${item.reporterUsername} ${item.targetWorkspaceName ?? ''}`
           .toLowerCase()
           .includes(search)
       }),
-    [activeCases, search, tab],
+    [activeCases, caseBucketV72, search, tab],
   )
 
   function canManageCase(item: CaseV53) {
@@ -372,6 +396,8 @@ export function SupportConsole({
     try {
       await updateModerationReport(reportId, status)
       await refresh()
+      window.dispatchEvent(new Event('spaces-support-queue-changed'))
+      if (status === 'reviewed') pushToast('Report moved to Reviewing.', 'success')
     } catch (error) {
       pushToast(errorMessage(error, 'Could not update report.'), 'danger')
     } finally {
@@ -699,10 +725,51 @@ export function SupportConsole({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tab])
 
+  useEffect(() => {
+    if (!allowed || !session?.token) {
+      setSupportTicketSummaryV755({ active: 0, waiting: 0, reviewing: 0, resolving: 0, resolved: 0 })
+      return
+    }
+    let cancelled = false
+    const loadTicketSummaryV755 = async () => {
+      try {
+        const response = await fetch(`${apiUrl.replace(/\/$/, '')}/v1/support/tickets`, {
+          headers: { Authorization: `Bearer ${session.token}` },
+        })
+        if (!response.ok) return
+        const tickets = await response.json() as { status?: string; transcriptDeletedAt?: number | null }[]
+        const live = tickets.filter(ticket => !ticket.transcriptDeletedAt)
+        const next = {
+          active: live.filter(ticket => ticket.status !== 'resolved').length,
+          waiting: live.filter(ticket => ticket.status === 'waiting').length,
+          reviewing: live.filter(ticket => ticket.status === 'reviewing').length,
+          resolving: live.filter(ticket => ticket.status === 'resolving').length,
+          resolved: live.filter(ticket => ticket.status === 'resolved').length,
+        }
+        if (!cancelled) setSupportTicketSummaryV755(next)
+      } catch {
+        // Ticket summary must never blank the existing Support Console.
+      }
+    }
+    void loadTicketSummaryV755()
+    const timer = window.setInterval(() => void loadTicketSummaryV755(), 4000)
+    const refresh = () => void loadTicketSummaryV755()
+    window.addEventListener('spaces-support-queue-changed', refresh)
+    window.addEventListener('focus', refresh)
+    return () => {
+      cancelled = true
+      window.clearInterval(timer)
+      window.removeEventListener('spaces-support-queue-changed', refresh)
+      window.removeEventListener('focus', refresh)
+    }
+  }, [allowed, apiUrl, session?.token])
+
   if (!allowed) return null
 
   const navItems: [SupportTab, string, IconName][] = [
     ['queue', 'Queue', 'activity'],
+    ['reviewing', 'Reviewing', 'search'],
+    ['resolved', 'Resolved', 'check'],
     ['players', 'Player reports', 'members'],
     ['spaces', 'Spaces reports', 'grid'],
     ['bugs', 'Bug reports', 'sparkle'],
@@ -712,8 +779,58 @@ export function SupportConsole({
     ['access', 'Beta access', 'lock'],
     ['team', 'Team', 'members'],
     ['staff-chat', 'Staff chat', 'chat'],
-    ['dms', 'Support DMs', 'message'],
+    ['dms', 'Support Tickets', 'message'],
   ]
+
+  const supportNavGroupsV728: {
+    id: 'cases' | 'reports' | 'operations' | 'communications'
+    label: string
+    icon: IconName
+    tabs: SupportTab[]
+  }[] = [
+    { id: 'cases', label: 'Cases', icon: 'activity', tabs: ['queue', 'reviewing', 'resolved'] },
+    { id: 'reports', label: 'Reports', icon: 'shield', tabs: ['players', 'spaces', 'bugs', 'archive'] },
+    { id: 'operations', label: 'Operations', icon: 'settings', tabs: ['accounts', 'restrictions', 'access', 'team'] },
+    { id: 'communications', label: 'Communications', icon: 'message', tabs: ['staff-chat', 'dms'] },
+  ]
+
+  function toggleSupportGroupV728(id: string) {
+    setCollapsedSupportGroupsV728(current => {
+      const next = { ...current, [id]: !current[id] }
+      localStorage.setItem('spaces.support.navGroups.v728', JSON.stringify(next))
+      return next
+    })
+  }
+
+  function supportNavEntriesV728(ids: SupportTab[]) {
+    return ids
+      .map(id => navItems.find(item => item[0] === id))
+      .filter((item): item is [SupportTab, string, IconName] => Boolean(item))
+      .filter(([id]) => navVisible(id))
+  }
+
+  function supportNavCountV728(id: SupportTab) {
+    if (id === 'queue') return openReports.length + openCases.length
+    if (id === 'reviewing') {
+      return reviewingReportsV72.length + reviewingCasesV72.length
+    }
+    if (id === 'resolved') {
+      return resolvedReportsV72.length + resolvedCasesV72.length
+    }
+    if (id === 'players') return activeReports.length
+    if (id === 'spaces') return activeCases.filter(item => item.kind === 'space').length
+    if (id === 'bugs') return activeCases.filter(item => item.kind === 'bug').length
+    if (id === 'archive') return archivedReports.length + archivedCases.length
+    if (id === 'dms') return supportTicketSummaryV755.active
+    return 0
+  }
+
+  function supportNavGlyphV728(id: SupportTab, icon: IconName) {
+    if (id === 'bugs') return <SupportGlyphV73 kind="bug" size={15}/>
+    if (id === 'restrictions') return <SupportGlyphV73 kind="block" size={15}/>
+    if (id === 'dms') return <SupportGlyphV73 kind="robot" size={15}/>
+    return <Icon name={icon} size={15}/>
+  }
 
   const navVisible = (id: SupportTab) => {
     if (id === 'team') return access.founder
@@ -761,33 +878,51 @@ export function SupportConsole({
         <div className="support-console-layout-v17">
           <nav className="support-console-nav-v17 support-console-nav-v53">
             <div className="support-console-nav-stats">
-              <strong>{openReports.length + openCases.length}</strong>
+              <strong>{openReports.length + openCases.length + supportTicketSummaryV755.active}</strong>
               <span>open items</span>
             </div>
-            {navItems.filter(([id]) => navVisible(id)).map(([id, label, icon]) => {
-              const count =
-                id === 'players'
-                  ? activeReports.length
-                  : id === 'spaces'
-                    ? activeCases.filter(item => item.kind === 'space').length
-                    : id === 'bugs'
-                      ? activeCases.filter(item => item.kind === 'bug').length
-                      : id === 'archive'
-                        ? archivedReports.length + archivedCases.length
-                        : 0
+            {supportNavGroupsV728.map(group => {
+              const entries = supportNavEntriesV728(group.tabs)
+              if (!entries.length) return null
+              const collapsed = Boolean(collapsedSupportGroupsV728[group.id])
+              const activeInGroup = entries.some(([id]) => id === tab)
               return (
-                <button
-                  key={id}
-                  className={tab === id ? 'active' : ''}
-                  onClick={() => {
-                    setTab(id)
-                    setQuery('')
-                  }}
+                <section
+                  className={`support-nav-group-v728 ${collapsed ? 'collapsed' : ''} ${activeInGroup ? 'has-active' : ''}`}
+                  key={group.id}
                 >
-                  <Icon name={icon} size={15} />
-                  <span>{label}</span>
-                  {count > 0 && <small>{count}</small>}
-                </button>
+                  <button
+                    type="button"
+                    className="support-nav-group-head-v728"
+                    onClick={() => toggleSupportGroupV728(group.id)}
+                    aria-expanded={!collapsed}
+                  >
+                    <span><Icon name={group.icon} size={11}/><strong>{group.label}</strong></span>
+                    <Icon name="chevron" size={10}/>
+                  </button>
+
+                  {!collapsed && (
+                    <div className="support-nav-group-items-v728">
+                      {entries.map(([id, label, icon]) => {
+                        const count = supportNavCountV728(id)
+                        return (
+                          <button
+                            key={id}
+                            className={`${tab === id ? 'active' : ''} ${id === 'dms' && supportTicketSummaryV755.waiting > 0 ? 'support-nav-waiting-v757' : ''}`.trim()}
+                            onClick={() => {
+                              setTab(id)
+                              setQuery('')
+                            }}
+                          >
+                            {supportNavGlyphV728(id, icon)}
+                            <span>{label}</span>
+                            {count > 0 && <small>{count}</small>}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  )}
+                </section>
               )
             })}
             <div className="support-console-nav-bottom">
@@ -815,7 +950,11 @@ export function SupportConsole({
                 <h3>
                   {tab === 'queue'
                     ? 'Needs attention'
-                    : tab === 'players'
+                    : tab === 'reviewing'
+                      ? 'Reviewing'
+                      : tab === 'resolved'
+                        ? 'Resolved'
+                        : tab === 'players'
                       ? 'Player reports'
                       : tab === 'spaces'
                         ? 'Spaces reports'
@@ -836,7 +975,7 @@ export function SupportConsole({
                                         : 'Support conversations'}
                 </h3>
               </div>
-              {['queue', 'players', 'spaces', 'bugs'].includes(tab) && (
+              {['queue', 'players', 'spaces', 'bugs', 'reviewing', 'resolved'].includes(tab) && (
                 <label>
                   <Icon name="search" size={14} />
                   <input
@@ -850,6 +989,13 @@ export function SupportConsole({
                 <Icon name="refresh" size={13} /> Refresh
               </button>
             </div>
+
+            {['reviewing', 'resolved'].includes(tab) && (
+              <div className="support-state-tabs-v72" role="tablist" aria-label="Support item type">
+                <button className={caseBucketV72 === 'reports' ? 'active' : ''} onClick={() => setCaseBucketV72('reports')}>Reports</button>
+                <button className={caseBucketV72 === 'bugs' ? 'active' : ''} onClick={() => setCaseBucketV72('bugs')}>Bugs</button>
+              </div>
+            )}
 
             {loading ? (
               <div className="support-console-loading support-console-loading-v17">
@@ -1062,7 +1208,8 @@ export function SupportConsole({
                 </div>
               </div>
             ) : tab === 'dms' ? (
-              <div className="support-dm-center-v53">
+              <div className="support-dm-center-v53 support-ticket-host-v73">
+                <SupportTicketConsoleV73 />
                 {access.can('view_accounts') && (
                   <section className="support-dm-compose-card-v53">
                     <header>
@@ -1169,7 +1316,7 @@ export function SupportConsole({
                         <span className="support-case-type-v17">
                           <Icon name="members" size={13} /> PLAYER
                         </span>
-                        <span className={`support-case-status-v17 status-${report.status}`}>
+                        <span className={`support-case-status-v17 status-${report.status === 'reviewed' ? 'Reviewing' : report.status}`}>
                           {report.status}
                         </span>
                         <time>{new Date(report.createdAt).toLocaleString()}</time>
@@ -1317,7 +1464,7 @@ export function SupportConsole({
                         <span className={`support-priority-v17 priority-${item.priority}`}>
                           {item.priority}
                         </span>
-                        <span className={`support-case-status-v17 status-${item.status}`}>
+                        <span className={`support-case-status-v17 status-${item.status === 'reviewed' ? 'Reviewing' : item.status}`}>
                           {item.status}
                         </span>
                         <time>{new Date(item.createdAt).toLocaleString()}</time>

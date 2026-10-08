@@ -1,0 +1,76 @@
+/* Spaces V74: three building bars, based on the supplied six-second loader. */
+.spaces-boot-v74 {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  margin: 0;
+  background: #08060e;
+  color: #c5bed3;
+  font-family: Inter, "Segoe UI", system-ui, sans-serif;
+  pointer-events: none;
+}
+.spaces-boot-v74, .spaces-boot-v74 * { box-sizing: border-box; }
+.spaces-boot-mark-v74 { display: flex; flex-direction: column; align-items: center; }
+.spaces-boot-city-v74 {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 15px;
+  width: 132px;
+  height: 102px;
+  padding: 0 6px 2px;
+  filter: drop-shadow(0 0 10px rgba(137, 78, 194, .12));
+}
+.spaces-boot-bar-v74 {
+  --tower-height: 48px;
+  position: relative;
+  display: block;
+  flex: 0 0 26px;
+  width: 26px;
+  height: var(--tower-height);
+  border-radius: 1px 1px 0 0;
+  background: linear-gradient(90deg, #63338c 0%, #9255bf 18%, #aa79d2 35%, #8350ac 63%, #512e72 66%, #3a234f 100%);
+  box-shadow: inset 1px 0 rgba(222, 189, 246, .18), inset -1px 0 rgba(191, 146, 224, .08);
+  animation: spacesBuildV74 6s cubic-bezier(.25,.7,.3,1) infinite both;
+}
+.spaces-boot-bar-v74::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -7px;
+  height: 8px;
+  background: linear-gradient(120deg, #bf93dd, #9664bd 64%, #5c397a);
+  clip-path: polygon(0 65%, 64% 0, 100% 35%, 100% 100%, 0 100%);
+}
+.spaces-boot-bar-v74::after {
+  content: '';
+  position: absolute;
+  left: -2px;
+  right: -2px;
+  bottom: -2px;
+  height: 2px;
+  border-radius: 1px;
+  background: #452b63;
+}
+.spaces-boot-bar-v74:nth-child(2) { --tower-height: 68px; animation-delay: .28s; }
+.spaces-boot-bar-v74:nth-child(3) { --tower-height: 88px; animation-delay: .56s; }
+.spaces-boot-label-v74 {
+  margin-top: 18px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 18px;
+  letter-spacing: .065em;
+}
+@keyframes spacesBuildV74 {
+  0%, 7%, 95%, 100% { height: 2px; opacity: .2; }
+  13%, 89% { height: calc(var(--tower-height) * .18); opacity: .55; }
+  20%, 83% { height: calc(var(--tower-height) * .38); opacity: .73; }
+  27%, 77% { height: calc(var(--tower-height) * .59); opacity: .86; }
+  34%, 71% { height: calc(var(--tower-height) * .8); opacity: .95; }
+  42%, 63% { height: var(--tower-height); opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .spaces-boot-bar-v74 { animation: none; height: var(--tower-height); opacity: 1; }
+}

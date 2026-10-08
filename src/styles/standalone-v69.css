@@ -1,0 +1,310 @@
+/* Spaces v69 — Discord-like direct-message rhythm + compact People UI */
+
+/* Friends navigation: compact, left-aligned, predictable. */
+.sidebar-friends-v54 {
+  gap: 1px !important;
+}
+
+.sidebar-friends-v54 .sidebar-section-label {
+  margin: 10px 8px 4px !important;
+  padding: 0 !important;
+  font-size: 9px !important;
+  letter-spacing: .1em !important;
+  opacity: .66;
+}
+
+.sidebar-friends-v54 > .sidebar-item {
+  min-height: 34px !important;
+  height: 34px !important;
+  display: grid !important;
+  grid-template-columns: 20px minmax(0, 1fr) auto !important;
+  align-items: center !important;
+  justify-items: start !important;
+  gap: 8px !important;
+  padding: 0 8px !important;
+  margin: 0 4px !important;
+  border-radius: 6px !important;
+  text-align: left !important;
+}
+
+.sidebar-friends-v54 > .sidebar-item > svg,
+.sidebar-friends-v54 > .sidebar-item > .person-plus-icon-v68 {
+  justify-self: center !important;
+}
+
+.sidebar-friends-v54 > .sidebar-item > span:not(.person-plus-icon-v68) {
+  min-width: 0;
+  justify-self: stretch !important;
+  text-align: left !important;
+}
+
+.sidebar-friends-v54 > .sidebar-item:hover,
+.sidebar-friends-v54 > .sidebar-item.active {
+  background: rgba(255,255,255,.055) !important;
+}
+
+/* Make the person+ glyph read like one icon instead of a badge floating away. */
+.sidebar-friends-v54 .person-plus-icon-v68 {
+  width: 18px !important;
+  height: 18px !important;
+}
+
+.sidebar-friends-v54 .person-plus-icon-v68 > i {
+  right: -2px !important;
+  bottom: -2px !important;
+  min-width: 8px !important;
+  height: 8px !important;
+  padding: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  color: currentColor !important;
+  font-size: 10px !important;
+}
+
+/* DM list behaves visually like Discord's Direct Messages section. */
+.sidebar-dm-list-v54 {
+  display: grid !important;
+  gap: 1px !important;
+  margin: 10px 4px 0 !important;
+  padding: 0 !important;
+}
+
+.sidebar-dm-list-v54::before {
+  content: "DIRECT MESSAGES";
+  display: block;
+  padding: 0 7px 4px;
+  color: var(--muted);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: .09em;
+  opacity: .7;
+}
+
+.sidebar-dm-row-v54 {
+  position: relative;
+  min-height: 42px !important;
+  margin: 0 !important;
+  border-radius: 7px !important;
+  overflow: visible !important;
+}
+
+.sidebar-dm-open-v54 {
+  width: 100% !important;
+  height: 42px !important;
+  min-height: 42px !important;
+  display: grid !important;
+  grid-template-columns: 30px minmax(0, 1fr) auto !important;
+  align-items: center !important;
+  gap: 8px !important;
+  padding: 4px 7px !important;
+  border: 0 !important;
+  border-radius: 7px !important;
+  background: transparent !important;
+  text-align: left !important;
+}
+
+.sidebar-dm-row-v54:hover .sidebar-dm-open-v54,
+.sidebar-dm-row-v54.active-v55 .sidebar-dm-open-v54 {
+  background: rgba(255,255,255,.055) !important;
+}
+
+.sidebar-dm-row-v54.active-v55 .sidebar-dm-open-v54 {
+  background: color-mix(in srgb, var(--app-accent) 11%, rgba(255,255,255,.055)) !important;
+}
+
+.sidebar-dm-open-v54 > div {
+  min-width: 0 !important;
+  display: grid !important;
+  gap: 1px !important;
+}
+
+.sidebar-dm-open-v54 strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px !important;
+  line-height: 1.15 !important;
+  font-weight: 650 !important;
+}
+
+.sidebar-dm-open-v54 small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--muted) !important;
+  font-size: 10px !important;
+  line-height: 1.15 !important;
+}
+
+.sidebar-dm-pin-v54 {
+  opacity: 0 !important;
+  pointer-events: none;
+  transition: opacity .12s ease, background .12s ease;
+}
+
+.sidebar-dm-row-v54:hover .sidebar-dm-pin-v54,
+.sidebar-dm-row-v54.is-pinned-v54 .sidebar-dm-pin-v54 {
+  opacity: .9 !important;
+  pointer-events: auto;
+}
+
+.sidebar-dm-unread-v54 {
+  min-width: 17px !important;
+  height: 17px !important;
+  padding: 0 5px !important;
+  display: inline-grid !important;
+  place-items: center !important;
+  border-radius: 999px !important;
+  font-size: 9px !important;
+}
+
+/* Main Friends page: rows instead of floating cards. */
+.direct-people-grid-v23 {
+  width: min(820px, 100%) !important;
+  display: grid !important;
+  grid-template-columns: 1fr !important;
+  gap: 0 !important;
+  align-content: start !important;
+}
+
+.direct-people-grid-v23 > button {
+  width: 100% !important;
+  min-height: 54px !important;
+  margin: 0 !important;
+  padding: 7px 9px !important;
+  display: grid !important;
+  grid-template-columns: auto minmax(0, 1fr) auto !important;
+  align-items: center !important;
+  gap: 10px !important;
+  border: 0 !important;
+  border-top: 1px solid rgba(255,255,255,.045) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  text-align: left !important;
+  box-shadow: none !important;
+}
+
+.direct-people-grid-v23 > button:first-child {
+  border-top-color: transparent !important;
+}
+
+.direct-people-grid-v23 > button:hover {
+  margin-inline: -4px !important;
+  width: calc(100% + 8px) !important;
+  padding-inline: 13px !important;
+  border-top-color: transparent !important;
+  border-radius: 8px !important;
+  background: rgba(255,255,255,.05) !important;
+}
+
+.direct-people-grid-v23 > button > span:not(.support-reply-avatar-v53) {
+  min-width: 0 !important;
+}
+
+.direct-people-grid-v23 > button strong,
+.direct-people-grid-v23 > button small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Space > People: remove the huge floating bubbles and use compact member rows. */
+.members-view-v63 .people-grid-v63,
+.members-view-v63 .people-bubble-grid {
+  width: min(900px, 100%) !important;
+  display: grid !important;
+  grid-template-columns: 1fr !important;
+  gap: 3px !important;
+  align-content: start !important;
+  justify-items: stretch !important;
+}
+
+.members-view-v63 .people-card-v63,
+.members-view-v63 .people-bubble {
+  width: 100% !important;
+  min-height: 60px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 1px solid transparent !important;
+  border-radius: 8px !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  transform: none !important;
+  animation: none !important;
+  overflow: visible !important;
+}
+
+.members-view-v63 .people-card-v63:hover {
+  border-color: rgba(255,255,255,.045) !important;
+  background: rgba(255,255,255,.045) !important;
+}
+
+.members-view-v63 .people-card-main-v63 {
+  width: 100% !important;
+  min-height: 56px !important;
+  padding: 7px 9px !important;
+  display: grid !important;
+  grid-template-columns: 42px minmax(0, 1fr) auto !important;
+  align-items: center !important;
+  gap: 9px !important;
+  border-radius: 8px !important;
+  text-align: left !important;
+}
+
+.members-view-v63 .people-bubble-avatar {
+  width: 42px !important;
+  min-width: 42px !important;
+  transform: scale(.88) !important;
+  transform-origin: left center !important;
+}
+
+.members-view-v63 .people-bubble-copy,
+.members-view-v63 .people-name-line-v63 {
+  min-width: 0 !important;
+}
+
+.members-view-v63 .people-bubble-copy strong,
+.members-view-v63 .people-bubble-copy small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.members-view-v63 .people-role-line-v63 {
+  min-height: 0 !important;
+  margin: -5px 8px 7px 60px !important;
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+}
+
+.members-view-v63 .people-role-chips-v63 {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 4px !important;
+}
+
+.members-view-v63 .people-role-chip-v63,
+.members-view-v63 .people-role-more-v63 {
+  min-height: 19px !important;
+  padding: 2px 7px !important;
+  border-radius: 5px !important;
+  font-size: 9px !important;
+}
+
+.members-view-v63 .people-card-main-v63 > svg {
+  opacity: 0 !important;
+  transition: opacity .12s ease;
+}
+
+.members-view-v63 .people-card-v63:hover .people-card-main-v63 > svg {
+  opacity: .7 !important;
+}
+
+@media (max-width: 720px) {
+  .direct-people-grid-v23,
+  .members-view-v63 .people-grid-v63,
+  .members-view-v63 .people-bubble-grid {
+    width: 100% !important;
+  }
+}

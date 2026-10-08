@@ -46,6 +46,21 @@ jobs:
       - name: Install npm dependencies
         run: npm ci
 
+      # SPACES_V77_7_VERSION_SYNC
+      - name: Sync Spaces version
+        run: npm run version:sync
+
+      # SPACES_V78_ANDROID_TEST_APK
+      - name: Build installable Android test APK
+        run: npx tauri android build --debug --apk
+
+      - name: Upload Android test APK
+        uses: actions/upload-artifact@v7
+        with:
+          name: Spaces-Android-Test-APK
+          path: src-tauri/gen/android/app/build/outputs/apk/**/*.apk
+          if-no-files-found: error
+
       - name: Configure Android signing
         shell: bash
         env:

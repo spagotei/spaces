@@ -1,5 +1,5 @@
 import type { IconName } from '../components/Icon'
-import type { WorkspaceChannel, WorkspaceSummary } from '../types/spaces'
+import type { WorkspaceChannel, WorkspaceSummary, WorkspaceChannelPermissionAction, WorkspaceChannelPermissionTarget } from '../types/spaces'
 
 export type ChannelIconChoice =
   | { kind: 'icon'; value: IconName }
@@ -366,4 +366,62 @@ export function getWorkspaceNumber(space: WorkspaceSummary, allSpaces: Workspace
   stored.next = next
   localStorage.setItem(workspaceIdsKey, JSON.stringify(stored))
   return stored.values[space.id] ?? 0
+}
+
+
+// ---------------------------------------------------------------------------
+// V70 category permission templates. Categories themselves are intentionally
+// local Spaces UI metadata; synced child channels always receive real server
+// channel overwrites.
+// ---------------------------------------------------------------------------
+export type CategoryPermissionOverride = {
+  targetType: WorkspaceChannelPermissionTarget
+  targetId: string
+  allow: WorkspaceChannelPermissionAction[]
+  deny: WorkspaceChannelPermissionAction[]
+}
+
+type PermissionMetaV70 = {
+  templates: Record<string, CategoryPermissionOverride[]>
+  sync: Record<string, string | null>
+}
+
+function permissionMetaKeyV70(workspaceId: string) { return `spaces.channelPermissions.v70.${workspaceId}` }
+function loadPermissionMetaV70(workspaceId: string): PermissionMetaV70 {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(permissionMetaKeyV70(workspaceId)) || '{}') as Partial<PermissionMetaV70>
+    return { templates: parsed.templates ?? {}, sync: parsed.sync ?? {} }
+  } catch { return { templates: {}, sync: {} } }
+}
+function savePermissionMetaV70(workspaceId: string, value: PermissionMetaV70) {
+  localStorage.setItem(permissionMetaKeyV70(workspaceId), JSON.stringify(value))
+  window.dispatchEvent(new CustomEvent('spaces-channel-meta-v70', { detail: { workspaceId } }))
+}
+function cleanPermissionRowsV70(rows: CategoryPermissionOverride[]): CategoryPermissionOverride[] {
+  return rows.map(row => ({
+    targetType: row.targetType,
+    targetId: row.targetId,
+    allow: [...new Set(row.allow)].sort(),
+    deny: [...new Set(row.deny)].sort(),
+  })).sort((a, b) => `${a.targetType}:${a.targetId}`.localeCompare(`${b.targetType}:${b.targetId}`))
+}
+export function channelPermissionOverridesEqual(a: CategoryPermissionOverride[], b: CategoryPermissionOverride[]) {
+  return JSON.stringify(cleanPermissionRowsV70(a)) === JSON.stringify(cleanPermissionRowsV70(b))
+}
+export function getCategoryPermissionTemplate(workspaceId: string, _channels: WorkspaceChannel[], categoryId: string) {
+  return cleanPermissionRowsV70(loadPermissionMetaV70(workspaceId).templates[categoryId] ?? [])
+}
+export function saveCategoryPermissionTemplate(workspaceId: string, _channels: WorkspaceChannel[], categoryId: string, rows: CategoryPermissionOverride[]) {
+  const store = loadPermissionMetaV70(workspaceId)
+  store.templates[categoryId] = cleanPermissionRowsV70(rows)
+  savePermissionMetaV70(workspaceId, store)
+}
+export function getChannelPermissionSyncCategory(workspaceId: string, _channels: WorkspaceChannel[], channelId: string) {
+  const store = loadPermissionMetaV70(workspaceId)
+  return Object.prototype.hasOwnProperty.call(store.sync, channelId) ? store.sync[channelId] : null
+}
+export function setChannelPermissionSyncCategory(workspaceId: string, _channels: WorkspaceChannel[], channelId: string, categoryId: string | null) {
+  const store = loadPermissionMetaV70(workspaceId)
+  store.sync[channelId] = categoryId
+  savePermissionMetaV70(workspaceId, store)
 }

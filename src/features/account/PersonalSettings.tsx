@@ -14,6 +14,7 @@ import { gifFileToDataUrl, imageFileToRawDataUrl, isGifDataUrl, isGifFile } from
 import { formatTime } from '../../utils/format'
 import { formatPublicUserId } from '../../utils/public-id'
 import { platformRoleLabel } from '../../utils/permissions'
+import { ensureMobileNotificationPermissionV72, isMobileDeviceV72 } from '../../utils/native-notifications'
 
 export type PersonalSettingsTab = 'profile' | 'content' | 'appearance' | 'accessibility' | 'notifications' | 'security' | 'developer'
 type Tab = PersonalSettingsTab
@@ -40,6 +41,7 @@ export function PersonalSettings({ onClose, initialTab = 'profile' }: { onClose:
   const [displayName, setDisplayName] = useState(profile?.displayName ?? '')
   const [bio, setBio] = useState(profile?.bio ?? '')
   const [profileAccent, setProfileAccent] = useState(profile?.profileAccent ?? '#8b6ca8')
+  const profileDraftSourceV72 = useRef(profile ? { id: profile.id, displayName: profile.displayName, bio: profile.bio, profileAccent: profile.profileAccent || '#8b6ca8' } : null)
   const [busy, setBusy] = useState(false)
   const [sessions, setSessions] = useState<WorkspaceSessionInfo[]>([])
   const [sessionsLoading, setSessionsLoading] = useState(false)
@@ -64,10 +66,19 @@ export function PersonalSettings({ onClose, initialTab = 'profile' }: { onClose:
 
   useEffect(() => {
     if (!profile) return
-    setDisplayName(profile.displayName)
-    setBio(profile.bio)
-    setProfileAccent(profile.profileAccent || '#8b6ca8')
-  }, [profile])
+    const source = profileDraftSourceV72.current
+    const dirtyAgainstSource = Boolean(source && source.id === profile.id && (
+      displayName !== source.displayName ||
+      bio !== source.bio ||
+      profileAccent !== source.profileAccent
+    ))
+    if (dirtyAgainstSource) return
+    const next = { id: profile.id, displayName: profile.displayName, bio: profile.bio, profileAccent: profile.profileAccent || '#8b6ca8' }
+    profileDraftSourceV72.current = next
+    setDisplayName(next.displayName)
+    setBio(next.bio)
+    setProfileAccent(next.profileAccent)
+  }, [profile?.id, profile?.displayName, profile?.bio, profile?.profileAccent])
 
   useEffect(() => {
     if (tab !== 'security') return
@@ -106,6 +117,7 @@ export function PersonalSettings({ onClose, initialTab = 'profile' }: { onClose:
         publicProfile: profile?.publicProfile ?? true,
         profileAccent,
       })
+      profileDraftSourceV72.current = { id: profile?.id ?? '', displayName: displayName.trim(), bio: bio.slice(0, 240), profileAccent }
     } catch (error) {
       pushToast(error instanceof Error ? error.message : 'Could not save profile.', 'danger')
     } finally {
@@ -273,6 +285,18 @@ export function PersonalSettings({ onClose, initialTab = 'profile' }: { onClose:
     } catch (error) {
       pushToast(error instanceof Error ? error.message : 'Could not regenerate recovery codes.', 'danger')
     } finally { setBusy(false) }
+  }
+
+  async function setMobileNotificationsV72(value: boolean) {
+    if (value && isMobileDeviceV72()) {
+      const granted = await ensureMobileNotificationPermissionV72(true)
+      if (!granted) {
+        pushToast('Allow notifications in your phone settings to enable the notification bar.', 'info')
+        setPreference('mobileSystemNotifications', false)
+        return
+      }
+    }
+    setPreference('mobileSystemNotifications', value)
   }
 
   async function reportBug() {
@@ -445,6 +469,15 @@ export function PersonalSettings({ onClose, initialTab = 'profile' }: { onClose:
               <ToggleRow title="In-app previews" description="Show the small notification card while you are using Spaces." checked={preferences.notificationPreviews} onChange={value => setPreference('notificationPreviews', value)} />
               <ToggleRow title="Notification sounds" description="Play the Spaces sound assigned to an incoming notification." checked={preferences.desktopSounds} onChange={value => setPreference('desktopSounds', value)} />
             </section>
+            <section className="settings-card settings-card-stack mobile-notification-card-v72">
+              <div className="section-heading"><div><span className="eyebrow">MOBILE NOTIFICATION BAR</span><h3>Phone notifications</h3><p>Native Android or iOS banners use the sender, conversation, and message preview like Discord.</p></div></div>
+              <ToggleRow title="System notification bar" description="Show native phone notifications when Spaces receives new activity." checked={preferences.mobileSystemNotifications} onChange={value => void setMobileNotificationsV72(value)} />
+              <ToggleRow title="Direct messages" description="Show a notification like “User · DM” with the message preview." checked={preferences.directNotifications} onChange={value => setPreference('directNotifications', value)} />
+              <ToggleRow title="Group DMs" description="Show group-message notifications with the sender and group name." checked={preferences.groupNotifications} onChange={value => setPreference('groupNotifications', value)} />
+              <ToggleRow title="Friend requests" description="Show new friend requests in the notification bar." checked={preferences.friendRequestNotifications} onChange={value => setPreference('friendRequestNotifications', value)} />
+              <ToggleRow title="Note comments" description="Show “New Comment on note” with the commenter and preview." checked={preferences.commentNotifications} onChange={value => setPreference('commentNotifications', value)} />
+              <small>Message previews follow the In-app previews setting above. Phone OS privacy settings can hide previews on the lock screen.</small>
+            </section>
             <section className="space-notification-controls">
               <div className="section-heading"><div><span className="eyebrow">SPACES</span><h3>Per-Space controls</h3><p>Mute noisy Spaces or hide them from your rails without leaving.</p></div></div>
               <div className="space-preference-list">
@@ -464,7 +497,7 @@ export function PersonalSettings({ onClose, initialTab = 'profile' }: { onClose:
           </>}
 
           {tab === 'security' && <>
-            <div className="settings-page-heading"><span className="eyebrow">ACCOUNT SECURITY</span><h2>Security</h2><p>Email verification and authenticator 2FA are separate. You can keep a verified email with 2FA off.</p><p>Secure your account without leaving Spaces. Codes and status stay inside the app UI.</p></div>
+            <div className="settings-page-heading"><span className="eyebrow">ACCOUNT SECURITY</span><h2>Security</h2><p>Email verification and authenticator 2FA are separate. You can keep a verified email with 2FA off.</p><p>Authenticator setup is issued as <strong>Spaces by Spagotei</strong>. Your authenticator may display its own catalog icon, but the issuer name identifies the official Spaces entry.</p></div>
 
             {securityLoading ? <div className="settings-loading security-loading-v16">Loading security status…</div> : <>
               <section className="security-overview-v16">
@@ -495,6 +528,11 @@ export function PersonalSettings({ onClose, initialTab = 'profile' }: { onClose:
 
                 {twoFactorSetup && <div className="two-factor-setup-v16">
                   <div className="two-factor-step"><b>1</b><div><strong>Add Spaces to your authenticator</strong><span>Tap the button on mobile or copy the secret into any TOTP app.</span></div></div>
+                  {/* SPACES_V77_7_AUTHY_BRAND */}
+                  <div className="spaces-totp-brand-v777" aria-label="Spaces authenticator identity">
+                    <img src={`${import.meta.env.BASE_URL}icon-128.png`} alt="" />
+                    <span><strong>Spaces</strong><small>yourspaces.net authenticator</small></span>
+                  </div>
                   <TotpQrCode uri={twoFactorSetup.otpauthUri} accountLabel={`Spaces @${profile?.username ?? 'account'}`} />
                   <div className="totp-secret-box"><code>{twoFactorSetup.secret}</code><div className="totp-secret-actions-v23"><button className="secondary-button compact" onClick={() => void navigator.clipboard.writeText(twoFactorSetup.secret)}><Icon name="copy" size={12}/>Copy setup key</button><button className="secondary-button compact" onClick={() => void navigator.clipboard.writeText(twoFactorSetup.otpauthUri)}><Icon name="copy" size={12}/>Copy authenticator link</button></div></div>
                   <a className="primary-button authenticator-link" href={twoFactorSetup.otpauthUri}><Icon name="shield" size={13}/>Open authenticator app</a>

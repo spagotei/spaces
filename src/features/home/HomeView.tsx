@@ -8,6 +8,7 @@ import { useSpaces } from '../../state/SpacesContext'
 import { usePreferences } from '../../state/PreferencesContext'
 import { timeAgo } from '../../utils/format'
 import { gifFileToDataUrl, imageFileToRawDataUrl, isGifFile } from '../../utils/image'
+import { SpaceIdentityBadgesV79 } from '../beta/v79/SpaceIdentityBadgesV79'
 
 function nextHomeGreeting() {
   const hour = new Date().getHours()
@@ -107,7 +108,7 @@ export function HomeView() {
   }
 
   return (
-    <div className="view-scroll home-view page-enter">
+    <div className="view-scroll home-view home-view-v78 page-enter">
       <section className="hero-panel">
         <div className="hero-copy">
           <span className="eyebrow hero-greeting-v41">{greeting}</span>
@@ -142,6 +143,8 @@ export function HomeView() {
               <button className="space-card" key={space.id} onClick={() => void chooseWorkspace(space.id)} style={{ '--delay': `${index * 45}ms`, '--space-accent': space.accentColor } as CSSProperties}>
                 <div className="space-card-banner">{space.bannerUrl && <AnimatedBackdrop src={space.bannerUrl} className="space-card-banner-media-v41" mode="always"/>}</div>
                 <div className="space-card-body">
+                {/* SPACES_V79_HOME_TRUST_BADGES */}
+                <SpaceIdentityBadgesV79 space={space} compact />
                   <span className={`space-icon-decor icon-decor-${space.iconDecoration ?? 'ring'}`} style={{ '--decor-accent': space.accentColor } as CSSProperties}><Avatar name={space.name} initials={space.initials} src={space.avatarUrl} size={46} accent={space.accentColor} animation="still" /></span>
                   <div><strong>{space.name}</strong><span>{space.description || 'Shared Space'}</span></div>
                   <Icon name="chevron" size={17} className="card-chevron" />

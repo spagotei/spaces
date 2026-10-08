@@ -16,6 +16,7 @@ import { defaultAdministratorRole, defaultStaffRole, flexibleRoleModelKey } from
 import { loadRoleLabels } from '../utils/workspace-local-meta'
 import type {
   WorkspaceBootstrap,
+  WorkspaceSync,
   WorkspaceChannel,
   WorkspaceCustomPermission,
   WorkspaceCustomRole,
@@ -51,6 +52,7 @@ import type {
   WorkspaceDirectGroup,
   WorkspaceDirectGroupMessage,
   WorkspaceDmPreference,
+  WorkspaceTypingUser,
 } from '../types/spaces'
 
 export type AppView = 'home' | 'chat' | 'notes' | 'members' | 'roles' | 'emoji' | 'activity' | 'invites' | 'settings' | 'staff'
@@ -99,12 +101,13 @@ type SpacesContextValue = {
   saveChannelPermissionOverwrite: (channelId: string, targetType: WorkspaceChannelPermissionTarget, targetId: string, allow: WorkspaceChannelPermissionAction[], deny: WorkspaceChannelPermissionAction[]) => Promise<WorkspaceChannelPermissionOverwrite>
   deleteChannelPermissionOverwrite: (channelId: string, targetType: WorkspaceChannelPermissionTarget, targetId: string) => Promise<void>
   reportUser: (userId: string, reason: string, details: string) => Promise<void>
-  sendMessage: (body: string, attachment?: WorkspaceMessageAttachment | null) => Promise<void>
+  sendMessage: (body: string, attachment?: WorkspaceMessageAttachment | null, replyToMessageId?: string | null) => Promise<void>
   editMessage: (messageId: string, body: string) => Promise<void>
   deleteMessage: (messageId: string) => Promise<void>
   saveNote: (note: Pick<WorkspaceNote, 'id' | 'channelId' | 'title' | 'body'>, reason?: string) => Promise<WorkspaceNote | null>
   deleteNote: (noteId: string) => Promise<void>
-  addComment: (noteId: string, body: string) => Promise<void>
+  addComment: (noteId: string, body: string, parentCommentId?: string | null) => Promise<void>
+  editComment: (commentId: string, body: string) => Promise<void>
   deleteComment: (commentId: string) => Promise<void>
   createRole: (input: { name: string; color: string; permissions: WorkspaceCustomPermission[]; hoist?: boolean; mentionable?: boolean }) => Promise<void>
   updateRole: (roleId: string, input: Partial<Pick<WorkspaceCustomRole, 'name' | 'color' | 'permissions' | 'position' | 'hoist' | 'mentionable'>>) => Promise<void>
@@ -145,6 +148,8 @@ type SpacesContextValue = {
   sendDirectGroupMessage: (groupId: string, body: string) => Promise<WorkspaceDirectGroupMessage>
   getWorkspaceDmPreference: (workspaceId: string) => Promise<WorkspaceDmPreference>
   updateWorkspaceDmPreference: (workspaceId: string, allowDms: boolean) => Promise<WorkspaceDmPreference>
+  listTypingPresence: (kind: 'channel' | 'dm' | 'group' | 'support', id: string) => Promise<WorkspaceTypingUser[]>
+  setTypingPresence: (kind: 'channel' | 'dm' | 'group' | 'support', id: string, active: boolean) => Promise<void>
   setPlatformSupportRole: (userId: string, role: 'support' | null) => Promise<void>
   listModerationReports: () => Promise<WorkspaceModerationReport[]>
   updateModerationReport: (reportId: string, status: 'reviewed' | 'dismissed') => Promise<void>
@@ -197,6 +202,83 @@ function storedNotificationReadBefore(userId: string | undefined) {
   return Number(localStorage.getItem(notificationReadStorageKey(userId)) || 0)
 }
 
+
+function mergeByIdV70<T extends { id: string }>(current: T[], incoming: T[]): T[] {
+  const map = new Map(current.map(item => [item.id, item]))
+  for (const item of incoming) map.set(item.id, item)
+  return [...map.values()]
+}
+
+function mergeWorkspaceSyncV70(current: WorkspaceBootstrap, update: WorkspaceSync): WorkspaceBootstrap {
+  const deleted = new Set(update.deletedNoteIds ?? [])
+  return {
+    ...current,
+    workspace: update.workspace ?? current.workspace,
+    notes: mergeByIdV70(current.notes, update.notes ?? []).filter(note => !deleted.has(note.id)),
+    messages: mergeByIdV70(current.messages, update.messages ?? []),
+    comments: mergeByIdV70(current.comments, update.comments ?? []),
+    logs: mergeByIdV70(current.logs, update.logs ?? []).sort((a, b) => b.createdAt - a.createdAt),
+    roles: update.roles ?? current.roles,
+    emojis: update.emojis ?? current.emojis,
+    members: update.members ?? current.members,
+    channels: update.channels ?? current.channels,
+  }
+}
+
+function workspaceCacheKeyV70(workspaceId: string) { return `spaces.workspaceCache.v70.${workspaceId}` }
+function readWorkspaceCacheV70(workspaceId: string): WorkspaceBootstrap | null {
+  try { const raw = localStorage.getItem(workspaceCacheKeyV70(workspaceId)); return raw ? JSON.parse(raw) as WorkspaceBootstrap : null }
+  catch { return null }
+}
+function writeWorkspaceCacheV70(workspaceId: string, value: WorkspaceBootstrap) {
+  try { localStorage.setItem(workspaceCacheKeyV70(workspaceId), JSON.stringify(value)) } catch { /* cache is best effort */ }
+}
+
+function notificationTargetReadStorageKeyV71(userId: string | undefined) {
+  return userId ? `spaces.notifications.targetsRead.v71.${userId}` : ''
+}
+
+function storedNotificationTargetReadsV71(userId: string | undefined): Record<string, number> {
+  if (!userId) return {}
+  try {
+    const parsed = JSON.parse(localStorage.getItem(notificationTargetReadStorageKeyV71(userId)) || '{}') as Record<string, unknown>
+    return Object.fromEntries(Object.entries(parsed).filter(([, value]) => Number.isFinite(Number(value))).map(([key, value]) => [key, Number(value)]))
+  } catch {
+    return {}
+  }
+}
+
+function notificationTargetKeyV71(item: {
+  workspaceId?: string | null
+  channelId?: string | null
+  conversationId?: string | null
+  groupId?: string | null
+  kind?: string | null
+}) {
+  if (item.conversationId) return `direct:${item.conversationId}`
+  if (item.groupId) return `group:${item.groupId}`
+  if (item.workspaceId && item.channelId) return `channel:${item.workspaceId}:${item.channelId}`
+  if (item.kind) return `kind:${item.kind}`
+  return ''
+}
+function lastViewedChannelKeyV728(workspaceId: string) {
+  return `spaces.lastChannel.v728.${workspaceId}`
+}
+
+function storedLastViewedChannelIdV728(workspaceId: string) {
+  try { return localStorage.getItem(lastViewedChannelKeyV728(workspaceId)) ?? '' } catch { return '' }
+}
+
+function lastViewedChannelV728<T extends { id: string }>(workspaceId: string, channels: T[]) {
+  const stored = storedLastViewedChannelIdV728(workspaceId)
+  return channels.find(channel => channel.id === stored) ?? channels[0] ?? null
+}
+
+function rememberLastViewedChannelV728(workspaceId: string, channelId: string) {
+  if (!workspaceId || !channelId) return
+  try { localStorage.setItem(lastViewedChannelKeyV728(workspaceId), channelId) } catch { /* ignore storage restrictions */ }
+}
+
 export function SpacesProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<WorkspaceSession | null>(() => loadWorkspaceSession())
   const [workspaces, setWorkspaces] = useState<WorkspaceSummary[]>([])
@@ -215,7 +297,9 @@ export function SpacesProvider({ children }: { children: ReactNode }) {
   const toastCounter = useRef(0)
   const notificationReadBefore = useRef(storedNotificationReadBefore(session?.profile.id))
   const notificationPollSince = useRef(Math.max(notificationReadBefore.current, Date.now() - 7 * 24 * 60 * 60 * 1000))
+  const notificationTargetReadsV71 = useRef<Record<string, number>>(storedNotificationTargetReadsV71(session?.profile.id))
   const workspaceCacheV44 = useRef(new Map<string, WorkspaceBootstrap>())
+  const workspaceSyncSinceV70 = useRef(new Map<string, number>())
   // Space bootstraps can overlap when the user switches Spaces quickly or a
   // background refresh is still in flight. Keep explicit request generations
   // so an older response can never replace the newest channel structure.
@@ -231,6 +315,21 @@ export function SpacesProvider({ children }: { children: ReactNode }) {
   // Keep the current profile available to callbacks without referencing an undeclared identifier.
   // v32.0's role-model upgrade used `profile` before defining it, which crashed the provider
   // during the first render and left the Tauri window blank.
+  const markNotificationTargetReadV71 = useCallback((filter: {
+    workspaceId?: string | null
+    channelId?: string | null
+    conversationId?: string | null
+    groupId?: string | null
+    kind?: string | null
+  }, at = Date.now()) => {
+    const key = notificationTargetKeyV71(filter)
+    const userId = session?.profile.id
+    if (!key || !userId) return
+    const next = { ...notificationTargetReadsV71.current, [key]: Math.max(notificationTargetReadsV71.current[key] ?? 0, at) }
+    notificationTargetReadsV71.current = next
+    localStorage.setItem(notificationTargetReadStorageKeyV71(userId), JSON.stringify(next))
+  }, [session?.profile.id])
+
   const profile = session?.profile ?? null
 
   useEffect(() => {
@@ -244,13 +343,16 @@ export function SpacesProvider({ children }: { children: ReactNode }) {
     if (!userId) {
       notificationReadBefore.current = 0
       notificationPollSince.current = Date.now()
+      notificationTargetReadsV71.current = {}
       setNotifications([])
       return
     }
     const readBefore = storedNotificationReadBefore(userId)
+    const targetReads = storedNotificationTargetReadsV71(userId)
     notificationReadBefore.current = readBefore
+    notificationTargetReadsV71.current = targetReads
     notificationPollSince.current = Math.max(readBefore, Date.now() - 7 * 24 * 60 * 60 * 1000)
-    setNotifications(storedNotifications(userId))
+    setNotifications(storedNotifications(userId).filter(item => item.createdAt > Math.max(readBefore, targetReads[notificationTargetKeyV71(item)] ?? 0)))
   }, [session?.profile.id])
 
   useEffect(() => {
@@ -264,6 +366,7 @@ export function SpacesProvider({ children }: { children: ReactNode }) {
         kind?: string
       }>).detail ?? {}
 
+      markNotificationTargetReadV71(filter)
       setNotifications(current => current.filter(item => {
         if (filter.id && item.id !== filter.id) return true
         if (filter.workspaceId && item.workspaceId !== filter.workspaceId) return true
@@ -277,7 +380,26 @@ export function SpacesProvider({ children }: { children: ReactNode }) {
 
     window.addEventListener('spaces-notifications-dismiss', dismiss)
     return () => window.removeEventListener('spaces-notifications-dismiss', dismiss)
-  }, [])
+  }, [markNotificationTargetReadV71])
+
+  useEffect(() => {
+    const syncReadV72 = (event: Event) => {
+      const filter = (event as CustomEvent<{
+        workspaceId?: string
+        channelId?: string
+        conversationId?: string
+        groupId?: string
+        kind?: string
+      }>).detail ?? {}
+      if (filter.conversationId) void api.markNotificationRead('dm', filter.conversationId).catch(() => undefined)
+      else if (filter.groupId) void api.markNotificationRead('group', filter.groupId).catch(() => undefined)
+      else if (filter.workspaceId && filter.channelId) void api.markNotificationRead('channel', filter.channelId).catch(() => undefined)
+      else if (filter.kind === 'support') void api.markNotificationRead('support', 'support').catch(() => undefined)
+      else if (filter.kind === 'friend_request') void api.markNotificationRead('friend_request', 'requests').catch(() => undefined)
+    }
+    window.addEventListener('spaces-notifications-dismiss', syncReadV72)
+    return () => window.removeEventListener('spaces-notifications-dismiss', syncReadV72)
+  }, [api])
 
   const clearNotifications = useCallback(() => {
     const now = Date.now()
@@ -285,8 +407,9 @@ export function SpacesProvider({ children }: { children: ReactNode }) {
     notificationReadBefore.current = now
     notificationPollSince.current = now
     if (userId) localStorage.setItem(notificationReadStorageKey(userId), String(now))
+    void api.markNotificationRead('all', 'all', now).catch(() => undefined)
     setNotifications([])
-  }, [session?.profile.id])
+  }, [api, session?.profile.id])
 
   const pushToast = useCallback((message: string, tone: Toast['tone'] = 'info') => {
     const id = ++toastCounter.current
@@ -306,23 +429,30 @@ export function SpacesProvider({ children }: { children: ReactNode }) {
     const choiceSerial = workspaceChoiceSerial.current
     const refreshSerial = ++workspaceRefreshSerial.current
     const next = await api.bootstrapWorkspace(workspaceId)
-
-    // Ignore stale refreshes. This prevents an older bootstrap from briefly
-    // removing newly-created channels or painting data from a Space we left.
-    if (
-      activeWorkspaceRef.current !== workspaceId
-      || workspaceChoiceSerial.current !== choiceSerial
-      || workspaceRefreshSerial.current !== refreshSerial
-    ) return
-
+    if (activeWorkspaceRef.current !== workspaceId || workspaceChoiceSerial.current !== choiceSerial || workspaceRefreshSerial.current !== refreshSerial) return
     workspaceCacheV44.current.set(workspaceId, next)
+    workspaceSyncSinceV70.current.set(workspaceId, Date.now())
+    writeWorkspaceCacheV70(workspaceId, next)
     setData(next)
     setWorkspaces(current => current.map(item => item.id === next.workspace.id ? next.workspace : item))
-    setActiveChannelId(current => {
-      if (current && next.channels.some(channel => channel.id === current)) return current
-      return next.channels[0]?.id ?? ''
-    })
+    setActiveChannelId(current => current && next.channels.some(channel => channel.id === current) ? current : next.channels[0]?.id ?? '')
   }, [activeWorkspaceId, api, session])
+
+  const syncWorkspaceIncrementalV70 = useCallback(async () => {
+    const workspaceId = activeWorkspaceRef.current
+    if (!workspaceId || !session) return
+    const since = workspaceSyncSinceV70.current.get(workspaceId) ?? Math.max(0, Date.now() - 5000)
+    const update = await api.syncWorkspace(workspaceId, since, false)
+    if (activeWorkspaceRef.current !== workspaceId) return
+    workspaceSyncSinceV70.current.set(workspaceId, update.serverTime || Date.now())
+    setData(current => {
+      if (!current || current.workspace.id !== workspaceId) return current
+      const merged = mergeWorkspaceSyncV70(current, update)
+      workspaceCacheV44.current.set(workspaceId, merged)
+      writeWorkspaceCacheV70(workspaceId, merged)
+      return merged
+    })
+  }, [api, session])
 
   useEffect(() => {
     let cancelled = false
@@ -359,10 +489,10 @@ export function SpacesProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!activeWorkspaceId || !session) return
     const timer = window.setInterval(() => {
-      if (document.visibilityState === 'visible') void refreshWorkspace().catch(() => undefined)
-    }, 12000)
+      if (document.visibilityState === 'visible') void syncWorkspaceIncrementalV70().catch(() => undefined)
+    }, 2500)
     return () => window.clearInterval(timer)
-  }, [activeWorkspaceId, refreshWorkspace, session])
+  }, [activeWorkspaceId, session, syncWorkspaceIncrementalV70])
 
   useEffect(() => {
     if (!session) return
@@ -378,7 +508,12 @@ export function SpacesProvider({ children }: { children: ReactNode }) {
             const existing = new Set(current.map(item => item.id))
             const map = new Map(current.map(item => [item.id, item]))
             for (const item of found) {
-              if (item.createdAt <= notificationReadBefore.current) continue
+              const targetReadV71 = notificationTargetReadsV71.current[notificationTargetKeyV71(item)] ?? 0
+              if (item.createdAt <= Math.max(notificationReadBefore.current, targetReadV71)) continue
+              if (item.workspaceId === activeWorkspaceId && item.channelId === activeChannelId) {
+                markNotificationTargetReadV71(item, item.createdAt)
+                continue
+              }
               map.set(item.id, item)
               if (!existing.has(item.id) && Date.now() - item.createdAt < 45_000) {
                 window.dispatchEvent(new CustomEvent('spaces-notification-peek', { detail: item }))
@@ -393,9 +528,12 @@ export function SpacesProvider({ children }: { children: ReactNode }) {
     }
 
     void poll()
-    const timer = window.setInterval(() => void poll(), 8000)
-    return () => { cancelled = true; window.clearInterval(timer) }
-  }, [api, session])
+    const timer = window.setInterval(() => void poll(), 2000)
+    const focus = () => void poll()
+    window.addEventListener('focus', focus)
+    document.addEventListener('visibilitychange', focus)
+    return () => { cancelled = true; window.clearInterval(timer); window.removeEventListener('focus', focus); document.removeEventListener('visibilitychange', focus) }
+  }, [activeChannelId, activeWorkspaceId, api, markNotificationTargetReadV71, session])
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -476,27 +614,28 @@ export function SpacesProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const chooseWorkspace = useCallback(async (workspaceId: string) => {
-    const cached = workspaceCacheV44.current.get(workspaceId)
+    const cached = workspaceCacheV44.current.get(workspaceId) ?? readWorkspaceCacheV70(workspaceId) ?? undefined
     const choiceSerial = ++workspaceChoiceSerial.current
     // Any refresh started for the previously-active Space is now obsolete.
     workspaceRefreshSerial.current += 1
     activeWorkspaceRef.current = workspaceId
 
-    // Always wait for one complete fresh bootstrap before painting the channel
-    // tree. Previously an in-memory snapshot could render first, making
-    // stale/missing channels pop in when the network response arrived.
-    setWorkspaceLoading(true)
+    // V70 paints the last usable snapshot immediately, then reconciles silently.
+    setWorkspaceLoading(!cached)
     setActiveWorkspaceId(workspaceId)
     setMobileNavOpen(false)
-    setData(null)
-    setActiveChannelId('')
-    setView('home')
+    setData(cached ?? null)
+    const cachedChannelV728 = cached ? lastViewedChannelV728(workspaceId, cached.channels) : null
+    setActiveChannelId(cachedChannelV728?.id ?? '')
+    setView(cachedChannelV728?.kind === 'notes' ? 'notes' : cachedChannelV728 ? 'chat' : 'home')
 
     try {
       const next = await api.bootstrapWorkspace(workspaceId)
       if (workspaceChoiceSerial.current !== choiceSerial || activeWorkspaceRef.current !== workspaceId) return
 
       workspaceCacheV44.current.set(workspaceId, next)
+      workspaceSyncSinceV70.current.set(workspaceId, Date.now())
+      writeWorkspaceCacheV70(workspaceId, next)
       setData(next)
       setWorkspaces(current => current.some(item => item.id === next.workspace.id)
         ? current.map(item => item.id === next.workspace.id ? next.workspace : item)
@@ -508,8 +647,9 @@ export function SpacesProvider({ children }: { children: ReactNode }) {
 
       // Commit the complete channel list at once so the sidebar does not
       // progressively fill in or temporarily lose channels.
-      setActiveChannelId(next.channels[0]?.id ?? '')
-      setView('home')
+      const restoredChannelV728 = lastViewedChannelV728(workspaceId, next.channels)
+      setActiveChannelId(restoredChannelV728?.id ?? '')
+      setView(restoredChannelV728?.kind === 'notes' ? 'notes' : restoredChannelV728 ? 'chat' : 'home')
     } catch (cause) {
       if (workspaceChoiceSerial.current !== choiceSerial || activeWorkspaceRef.current !== workspaceId) return
       if (!cached) {
@@ -523,7 +663,8 @@ export function SpacesProvider({ children }: { children: ReactNode }) {
       // Cache is fallback-only: it is never painted before the fresh bootstrap
       // finishes, but it still keeps Spaces usable if the request fails.
       setData(cached)
-      const fallback = cached.channels[0]
+      const fallback = lastViewedChannelV728(workspaceId, cached.channels)
+      if (fallback) rememberLastViewedChannelV728(activeWorkspaceId, fallback.id)
       setActiveChannelId(fallback?.id ?? '')
       setView(fallback?.kind === 'notes' ? 'notes' : fallback ? 'chat' : 'home')
       pushToast('Could not refresh this Space. Showing the last loaded copy.', 'info')
@@ -535,14 +676,16 @@ export function SpacesProvider({ children }: { children: ReactNode }) {
   }, [api, pushToast])
 
   const chooseChannel = useCallback((channelId: string) => {
+    rememberLastViewedChannelV728(activeWorkspaceId, channelId)
     setActiveChannelId(channelId)
     const channel = data?.channels.find(item => item.id === channelId)
     setView(channel?.kind === 'notes' ? 'notes' : 'chat')
     setMobileNavOpen(false)
+    markNotificationTargetReadV71({ workspaceId: activeWorkspaceId, channelId })
     window.dispatchEvent(new CustomEvent('spaces-notifications-dismiss', {
       detail: { workspaceId: activeWorkspaceId, channelId },
     }))
-  }, [activeWorkspaceId, data?.channels])
+  }, [activeWorkspaceId, data?.channels, markNotificationTargetReadV71])
 
   const createWorkspace = useCallback(async (name: string, options?: { description?: string; avatarUrl?: string | null; accentColor?: string }) => {
     let created = await api.createWorkspace(name)
@@ -576,6 +719,7 @@ export function SpacesProvider({ children }: { children: ReactNode }) {
     if (!activeWorkspaceId) return null
     const channel = await api.createChannel(activeWorkspaceId, name, description, kind)
     await refreshWorkspace()
+    rememberLastViewedChannelV728(activeWorkspaceId, channel.id)
     setActiveChannelId(channel.id)
     setView(channel.kind === 'notes' ? 'notes' : 'chat')
     pushToast(`#${channel.name} created.`, 'success')
@@ -630,11 +774,19 @@ export function SpacesProvider({ children }: { children: ReactNode }) {
     pushToast('Report sent to Spaces moderation.', 'success')
   }, [activeWorkspaceId, api, pushToast])
 
-  const sendMessage = useCallback(async (body: string, attachment: WorkspaceMessageAttachment | null = null) => {
-    if (!activeWorkspaceId || !activeChannelId) return
-    const message = await api.sendMessage(activeWorkspaceId, activeChannelId, body, attachment)
-    setData(current => current ? { ...current, messages: [...current.messages.filter(item => item.id !== message.id), message] } : current)
-  }, [activeChannelId, activeWorkspaceId, api])
+  const sendMessage = useCallback(async (body: string, attachment: WorkspaceMessageAttachment | null = null, replyToMessageId: string | null = null) => {
+    if (!activeWorkspaceId || !activeChannelId || !profile) return
+    const tempId = `temp-v70-${Date.now()}-${Math.random().toString(36).slice(2)}`
+    const optimistic = { id: tempId, workspaceId: activeWorkspaceId, channelId: activeChannelId, authorId: profile.id, authorName: profile.displayName, authorInitials: profile.initials, body, createdAt: Date.now(), editedAt: null, deletedAt: null, deletedBy: null, attachment, replyToMessageId }
+    setData(current => current ? { ...current, messages: [...current.messages, optimistic] } : current)
+    try {
+      const message = await api.sendMessage(activeWorkspaceId, activeChannelId, body, attachment, replyToMessageId)
+      setData(current => current ? { ...current, messages: [...current.messages.filter(item => item.id !== tempId && item.id !== message.id), message] } : current)
+    } catch (error) {
+      setData(current => current ? { ...current, messages: current.messages.filter(item => item.id !== tempId) } : current)
+      throw error
+    }
+  }, [activeChannelId, activeWorkspaceId, api, profile])
 
   const editMessage = useCallback(async (messageId: string, body: string) => {
     if (!activeWorkspaceId) return
@@ -645,9 +797,9 @@ export function SpacesProvider({ children }: { children: ReactNode }) {
   const deleteMessage = useCallback(async (messageId: string) => {
     if (!activeWorkspaceId) return
     await api.deleteMessage(activeWorkspaceId, messageId)
-    await refreshWorkspace()
+    setData(current => current ? { ...current, messages: current.messages.map(item => item.id === messageId ? { ...item, deletedAt: Date.now(), body: '' } : item) } : current)
     pushToast('Message removed.', 'success')
-  }, [activeWorkspaceId, api, pushToast, refreshWorkspace])
+  }, [activeWorkspaceId, api, pushToast])
 
   const saveNote = useCallback(async (note: Pick<WorkspaceNote, 'id' | 'channelId' | 'title' | 'body'>, reason = '') => {
     if (!activeWorkspaceId) return null
@@ -664,17 +816,31 @@ export function SpacesProvider({ children }: { children: ReactNode }) {
     pushToast('Note deleted.', 'success')
   }, [activeWorkspaceId, api, pushToast])
 
-  const addComment = useCallback(async (noteId: string, body: string) => {
+  const addComment = useCallback(async (noteId: string, body: string, parentCommentId: string | null = null) => {
+    if (!activeWorkspaceId || !profile) return
+    const tempId = `temp-comment-v70-${Date.now()}-${Math.random().toString(36).slice(2)}`
+    const optimistic = { id: tempId, workspaceId: activeWorkspaceId, noteId, authorId: profile.id, authorName: profile.displayName, authorUsername: profile.username, authorInitials: profile.initials, authorAvatarUrl: profile.avatarUrl, body, createdAt: Date.now(), editedAt: null, deletedAt: null, deletedBy: null, parentCommentId }
+    setData(current => current ? { ...current, comments: [...current.comments, optimistic] } : current)
+    try {
+      const saved = await api.addNoteComment(activeWorkspaceId, noteId, body, parentCommentId)
+      setData(current => current ? { ...current, comments: [...current.comments.filter(item => item.id !== tempId && item.id !== saved.id), saved] } : current)
+    } catch (error) {
+      setData(current => current ? { ...current, comments: current.comments.filter(item => item.id !== tempId) } : current)
+      throw error
+    }
+  }, [activeWorkspaceId, api, profile])
+
+  const editComment = useCallback(async (commentId: string, body: string) => {
     if (!activeWorkspaceId) return
-    const comment = await api.addNoteComment(activeWorkspaceId, noteId, body)
-    setData(current => current ? { ...current, comments: [...current.comments, comment] } : current)
+    const saved = await api.editNoteComment(activeWorkspaceId, commentId, body)
+    setData(current => current ? { ...current, comments: current.comments.map(item => item.id === saved.id ? saved : item) } : current)
   }, [activeWorkspaceId, api])
 
   const deleteComment = useCallback(async (commentId: string) => {
     if (!activeWorkspaceId) return
     await api.deleteNoteComment(activeWorkspaceId, commentId)
-    await refreshWorkspace()
-  }, [activeWorkspaceId, api, refreshWorkspace])
+    setData(current => current ? { ...current, comments: current.comments.map(item => item.id === commentId ? { ...item, deletedAt: Date.now(), body: '' } : item) } : current)
+  }, [activeWorkspaceId, api])
 
   const upgradeRoleModel = useCallback(async () => {
     if (!activeWorkspaceId || !data || !profile) return
@@ -961,6 +1127,8 @@ export function SpacesProvider({ children }: { children: ReactNode }) {
   const sendDirectGroupMessage = useCallback(async (groupId: string, body: string) => api.sendDirectGroupMessage(groupId, body), [api])
   const getWorkspaceDmPreference = useCallback(async (workspaceId: string) => api.getWorkspaceDmPreference(workspaceId), [api])
   const updateWorkspaceDmPreference = useCallback(async (workspaceId: string, allowDms: boolean) => api.updateWorkspaceDmPreference(workspaceId, allowDms), [api])
+  const listTypingPresence = useCallback(async (kind: 'channel' | 'dm' | 'group' | 'support', id: string) => api.listTypingPresence(kind, id), [api])
+  const setTypingPresence = useCallback(async (kind: 'channel' | 'dm' | 'group' | 'support', id: string, active: boolean) => api.setTypingPresence(kind, id, active), [api])
   const setPlatformSupportRole = useCallback(async (userId: string, role: 'support' | null) => {
     await api.setPlatformSupportRole(userId, role)
     await refreshWorkspace()
@@ -1061,6 +1229,7 @@ export function SpacesProvider({ children }: { children: ReactNode }) {
     saveNote,
     deleteNote,
     addComment,
+    editComment,
     deleteComment,
     createRole,
     updateRole,
@@ -1089,7 +1258,7 @@ export function SpacesProvider({ children }: { children: ReactNode }) {
     enableTwoFactor,
     disableTwoFactor,
     regenerateRecoveryCodes,
-    getDirectCenter, requestDirectConversation, acceptDirectConversation, declineDirectConversation, listDirectMessages, sendDirectMessage, createDirectGroup, updateDirectGroup, listDirectGroupMessages, sendDirectGroupMessage, getWorkspaceDmPreference, updateWorkspaceDmPreference,
+    getDirectCenter, requestDirectConversation, acceptDirectConversation, declineDirectConversation, listDirectMessages, sendDirectMessage, createDirectGroup, updateDirectGroup, listDirectGroupMessages, sendDirectGroupMessage, getWorkspaceDmPreference, updateWorkspaceDmPreference, listTypingPresence, setTypingPresence,
     setPlatformSupportRole,
     listModerationReports, updateModerationReport, banPlatformUser, unbanPlatformUser,
     createSupportCase, listSupportCases, updateSupportCase, listSupportMessages, sendSupportMessage,
@@ -1102,7 +1271,7 @@ export function SpacesProvider({ children }: { children: ReactNode }) {
     chooseWorkspace, commandOpen, createChannel, deleteChannel, createEmoji, createRole, createWorkspace, data, deleteComment,
     deleteEmoji, deleteMessage, deleteNote, deleteRole, upgradeRoleModel, editMessage, error, goHome, joinWorkspace, loading, login, completeBetaProfile,
     clearNotifications, logout, memberRailOpen, mobileNavOpen, pushToast, refreshWorkspace, refreshWorkspaces, saveNote, updateChannelPermissions, listChannelPermissionOverwrites, saveChannelPermissionOverwrite, deleteChannelPermissionOverwrite, reportUser,
-    sendMessage, session, notifications, setMemberRoles, changeMemberRole, removeMember, toasts, updateRole, updateBaseRoleSetting, reorderRoles, updateWorkspace, leaveWorkspace, deleteWorkspace, updateProfile, setAvatar, setBanner, listSessions, revokeSession, changePassword, getAccountSecurity, startEmailVerification, verifyEmail, beginTwoFactorSetup, enableTwoFactor, disableTwoFactor, regenerateRecoveryCodes, getDirectCenter, requestDirectConversation, acceptDirectConversation, declineDirectConversation, listDirectMessages, sendDirectMessage, createDirectGroup, updateDirectGroup, listDirectGroupMessages, sendDirectGroupMessage, getWorkspaceDmPreference, updateWorkspaceDmPreference, setPlatformSupportRole, listModerationReports, updateModerationReport, banPlatformUser, unbanPlatformUser, createSupportCase, listSupportCases, updateSupportCase, listSupportMessages, sendSupportMessage, searchSupportUsers, listSupportStaffMessages, sendSupportStaffMessage, restrictSupportSpace, unrestrictSupportSpace, deleteSupportSpace, listBetaAccess, inviteBetaEmail, revokeBetaAccess, view, workspaceLoading, workspaces,
+    sendMessage, session, notifications, setMemberRoles, changeMemberRole, removeMember, toasts, updateRole, updateBaseRoleSetting, reorderRoles, updateWorkspace, leaveWorkspace, deleteWorkspace, updateProfile, setAvatar, setBanner, listSessions, revokeSession, changePassword, getAccountSecurity, startEmailVerification, verifyEmail, beginTwoFactorSetup, enableTwoFactor, disableTwoFactor, regenerateRecoveryCodes, getDirectCenter, requestDirectConversation, acceptDirectConversation, declineDirectConversation, listDirectMessages, sendDirectMessage, createDirectGroup, updateDirectGroup, listDirectGroupMessages, sendDirectGroupMessage, getWorkspaceDmPreference, updateWorkspaceDmPreference, listTypingPresence, setTypingPresence, setPlatformSupportRole, listModerationReports, updateModerationReport, banPlatformUser, unbanPlatformUser, createSupportCase, listSupportCases, updateSupportCase, listSupportMessages, sendSupportMessage, searchSupportUsers, listSupportStaffMessages, sendSupportStaffMessage, restrictSupportSpace, unrestrictSupportSpace, deleteSupportSpace, listBetaAccess, inviteBetaEmail, revokeBetaAccess, view, workspaceLoading, workspaces,
   ])
 
   return <SpacesContext.Provider value={value}>{children}</SpacesContext.Provider>

@@ -7,7 +7,7 @@ import { EmojiPicker } from '../../components/EmojiPicker'
 import { renderRichText } from '../../components/RichText'
 import { usePreferences } from '../../state/PreferencesContext'
 import { useSpaces } from '../../state/SpacesContext'
-import type { WorkspaceChatMessage, WorkspaceMessageAttachment } from '../../types/spaces'
+import type { WorkspaceChatMessage, WorkspaceMessageAttachment, WorkspaceTypingUser } from '../../types/spaces'
 import { formatBytes, formatTime } from '../../utils/format'
 import { filterContent } from '../../utils/content-filter'
 import { hasWorkspacePermission } from '../../utils/permissions'
@@ -36,7 +36,7 @@ function runSlashCommand(input: string): string {
 
 export function ChatView() {
   const dialog = useAppDialog()
-  const { data, activeChannel, activeChannelId, profile, session, sendMessage, editMessage, deleteMessage, reportUser, pushToast } = useSpaces()
+  const { data, activeChannel, activeChannelId, profile, session, sendMessage, editMessage, deleteMessage, reportUser, pushToast, listTypingPresence, setTypingPresence } = useSpaces()
   const { preferences } = usePreferences()
   const [body, setBody] = useState('')
   const [attachment, setAttachment] = useState<WorkspaceMessageAttachment | null>(null)
@@ -48,6 +48,9 @@ export function ChatView() {
   const [replyTarget, setReplyTarget] = useState<WorkspaceChatMessage | null>(null)
   const [previewImage, setPreviewImage] = useState<{ src: string; name: string } | null>(null)
   const [revealedBlockedMessages, setRevealedBlockedMessages] = useState<string[]>([])
+  const [typingUsersV72, setTypingUsersV72] = useState<WorkspaceTypingUser[]>([])
+  const typingLastSignalV72 = useRef(0)
+  const typingStopTimerV72 = useRef<number | null>(null)
   const blockedUserIds = useBlockedUserIds(session?.token)
   const fileInput = useRef<HTMLInputElement>(null)
   const endRef = useRef<HTMLDivElement>(null)
@@ -82,6 +85,24 @@ export function ChatView() {
     ]
     return items.filter(item => item.label.slice(1).toLowerCase().includes(mentionQuery)).slice(0, 8)
   }, [canMentionEveryone, data, mentionMatch, mentionQuery])
+
+  function updateBodyV72(value: string) {
+    setBody(value)
+    if (!activeChannelId || !canSend) return
+    if (typingStopTimerV72.current) window.clearTimeout(typingStopTimerV72.current)
+    if (!value.trim()) {
+      void setTypingPresence('channel', activeChannelId, false).catch(() => undefined)
+      return
+    }
+    const now = Date.now()
+    if (now - typingLastSignalV72.current > 1200) {
+      typingLastSignalV72.current = now
+      void setTypingPresence('channel', activeChannelId, true).catch(() => undefined)
+    }
+    typingStopTimerV72.current = window.setTimeout(() => {
+      void setTypingPresence('channel', activeChannelId, false).catch(() => undefined)
+    }, 2800)
+  }
 
   function insertMention(value: string) {
     if (!mentionMatch) return
@@ -118,6 +139,25 @@ export function ChatView() {
     if (personalPingTokens.some(token => bodyLower.includes(token))) return true
     return authorCanMentionEveryone(message.authorId) && (bodyLower.includes('@everyone') || bodyLower.includes('@here'))
   }
+  useEffect(() => {
+    if (!activeChannelId || !session?.token) {
+      setTypingUsersV72([])
+      return
+    }
+    let cancelled = false
+    const load = () => void listTypingPresence('channel', activeChannelId)
+      .then(items => { if (!cancelled) setTypingUsersV72(items) })
+      .catch(() => undefined)
+    load()
+    const timer = window.setInterval(load, 1400)
+    return () => {
+      cancelled = true
+      window.clearInterval(timer)
+      if (typingStopTimerV72.current) window.clearTimeout(typingStopTimerV72.current)
+      void setTypingPresence('channel', activeChannelId, false).catch(() => undefined)
+    }
+  }, [activeChannelId, listTypingPresence, session?.token, setTypingPresence])
+
   useEffect(() => {
     setBody(draftKey ? localStorage.getItem(draftKey) ?? '' : '')
     setReplyTarget(null)
@@ -168,10 +208,7 @@ export function ChatView() {
     setSending(true)
     try {
       const transformed = runSlashCommand(body)
-      const replyPrefix = replyTarget
-        ? `↳ @${replyTarget.authorName}: ${replyTarget.body.replace(/\s+/g, ' ').slice(0, 72)}${replyTarget.body.length > 72 ? '…' : ''}\n`
-        : ''
-      await sendMessage(`${replyPrefix}${transformed}`.trim(), attachment)
+      await sendMessage(transformed, attachment, replyTarget?.id ?? null)
       setBody('')
       setAttachment(null)
       setEmojiOpen(false)
@@ -196,6 +233,13 @@ export function ChatView() {
   function editKeyDown(event: KeyboardEvent<HTMLTextAreaElement>, messageId: string) {
     if (event.key === 'Escape') { setEditingId(''); setEditBody(''); return }
     if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); void saveEdit(messageId) }
+  }
+
+  function jumpToReplyV70(messageId: string) {
+    const node = document.getElementById(`message-${messageId}`)
+    node?.scrollIntoView({ behavior: preferences.reducedMotion ? 'auto' : 'smooth', block: 'center' })
+    node?.classList.add('flash-reply-v70')
+    window.setTimeout(() => node?.classList.remove('flash-reply-v70'), 1400)
   }
 
   async function reportMessage(message: WorkspaceChatMessage) {
@@ -263,9 +307,10 @@ export function ChatView() {
           const authorAccent = own ? profile?.profileAccent : authorMember?.profileAccent
           const isImage = Boolean(message.attachment?.dataUrl && message.attachment.type.startsWith('image/'))
           return (
-            <article className={`message ${grouped ? 'message-grouped' : ''} ${messagePingsMe(message) ? 'message-pinged' : ''}`} key={message.id}>
+            <article id={`message-${message.id}`} className={`message ${grouped ? 'message-grouped' : ''} ${messagePingsMe(message) ? 'message-pinged' : ''}`} key={message.id}>
               {!grouped && <Avatar name={message.authorName} initials={message.authorInitials} src={authorAvatar} accent={authorAccent} size={38} />}
               <div className="message-main">
+                {message.replyToMessageId && (() => { const original = messages.find(item => item.id === message.replyToMessageId); return <button type="button" className="message-reply-reference-v70" onClick={() => jumpToReplyV70(message.replyToMessageId!)}><Icon name="reply" size={12}/>{original && !original.deletedAt ? <><strong>{original.authorName}</strong><span>{filterContent(original.body, preferences.contentFilter).slice(0, 100)}</span></> : <span>Original message deleted</span>}</button> })()}
                 {!grouped && <div className="message-meta"><strong>{message.authorName}</strong>{own && <span className="you-chip">YOU</span>}<time>{formatTime(message.createdAt)}</time></div>}
                 {editingId === message.id ? (
                   <div className="message-edit"><textarea value={editBody} onChange={event => setEditBody(event.target.value)} onKeyDown={event => editKeyDown(event, message.id)} autoFocus /><div><span>Enter to save · Shift+Enter for a line · Esc to cancel</span><button onClick={() => void saveEdit(message.id)}>Save</button></div></div>
@@ -308,6 +353,7 @@ export function ChatView() {
         <div ref={endRef} className="message-end-anchor" />
       </div>
 
+      <TypingIndicatorV72 users={typingUsersV72}/>
       <form className={`composer ${dragging ? 'composer-dragging' : ''} ${!canSend ? 'composer-locked' : ''}`} onSubmit={submit} onDragEnter={event => { event.preventDefault(); setDragging(true) }} onDragOver={event => { event.preventDefault(); setDragging(true) }} onDragLeave={event => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setDragging(false) }} onDrop={event => void dropFile(event)}>
         {dragging && <div className="composer-drop-hint"><Icon name="paperclip" /><span>Drop to attach to chat</span></div>}
         {replyTarget && <div className="composer-reply"><Icon name="reply" size={14} /><div><span>Replying to <strong>{replyTarget.authorName}</strong></span><p>{filterContent(replyTarget.body, preferences.contentFilter).slice(0, 110)}</p></div><button type="button" onClick={() => setReplyTarget(null)}><Icon name="x" size={14} /></button></div>}
@@ -317,7 +363,7 @@ export function ChatView() {
         <div className="composer-row">
           <button type="button" className="composer-icon" disabled={!canAttach} title={canAttach ? 'Attach file' : 'Attachments are not allowed for your roles'} onClick={() => fileInput.current?.click()}><Icon name="plus" /></button>
           <input ref={fileInput} type="file" hidden onChange={event => void pickFile(event)} accept=".png,.jpg,.jpeg,.webp,.txt,image/png,image/jpeg,image/webp,text/plain" />
-          <textarea disabled={!canSend} value={body} onChange={event => setBody(event.target.value)} onKeyDown={event => { if (preferences.enterToSend && event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); void submit() } }} placeholder={canSend ? `Message #${activeChannel.name}` : 'You can read this channel, but cannot send messages.'} rows={1} />
+          <textarea disabled={!canSend} value={body} onChange={event => updateBodyV72(event.target.value)} onKeyDown={event => { if (preferences.enterToSend && event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); void submit() } }} placeholder={canSend ? `Message #${activeChannel.name}` : 'You can read this channel, but cannot send messages.'} rows={1} />
           <button type="button" className={`composer-icon ${emojiOpen ? 'active' : ''}`} title="Emoji" onClick={() => setEmojiOpen(value => !value)}><Icon name="emoji" /></button>
           <button className="send-button" disabled={!canSend || sending || (!body.trim() && !attachment)} title="Send"><Icon name="send" size={17} /></button>
         </div>
@@ -325,4 +371,15 @@ export function ChatView() {
       {previewImage && <ImagePreview src={previewImage.src} name={previewImage.name} onClose={() => setPreviewImage(null)} />}
     </div>
   )
+}
+
+
+function TypingIndicatorV72({ users }: { users: WorkspaceTypingUser[] }) {
+  if (!users.length) return null
+  const text = users.length === 1
+    ? `${users[0].displayName} is typing...`
+    : users.length === 2
+      ? `${users[0].displayName} and ${users[1].displayName} are typing...`
+      : 'Multiple People are Talking'
+  return <div className="typing-indicator-v72"><span aria-hidden="true"><i/><i/><i/></span><span>{text}</span></div>
 }

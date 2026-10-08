@@ -10,9 +10,183 @@
     <link rel="manifest" href="/manifest.webmanifest" />
     <link rel="icon" type="image/png" href="/icon-128.png" />
     <title>Spaces</title>
+    <!-- SPACES_STARTUP_LOADING_HEAD -->
+<style>
+  :root {
+    --spaces-boot-bg: #09090c;
+    --spaces-boot-text: rgba(255,255,255,.94);
+    --spaces-boot-muted: rgba(255,255,255,.46);
+    --spaces-boot-accent: #9d7bc6;
+  }
+
+  html:not(.spaces-app-ready) #root {
+    opacity: 0;
+    transform: scale(.997);
+  }
+
+  html.spaces-app-ready #root {
+    opacity: 1;
+    transform: scale(1);
+    transition:
+      opacity 360ms cubic-bezier(.22,.8,.2,1),
+      transform 420ms cubic-bezier(.22,.8,.2,1);
+  }
+
+  #spaces-preboot {
+    position: fixed;
+    inset: 0;
+    z-index: 2147483646;
+    display: grid;
+    place-items: center;
+    overflow: hidden;
+    background:
+      radial-gradient(circle at 50% 47%, rgba(157,123,198,.11), transparent 24rem),
+      linear-gradient(180deg, #0a0a0d 0%, var(--spaces-boot-bg) 100%);
+    color: var(--spaces-boot-text);
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    transition:
+      opacity 440ms cubic-bezier(.22,.8,.2,1),
+      visibility 440ms step-end;
+    font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  }
+
+  html.spaces-app-ready #spaces-preboot {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+  }
+
+  .spaces-preboot-card {
+    position: relative;
+    width: min(330px, calc(100vw - 48px));
+    display: grid;
+    justify-items: center;
+    gap: 20px;
+    padding: 28px;
+    border: 1px solid rgba(255,255,255,.09);
+    border-radius: 24px;
+    background: rgba(255,255,255,.035);
+    box-shadow: 0 28px 90px rgba(0,0,0,.44);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    animation: spacesBootCardIn 480ms cubic-bezier(.2,.82,.2,1) both;
+  }
+
+  .spaces-preboot-mark {
+    height: 50px;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    gap: 6px;
+  }
+
+  .spaces-preboot-mark i {
+    display: block;
+    width: 7px;
+    height: 7px;
+    border: 1px solid rgba(255,255,255,.68);
+    border-radius: 999px;
+    background: transparent;
+    transform-origin: 50% 100%;
+    animation: spacesBootBuild 1.65s cubic-bezier(.3,.72,.25,1) infinite;
+  }
+
+  .spaces-preboot-mark i:nth-child(2) { animation-delay: 110ms; }
+  .spaces-preboot-mark i:nth-child(3) { animation-delay: 220ms; }
+
+  .spaces-preboot-copy {
+    display: grid;
+    justify-items: center;
+    gap: 6px;
+  }
+
+  .spaces-preboot-copy strong {
+    font-size: 22px;
+    line-height: 1;
+    letter-spacing: -.035em;
+    font-weight: 760;
+  }
+
+  .spaces-preboot-copy span {
+    font-size: 11px;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--spaces-boot-muted);
+  }
+
+  .spaces-preboot-progress {
+    width: min(190px, 65vw);
+    height: 2px;
+    overflow: hidden;
+    border-radius: 999px;
+    background: rgba(255,255,255,.06);
+  }
+
+  .spaces-preboot-progress::after {
+    content: "";
+    display: block;
+    width: 42%;
+    height: 100%;
+    border-radius: inherit;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(255,255,255,.78),
+      var(--spaces-boot-accent),
+      transparent
+    );
+    animation: spacesBootSweep 1.25s cubic-bezier(.45,0,.2,1) infinite;
+  }
+
+  @keyframes spacesBootBuild {
+    0%, 100% { height: 7px; border-radius: 999px; opacity: .52; }
+    34% { height: 27px; border-radius: 4px 4px 2px 2px; opacity: 1; }
+    58% { height: 42px; border-radius: 4px 4px 2px 2px; opacity: .92; }
+    78% { height: 12px; border-radius: 5px; opacity: .66; }
+  }
+
+  @keyframes spacesBootSweep {
+    from { transform: translateX(-145%); }
+    to { transform: translateX(345%); }
+  }
+
+  @keyframes spacesBootCardIn {
+    from { opacity: 0; transform: translateY(8px) scale(.985); filter: blur(3px); }
+    to { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    #spaces-preboot,
+    .spaces-preboot-card,
+    .spaces-preboot-mark i,
+    .spaces-preboot-progress::after,
+    #root {
+      animation: none !important;
+      transition-duration: 120ms !important;
+    }
+  }
+</style>
+    <style id="spaces-preboot-style">html,body,#root{margin:0;min-height:100%;background:#09080d}#spaces-preboot{position:fixed;inset:0;display:grid;place-items:center;background:#09080d;overflow:hidden}#spaces-preboot video{display:block;background:transparent}</style>
+
+  <style id="spaces-preboot-style-v77">html,body,#root{margin:0;width:100%;min-height:100%;background:#09080d}#spaces-preboot-v77{position:fixed;inset:0;display:grid;place-items:center;background:#09080d;overflow:hidden}#spaces-preboot-v77 video{display:block;width:100%;height:100%;object-fit:contain;background:transparent}</style>
   </head>
   <body>
-    <div id="root"></div>
+    <!-- SPACES_STARTUP_LOADING_BODY -->
+<div id="spaces-preboot" role="status" aria-live="polite" aria-label="Loading Spaces">
+  <div class="spaces-preboot-card">
+    <div class="spaces-preboot-mark" aria-hidden="true"><i></i><i></i><i></i></div>
+    <div class="spaces-preboot-copy">
+      <strong>Spaces</strong>
+      <span>Opening your workspace</span>
+    </div>
+    <div class="spaces-preboot-progress" aria-hidden="true"></div>
+  </div>
+</div>
+
+    <div id="root"><main id="spaces-preboot-v77"><video autoplay muted loop playsinline preload="auto" src="/Spaces-Bootloading-V77-transparent.webm"></video></main></div>
+
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "brand": "Spaces",
+  "from": {
+    "noreply": "Spaces <noreply@yourspaces.net>",
+    "support": "Spaces Support <support@yourspaces.net>",
+    "security": "Spaces Security <security@yourspaces.net>"
+  },
+  "replyTo": "support@yourspaces.net",
+  "sendEndpoint": "/v1/support/email",
+  "logoUrl": "",
+  "defaultHeroImageUrl": "",
+  "footerImageUrl": "",
+  "presetImages": [],
+  "note": "Server controls actual sender identity. Never trust client-provided from/reply-to values for delivery."
+}

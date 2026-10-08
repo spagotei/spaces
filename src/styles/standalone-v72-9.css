@@ -1,0 +1,300 @@
+/* Spaces V72.9: Discord-like DM activity ordering, Support nav polish, logo boot */
+
+/* ---------------- Support Console grouped nav ---------------- */
+.support-console-nav-v53 .support-nav-group-v728{
+  display:grid!important;
+  gap:3px!important;
+  margin:5px 4px 8px!important;
+}
+
+.support-console-nav-v53 .support-nav-group-head-v728{
+  appearance:none!important;
+  -webkit-appearance:none!important;
+  width:100%!important;
+  min-height:28px!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:space-between!important;
+  gap:7px!important;
+  padding:0 7px!important;
+  border:0!important;
+  border-radius:7px!important;
+  background:transparent!important;
+  background-image:none!important;
+  color:rgba(202,196,210,.48)!important;
+  box-shadow:none!important;
+  font:inherit!important;
+  cursor:pointer!important;
+}
+
+.support-console-nav-v53 .support-nav-group-head-v728:hover{
+  background:rgba(255,255,255,.025)!important;
+  color:rgba(224,219,229,.72)!important;
+}
+
+.support-console-nav-v53 .support-nav-group-head-v728 strong{
+  font-size:9px!important;
+  font-weight:780!important;
+  letter-spacing:.085em!important;
+}
+
+.support-console-nav-v53 .support-nav-group-items-v728{
+  display:grid!important;
+  gap:2px!important;
+  padding:0!important;
+}
+
+.support-console-nav-v53 .support-nav-group-items-v728>button{
+  appearance:none!important;
+  -webkit-appearance:none!important;
+  width:100%!important;
+  min-width:0!important;
+  min-height:35px!important;
+  display:grid!important;
+  grid-template-columns:20px minmax(0,1fr) auto!important;
+  align-items:center!important;
+  gap:8px!important;
+  margin:0!important;
+  padding:0 9px!important;
+  border:1px solid transparent!important;
+  border-radius:8px!important;
+  background:transparent!important;
+  background-image:none!important;
+  color:rgba(218,213,223,.76)!important;
+  box-shadow:none!important;
+  font:inherit!important;
+  font-size:11px!important;
+  text-align:left!important;
+  cursor:pointer!important;
+  transition:
+    background .12s ease,
+    border-color .12s ease,
+    color .12s ease,
+    transform .08s ease!important;
+}
+
+.support-console-nav-v53 .support-nav-group-items-v728>button:hover{
+  background:rgba(255,255,255,.035)!important;
+  border-color:rgba(255,255,255,.035)!important;
+  color:#f2edf5!important;
+}
+
+.support-console-nav-v53 .support-nav-group-items-v728>button:active{
+  transform:translateY(1px)!important;
+}
+
+.support-console-nav-v53 .support-nav-group-items-v728>button.active{
+  background:
+    linear-gradient(90deg,rgba(143,86,187,.16),rgba(107,64,143,.055))!important;
+  border-color:rgba(169,111,211,.19)!important;
+  color:#f7f2fa!important;
+  box-shadow:
+    inset 3px 0 0 rgba(179,115,224,.72),
+    inset 0 1px rgba(255,255,255,.018)!important;
+}
+
+.support-console-nav-v53 .support-nav-group-items-v728>button>svg,
+.support-console-nav-v53 .support-nav-group-items-v728>button>.support-nav-emoji-v728{
+  justify-self:center!important;
+  color:rgba(199,174,217,.68)!important;
+}
+
+.support-console-nav-v53 .support-nav-group-items-v728>button.active>svg{
+  color:#c78dea!important;
+}
+
+.support-console-nav-v53 .support-nav-group-items-v728>button>span:not(.support-nav-emoji-v728){
+  min-width:0!important;
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
+  white-space:nowrap!important;
+}
+
+.support-console-nav-v53 .support-nav-group-items-v728>button>small{
+  min-width:19px!important;
+  height:18px!important;
+  display:grid!important;
+  place-items:center!important;
+  margin:0!important;
+  padding:0 5px!important;
+  border:1px solid rgba(255,255,255,.055)!important;
+  border-radius:999px!important;
+  background:rgba(255,255,255,.035)!important;
+  color:rgba(230,225,234,.65)!important;
+  font-size:8px!important;
+  font-weight:750!important;
+}
+
+.support-console-nav-v53 .support-nav-group-items-v728>button.active>small{
+  border-color:rgba(175,111,219,.18)!important;
+  background:rgba(146,89,188,.15)!important;
+  color:#d7b2ef!important;
+}
+
+.support-console-nav-v53 .support-nav-emoji-v728{
+  width:18px!important;
+  height:18px!important;
+  display:grid!important;
+  place-items:center!important;
+  font-size:11px!important;
+  line-height:1!important;
+}
+
+/* ---------------- React fallback startup ---------------- */
+.spaces-logo-boot-v729{
+  position:fixed;
+  inset:0;
+  display:grid;
+  place-items:center;
+  background:transparent!important;
+  pointer-events:none;
+}
+
+.spaces-logo-boot-mark-v729{
+  position:relative;
+  width:190px;
+  height:138px;
+}
+
+.spaces-logo-boot-orbit-v729{
+  position:absolute;
+  left:50%;
+  top:50%;
+  width:166px;
+  height:72px;
+  transform:translate(-50%,-62%) rotate(-12deg);
+  border:2px solid rgba(164,94,219,.44);
+  border-left-color:rgba(205,145,246,.92);
+  border-right-color:rgba(116,60,165,.28);
+  border-radius:50%;
+  box-shadow:0 0 12px rgba(152,82,207,.14);
+  animation:v729Orbit 3.3s linear infinite;
+}
+
+.spaces-logo-boot-orbit-v729::after{
+  content:'';
+  position:absolute;
+  width:7px;
+  height:7px;
+  left:16px;
+  top:8px;
+  border-radius:50%;
+  background:#bd7ee7;
+  box-shadow:0 0 10px rgba(189,126,231,.72);
+}
+
+.spaces-logo-boot-buildings-v729{
+  position:absolute;
+  left:50%;
+  top:18px;
+  transform:translateX(-50%);
+  height:74px;
+  display:flex;
+  align-items:flex-end;
+  justify-content:center;
+  gap:5px;
+}
+
+.spaces-logo-boot-buildings-v729 i{
+  --h:50px;
+  position:relative;
+  display:block;
+  width:12px;
+  height:var(--h);
+  transform-origin:50% 100%;
+  border:1px solid rgba(190,133,232,.92);
+  border-bottom-color:rgba(190,133,232,.34);
+  border-radius:2px 2px 1px 1px;
+  background:linear-gradient(90deg,
+    rgba(103,49,153,.97) 0 26%,
+    rgba(177,108,225,.98) 27% 63%,
+    rgba(94,42,143,.97) 64% 100%);
+  box-shadow:
+    inset 1px 0 rgba(219,172,248,.12),
+    inset -1px 0 rgba(44,16,72,.38);
+  animation:v729Building 2.6s cubic-bezier(.45,0,.2,1) infinite;
+}
+
+.spaces-logo-boot-buildings-v729 i::before{
+  content:'';
+  position:absolute;
+  width:12px;
+  height:6px;
+  left:-1px;
+  top:-6px;
+  clip-path:polygon(0 68%,68% 0,100% 30%,31% 100%);
+  background:linear-gradient(135deg,#d8a4f9 0%,#aa68d8 52%,#613389 100%);
+}
+
+.spaces-logo-boot-buildings-v729 i:nth-child(1){--h:27px;animation-delay:0s}
+.spaces-logo-boot-buildings-v729 i:nth-child(2){--h:41px;animation-delay:.06s}
+.spaces-logo-boot-buildings-v729 i:nth-child(3){--h:61px;animation-delay:.12s}
+.spaces-logo-boot-buildings-v729 i:nth-child(4){--h:61px;animation-delay:.18s}
+.spaces-logo-boot-buildings-v729 i:nth-child(5){--h:41px;animation-delay:.24s}
+.spaces-logo-boot-buildings-v729 i:nth-child(6){--h:27px;animation-delay:.30s}
+
+.spaces-logo-boot-word-v729{
+  position:absolute;
+  left:50%;
+  bottom:7px;
+  transform:translateX(-50%);
+  font-size:15px;
+  line-height:1;
+  font-weight:840;
+  letter-spacing:.28em;
+  text-indent:.28em;
+  color:rgba(255,255,255,.10);
+  -webkit-text-stroke:1px rgba(189,136,224,.22);
+  background:linear-gradient(
+    0deg,
+    #b66fde 0%,
+    #c98af0 47%,
+    rgba(255,255,255,.09) 48%,
+    rgba(255,255,255,.09) 100%
+  );
+  background-size:100% 220%;
+  background-position:0 100%;
+  -webkit-background-clip:text;
+  background-clip:text;
+  -webkit-text-fill-color:transparent;
+  animation:v729Liquid 2.8s ease-in-out infinite;
+}
+
+@keyframes v729Building{
+  0%,100%{transform:scaleY(.82);opacity:.75}
+  48%{transform:scaleY(1);opacity:1}
+  72%{transform:scaleY(.92);opacity:.88}
+}
+
+@keyframes v729Orbit{
+  from{transform:translate(-50%,-62%) rotate(-12deg)}
+  to{transform:translate(-50%,-62%) rotate(348deg)}
+}
+
+@keyframes v729Liquid{
+  0%,100%{background-position:0 108%}
+  45%,62%{background-position:0 12%}
+}
+
+@media(max-width:700px){
+  .support-console-nav-v53 .support-nav-group-v728{
+    min-width:max-content!important;
+    margin:0 3px!important;
+  }
+
+  .support-console-nav-v53 .support-nav-group-head-v728{
+    display:none!important;
+  }
+
+  .support-console-nav-v53 .support-nav-group-items-v728{
+    display:flex!important;
+    gap:4px!important;
+  }
+
+  .support-console-nav-v53 .support-nav-group-items-v728>button{
+    width:auto!important;
+    min-width:max-content!important;
+    grid-template-columns:18px auto auto!important;
+    padding:0 9px!important;
+  }
+}

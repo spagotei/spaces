@@ -1,10 +1,12 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { invoke } from '@tauri-apps/api/core'
 import { DesktopTitlebar, isTauriDesktopRuntime } from './components/DesktopTitlebar'
 import { CustomCursor } from './components/CustomCursor'
 import { WelcomeToSpaces } from './components/WelcomeToSpaces'
 import { AppDialogProvider } from './components/AppDialog'
 import { LoginScreen } from './features/auth/LoginScreen'
 import { BetaProfileSetup } from './features/auth/BetaProfileSetup'
+import { StartupLauncher } from './components/StartupLauncher'
 import { AppShell } from './features/shell/AppShell'
 import { PreferencesProvider } from './state/PreferencesContext'
 import { SpacesProvider, useSpaces } from './state/SpacesContext'
@@ -60,22 +62,42 @@ import './styles/standalone-v50.css'
 import './styles/standalone-v59.css'
 import './styles/standalone-v62.css'
 import './styles/standalone-v63.css'
+import './styles/standalone-v70.css'
+import './styles/standalone-v71.css'
+import './styles/standalone-v72.css'
+import './styles/standalone-v73.css'
+import './styles/standalone-v72-6.css'
+import './styles/standalone-v64.css'
+import './styles/standalone-v65.css'
+import './styles/standalone-v66.css'
+import './styles/standalone-v67.css'
+import './styles/standalone-v68.css'
+import './styles/standalone-v69.css'
+import './styles/standalone-v72-8.css'
+import './styles/standalone-v72-9.css'
+import './styles/standalone-v74.css'
+import './styles/standalone-v75-4.css'
+import './styles/standalone-v75-5.css'
+import './styles/standalone-v75-7.css'
+import './styles/standalone-v76.css'
+import './styles/standalone-v77.css'
+import './styles/standalone-v78.css'
+import './styles/standalone-v79.css'
+import './styles/legal-v80.css'
 function StartupLoadingScreen() {
-  return (
-    <div className="startup-loading-screen" aria-label="Opening Spaces">
-      <div className="spaces-loader" aria-hidden="true"><i /><i /><i /></div>
-      <span>Opening Spaces…</span>
-    </div>
-  )
+  return <div className="startup-loading-screen startup-loading-v77" aria-label="Opening Spaces"><video autoPlay muted loop playsInline preload="auto" src="/Spaces-Bootloading-V77-transparent.webm" /></div>
 }
+
+const launcherModeV70 = new URLSearchParams(window.location.search).get('launcher') === '1'
 
 function SpacesRoot() {
   const { session, loading } = useSpaces()
   const [welcomeDone, setWelcomeDone] = useState(() => localStorage.getItem('spaces.welcome.v1') === '1')
+  useEffect(() => { if (!loading && isTauriDesktopRuntime()) void invoke('finish_startup').catch(() => undefined) }, [loading])
 
   // Do not unmount LoginScreen while a login/2FA request is in flight.
   // Unmounting it reset the local two-factor challenge state and made the page appear to refresh.
-  if (loading && !session && !welcomeDone) return <StartupLoadingScreen />
+  if (loading && !session && !welcomeDone && !isTauriDesktopRuntime()) return <StartupLoadingScreen />
   if (!welcomeDone) return <WelcomeToSpaces onContinue={() => { localStorage.setItem('spaces.welcome.v1', '1'); setWelcomeDone(true) }} />
   if (!session) return <LoginScreen />
   if (session.profileSetupRequired) return <BetaProfileSetup />
@@ -83,12 +105,13 @@ function SpacesRoot() {
 }
 
 export default function App() {
+  if (launcherModeV70) return <StartupLauncher />
   const desktopRuntime = isTauriDesktopRuntime()
 
   return (
     <>
       <DesktopTitlebar />
-      <div className={desktopRuntime ? 'tauri-desktop-content' : undefined}>
+      <div className={desktopRuntime ? 'tauri-desktop-content' : 'spaces-web-runtime-v78'}>
         <PreferencesProvider>
           <SpacesProvider>
             <AppDialogProvider>

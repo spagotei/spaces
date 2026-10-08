@@ -1,0 +1,257 @@
+/* Spaces V72.8 — Support organization, protected staff verification, transparent boot */
+
+/* Support Console grouped navigation */
+.support-nav-group-v728{
+  display:grid;
+  gap:3px;
+  margin:4px 5px 7px;
+}
+
+.support-nav-group-head-v728{
+  appearance:none;
+  width:100%;
+  min-height:28px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+  padding:0 6px;
+  border:0;
+  border-radius:7px;
+  background:transparent;
+  color:var(--faint);
+  font:inherit;
+  cursor:pointer;
+}
+
+.support-nav-group-head-v728:hover{
+  background:rgba(255,255,255,.025);
+  color:var(--muted);
+}
+
+.support-nav-group-head-v728>span{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  min-width:0;
+}
+
+.support-nav-group-head-v728 strong{
+  font-size:8px;
+  font-weight:760;
+  letter-spacing:.095em;
+  text-transform:uppercase;
+}
+
+.support-nav-group-head-v728>svg{
+  transition:transform .15s ease;
+}
+
+.support-nav-group-v728.collapsed .support-nav-group-head-v728>svg{
+  transform:rotate(-90deg);
+}
+
+.support-nav-group-items-v728{
+  display:grid;
+  gap:2px;
+}
+
+.support-nav-group-items-v728>button{
+  width:100%;
+}
+
+.support-nav-emoji-v728{
+  width:17px;
+  height:17px;
+  display:grid;
+  place-items:center;
+  flex:0 0 17px;
+  font-size:12px;
+  line-height:1;
+  filter:saturate(.92);
+}
+
+/* Protected platform staff mark. Custom Space roles never receive these platform classes. */
+.platform-verified-v55.platform-staff,
+.platform-verified-v55.platform-support{
+  border-color:rgba(226,77,91,.30)!important;
+  background:
+    linear-gradient(180deg,rgba(93,25,33,.72),rgba(41,10,15,.82))!important;
+  color:#ffb9bf!important;
+  box-shadow:
+    inset 0 1px rgba(255,255,255,.035),
+    0 0 0 1px rgba(126,36,45,.10),
+    0 5px 18px rgba(59,8,14,.12)!important;
+  font-size:0!important;
+}
+
+.platform-verified-v55.platform-staff::after,
+.platform-verified-v55.platform-support::after{
+  content:'VERIFIED SPACES STAFF';
+  font-size:6.4px;
+  font-weight:850;
+  letter-spacing:.065em;
+  line-height:1;
+  white-space:nowrap;
+  color:#ffb9bf;
+}
+
+.platform-verified-v55.compact.platform-staff::after,
+.platform-verified-v55.compact.platform-support::after{
+  font-size:5.4px;
+}
+
+.drawer-platform-badge.platform-staff,
+.drawer-platform-badge.platform-support,
+.profile-role-chip.platform-staff,
+.profile-role-chip.platform-support,
+.people-platform-v63.platform-staff,
+.people-platform-v63.platform-support,
+.member-platform-rail.platform-staff,
+.member-platform-rail.platform-support{
+  color:#ffb0b7!important;
+  border-color:rgba(218,72,85,.30)!important;
+  background:
+    linear-gradient(180deg,rgba(88,23,31,.55),rgba(37,9,14,.62))!important;
+  box-shadow:inset 0 1px rgba(255,255,255,.025)!important;
+}
+
+/* React fallback boot mirrors the supplied 4-second purple-building reference. */
+.spaces-reference-boot-v728{
+  position:fixed;
+  inset:0;
+  display:grid;
+  place-items:center;
+  background:transparent!important;
+  pointer-events:none;
+}
+
+.spaces-reference-wave-v728{
+  position:relative;
+  width:138px;
+  height:94px;
+  display:flex;
+  align-items:flex-end;
+  justify-content:center;
+  gap:6px;
+  filter:drop-shadow(0 0 9px rgba(151,84,207,.16));
+}
+
+.spaces-reference-wave-v728>i{
+  --h:72px;
+  position:relative;
+  width:13px;
+  height:var(--h);
+  flex:0 0 13px;
+  transform-origin:50% 100%;
+  border-radius:2px 2px 1px 1px;
+  background:linear-gradient(90deg,
+    rgba(111,53,163,.96) 0 26%,
+    rgba(174,105,225,.98) 27% 63%,
+    rgba(103,48,153,.96) 64% 100%);
+  box-shadow:
+    0 0 8px rgba(157,89,211,.17),
+    inset 1px 0 rgba(213,164,245,.14),
+    inset -1px 0 rgba(54,22,84,.45);
+}
+
+.spaces-reference-wave-v728>i::before{
+  content:'';
+  position:absolute;
+  left:0;
+  top:-5px;
+  width:100%;
+  height:7px;
+  clip-path:polygon(0 68%,68% 0,100% 30%,31% 100%);
+  background:linear-gradient(135deg,#d6a0f8 0%,#a866d7 50%,#65358f 100%);
+}
+
+.spaces-reference-wave-v728>i::after{
+  content:'';
+  position:absolute;
+  inset:0 0 0 auto;
+  width:4px;
+  background:linear-gradient(180deg,rgba(65,25,105,.72),rgba(35,14,63,.88));
+  border-radius:0 2px 1px 0;
+  opacity:.78;
+}
+
+.spaces-reference-wave-v728>i:nth-of-type(1){--h:58px;animation:v728RefWave1 4s linear infinite}
+.spaces-reference-wave-v728>i:nth-of-type(2){--h:66px;animation:v728RefWave2 4s linear infinite}
+.spaces-reference-wave-v728>i:nth-of-type(3){--h:76px;animation:v728RefWave3 4s linear infinite}
+.spaces-reference-wave-v728>i:nth-of-type(4){--h:68px;animation:v728RefWave4 4s linear infinite}
+.spaces-reference-wave-v728>i:nth-of-type(5){--h:60px;animation:v728RefWave5 4s linear infinite}
+
+.spaces-reference-glow-v728{
+  position:absolute;
+  left:50%;
+  bottom:-3px;
+  width:105px;
+  height:28px;
+  transform:translateX(-50%);
+  border-radius:50%;
+  background:radial-gradient(ellipse at center,
+    rgba(169,97,224,.24) 0%,
+    rgba(135,70,192,.10) 44%,
+    transparent 76%);
+  filter:blur(7px);
+  animation:v728RefGlow 4s ease-in-out infinite;
+  z-index:-1;
+}
+
+@keyframes v728RefWave1{
+  0%,100%{transform:scaleY(.34);opacity:.72}
+  12.5%{transform:scaleY(.22);opacity:.62}
+  25%{transform:scaleY(.15);opacity:.56}
+  37.5%{transform:scaleY(.18);opacity:.58}
+  50%{transform:scaleY(.38);opacity:.76}
+  62.5%{transform:scaleY(.68);opacity:.92}
+  75%{transform:scaleY(.94);opacity:1}
+  87.5%{transform:scaleY(.57);opacity:.88}
+}
+@keyframes v728RefWave2{
+  0%,100%{transform:scaleY(.62);opacity:.9}
+  12.5%{transform:scaleY(.42);opacity:.78}
+  25%{transform:scaleY(.30);opacity:.7}
+  37.5%{transform:scaleY(.34);opacity:.73}
+  50%{transform:scaleY(.52);opacity:.84}
+  62.5%{transform:scaleY(.78);opacity:.98}
+  75%{transform:scaleY(.82);opacity:1}
+  87.5%{transform:scaleY(.74);opacity:.96}
+}
+@keyframes v728RefWave3{
+  0%,100%{transform:scaleY(1);opacity:1}
+  12.5%{transform:scaleY(.76);opacity:.97}
+  25%{transform:scaleY(.50);opacity:.86}
+  37.5%{transform:scaleY(.45);opacity:.82}
+  50%{transform:scaleY(.51);opacity:.86}
+  62.5%{transform:scaleY(.59);opacity:.9}
+  75%{transform:scaleY(.66);opacity:.94}
+  87.5%{transform:scaleY(.98);opacity:1}
+}
+@keyframes v728RefWave4{
+  0%,100%{transform:scaleY(.72);opacity:.94}
+  12.5%{transform:scaleY(.96);opacity:1}
+  25%{transform:scaleY(.75);opacity:.97}
+  37.5%{transform:scaleY(.70);opacity:.94}
+  50%{transform:scaleY(.50);opacity:.86}
+  62.5%{transform:scaleY(.34);opacity:.72}
+  75%{transform:scaleY(.30);opacity:.68}
+  87.5%{transform:scaleY(.56);opacity:.88}
+}
+@keyframes v728RefWave5{
+  0%,100%{transform:scaleY(.43);opacity:.8}
+  12.5%{transform:scaleY(.68);opacity:.92}
+  25%{transform:scaleY(.56);opacity:.88}
+  37.5%{transform:scaleY(.76);opacity:1}
+  50%{transform:scaleY(.40);opacity:.78}
+  62.5%{transform:scaleY(.22);opacity:.63}
+  75%{transform:scaleY(.16);opacity:.56}
+  87.5%{transform:scaleY(.22);opacity:.64}
+}
+@keyframes v728RefGlow{
+  0%,100%{opacity:.72;transform:translateX(-50%) scale(.92,.72)}
+  25%{opacity:.56;transform:translateX(-50%) translateY(2px) scale(.82,.6)}
+  50%{opacity:.64;transform:translateX(-50%) scale(.9,.68)}
+  75%{opacity:.9;transform:translateX(-50%) translateY(-2px) scale(1.08,.84)}
+}

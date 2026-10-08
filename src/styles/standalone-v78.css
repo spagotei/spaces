@@ -1,0 +1,124 @@
+/* SPACES_V78_WEB_MOBILE_RC — browser polish, mobile release-candidate interactions, motion pass */
+
+/* Motion is subtle and uses individual transform properties so it does not clobber
+   existing component transforms. */
+:where(button,[role='button'],.space-card,.support-case-row-v77,.people-bubble){
+  transition-property:scale,translate,filter,background-color,border-color,box-shadow,opacity!important;
+  transition-duration:140ms!important;
+  transition-timing-function:cubic-bezier(.2,.8,.2,1)!important;
+}
+:where(button,[role='button']):active:not(:disabled){scale:.975}
+@media(hover:hover){
+  :where(.primary-button,.secondary-button,.ghost-button,.icon-button,.mobile-menu-button):hover:not(:disabled){translate:0 -1px;filter:brightness(1.06)}
+  .space-card:hover{translate:0 -2px}
+}
+
+/* The old Support header claimed LIVE. Publishing is controlled by the owner, so
+   there is no fake deployment state in the client. */
+.support-live-v77{display:none!important}
+
+/* ---------- Web dashboard: designed for a browser, not stretched desktop ---------- */
+@media(min-width:1100px){
+  .spaces-web-runtime-v78 .home-view-v78{
+    width:min(100%,1480px)!important;
+    max-width:1480px!important;
+    margin:0 auto!important;
+    padding:26px clamp(22px,3vw,46px) 54px!important;
+    display:grid!important;
+    grid-template-columns:minmax(0,1fr) minmax(300px,350px)!important;
+    gap:22px!important;
+    align-content:start!important;
+  }
+  .spaces-web-runtime-v78 .home-view-v78>.hero-panel{grid-column:1/-1;min-height:232px!important;padding:34px 38px!important;grid-template-columns:minmax(0,1fr) minmax(300px,360px)!important;border-radius:22px!important;background:radial-gradient(circle at 14% 18%,color-mix(in srgb,var(--active-accent) 16%,transparent),transparent 38%),linear-gradient(130deg,rgba(255,255,255,.032),rgba(255,255,255,.012))!important;box-shadow:inset 0 1px rgba(255,255,255,.05),0 24px 80px rgba(0,0,0,.24)!important}
+  .spaces-web-runtime-v78 .hero-copy h1{font-size:clamp(48px,4.8vw,76px)!important}
+  .spaces-web-runtime-v78 .hero-copy p{max-width:700px!important;font-size:14px!important;line-height:1.65!important}
+  .spaces-web-runtime-v78 .hero-actions button{min-height:44px!important;padding-inline:18px!important}
+  .spaces-web-runtime-v78 .hero-missed{min-height:154px!important;padding:18px!important;border-radius:16px!important;background:rgba(8,8,12,.44)!important;border-color:rgba(255,255,255,.07)!important}
+  .spaces-web-runtime-v78 .home-view-v78>.section-block{grid-column:1;min-width:0;padding:2px 0!important}
+  .spaces-web-runtime-v78 .section-heading h2{font-size:22px!important}
+  .spaces-web-runtime-v78 .space-card-grid{grid-template-columns:repeat(auto-fit,minmax(min(360px,100%),1fr))!important;gap:14px!important}
+  .spaces-web-runtime-v78 .space-card{min-height:228px!important;grid-template-rows:104px minmax(72px,auto) 38px!important;border-radius:18px!important;background:linear-gradient(180deg,rgba(255,255,255,.028),rgba(255,255,255,.014))!important}
+  .spaces-web-runtime-v78 .space-card-body{padding-inline:16px!important;gap:13px!important}
+  .spaces-web-runtime-v78 .space-card-body strong{font-size:14px!important}
+  .spaces-web-runtime-v78 .space-card-body span{font-size:10px!important}
+  .spaces-web-runtime-v78 .space-card-meta{font-size:9px!important;padding-inline:16px!important}
+  .spaces-web-runtime-v78 .home-view-v78>.dashboard-strip{grid-column:2;grid-row:2;align-self:start;display:grid!important;grid-template-columns:1fr!important;gap:10px!important;padding-top:2px!important}
+  .spaces-web-runtime-v78 .dashboard-strip:before{content:'QUICK ACCESS';display:block;margin:0 0 2px 2px;color:#716b79;font-size:9px;font-weight:750;letter-spacing:.13em}
+  .spaces-web-runtime-v78 .dashboard-strip article{min-height:86px!important;padding:15px 16px!important;border-radius:14px!important;background:linear-gradient(135deg,rgba(255,255,255,.028),rgba(255,255,255,.012))!important}
+  .spaces-web-runtime-v78 .dashboard-strip strong{font-size:12px!important}
+  .spaces-web-runtime-v78 .dashboard-strip span{font-size:10px!important;line-height:1.5!important}
+  .spaces-web-runtime-v78 .hidden-spaces-strip{grid-column:1/-1}
+}
+@media(min-width:1500px){
+  .spaces-web-runtime-v78 .home-view-v78{padding-top:30px!important}
+}
+
+/* ---------- Mobile home + touch density ---------- */
+@media(max-width:900px){
+  .home-view-v78{padding:10px 10px calc(var(--mobile-homebar-height,64px) + var(--mobile-bottom-inset,8px) + 28px)!important;gap:14px!important}
+  .home-view-v78>.hero-panel{min-height:0!important;grid-template-columns:1fr!important;gap:14px!important;padding:20px 16px!important;border-radius:18px!important}
+  .home-view-v78 .hero-copy h1{font-size:clamp(36px,11vw,52px)!important;margin-top:7px!important}
+  .home-view-v78 .hero-copy p{font-size:12px!important;line-height:1.5!important;margin-top:10px!important}
+  .home-view-v78 .hero-actions{display:grid!important;grid-template-columns:1fr 1fr!important;gap:8px!important;margin-top:15px!important}
+  .home-view-v78 .hero-actions button{min-height:44px!important;padding:0 10px!important}
+  .home-view-v78 .hero-missed{min-height:0!important;padding:13px!important;border-radius:14px!important}
+  .home-view-v78 .section-heading{align-items:center!important}
+  .home-view-v78 .section-heading h2{font-size:19px!important}
+  .home-view-v78 .space-card-grid{grid-template-columns:1fr!important;gap:10px!important}
+  .home-view-v78 .space-card{min-height:158px!important;grid-template-rows:64px auto 30px!important;border-radius:15px!important}
+  .home-view-v78 .space-card-body{margin-top:-14px!important}
+  .home-view-v78 .dashboard-strip{grid-template-columns:1fr!important;gap:8px!important}
+  .home-view-v78 .dashboard-strip article{min-height:70px!important;padding:11px 12px!important}
+
+  /* Four buttons when Staff is available; three for normal members. */
+  .mobile-homebar:has(>button:nth-child(4)){grid-template-columns:repeat(4,minmax(0,1fr))!important}
+  .mobile-homebar button{touch-action:manipulation!important}
+  .mobile-homebar button span{font-size:9px!important}
+
+  /* Right-click menus become reliable long-press bottom sheets on touch. */
+  .context-scrim{position:fixed!important;inset:0!important;z-index:1998!important;background:rgba(2,2,5,.58)!important;backdrop-filter:blur(3px)!important}
+  .spaces-context-menu{
+    position:fixed!important;z-index:1999!important;left:8px!important;right:8px!important;top:auto!important;bottom:calc(max(env(safe-area-inset-bottom),8px) + 8px)!important;width:auto!important;max-width:none!important;max-height:min(72dvh,560px)!important;overflow:hidden!important;border-radius:18px!important;box-shadow:0 26px 90px rgba(0,0,0,.62)!important;animation:v78-sheet-in 170ms cubic-bezier(.2,.8,.2,1) both!important
+  }
+  .spaces-context-menu>header{min-height:54px!important;padding:10px 12px!important}
+  .spaces-context-menu>header strong{font-size:14px!important}
+  .spaces-context-menu>header span{font-size:11px!important}
+  .context-action-list{max-height:calc(72dvh - 70px)!important;overflow-y:auto!important;-webkit-overflow-scrolling:touch!important;padding:6px!important}
+  .context-action-list>button{min-height:52px!important;padding:9px 10px!important;border-radius:12px!important;touch-action:manipulation!important}
+  .context-action-copy strong{font-size:13px!important}
+  .context-action-copy small{font-size:10px!important;line-height:1.35!important}
+  [data-member-context-v77],.support-case-row-v77,.direct-thread-row-v23,.direct-sidebar-row-v23{touch-action:pan-y!important;-webkit-touch-callout:none!important}
+
+  /* Staff Panel: horizontal touch nav leaves the whole phone width for cases. */
+  .support-console-v77.mobile .support-console-body-v77{display:flex!important;flex-direction:column!important;grid-template-columns:none!important;min-height:0!important}
+  .support-console-v77.mobile .support-console-nav-v77{flex:0 0 auto!important;display:block!important;min-height:0!important;border-right:0!important;border-bottom:1px solid rgba(255,255,255,.065)!important;padding:0!important;overflow:hidden!important}
+  .support-console-v77.mobile .support-console-user-v77{display:none!important}
+  .support-console-v77.mobile .support-console-nav-v77 nav{display:flex!important;gap:6px!important;overflow-x:auto!important;overflow-y:hidden!important;padding:7px 8px!important;scrollbar-width:none!important;touch-action:pan-x!important}
+  .support-console-v77.mobile .support-console-nav-v77 nav::-webkit-scrollbar{display:none!important}
+  .support-console-v77.mobile .support-console-nav-v77 nav button{position:relative!important;flex:0 0 auto!important;width:auto!important;min-width:76px!important;height:46px!important;display:flex!important;align-items:center!important;justify-content:center!important;gap:5px!important;padding:0 9px!important;border-radius:10px!important}
+  .support-console-v77.mobile .support-console-nav-v77 nav button span{font-size:8px!important;white-space:nowrap!important}
+  .support-console-v77.mobile .support-console-nav-v77 nav button b{position:absolute!important;right:2px!important;top:2px!important;margin:0!important}
+  .support-console-v77.mobile .support-console-main-v77{position:relative!important;flex:1 1 auto!important;min-height:0!important;display:grid!important;grid-template-columns:1fr!important}
+  .support-console-v77.mobile .support-case-inspector-v77{position:absolute!important;inset:0!important;z-index:30!important}
+  .support-console-v77.mobile .support-case-column-v77>header{padding:10px!important}
+  .support-console-v77.mobile .support-case-list-v77{padding:5px 7px 18px!important}
+  .support-console-v77.mobile .support-case-row-v77{min-height:62px!important;padding:10px!important}
+  .support-console-v77.mobile .support-inspector-scroll-v77{padding:10px 10px 28px!important}
+  .support-console-v77.mobile .support-reply-box-v77 textarea,.support-console-v77.mobile .support-note-box-v77 textarea{font-size:16px!important}
+  .support-console-v77.mobile .support-target-space-v77{min-height:50px!important}
+
+  /* Touch targets and drawers. */
+  .people-role-picker-v63{border-radius:18px!important}
+  .people-role-picker-v63>div>button{min-height:50px!important}
+  .profile-v77-drawer{padding-bottom:env(safe-area-inset-bottom)!important}
+  .profile-v77-actions button{min-height:44px!important}
+  .direct-center-v23 button,.direct-center-v43 button{touch-action:manipulation!important}
+}
+
+@keyframes v78-sheet-in{from{opacity:0;translate:0 18px;scale:.985}to{opacity:1;translate:0 0;scale:1}}
+
+html[data-motion='reduced'] :where(button,[role='button'],.space-card,.support-case-row-v77,.people-bubble),
+html[data-motion='reduced'] .spaces-context-menu{transition:none!important;animation:none!important;scale:1!important;translate:none!important}
+@media(prefers-reduced-motion:reduce){
+  :where(button,[role='button'],.space-card,.support-case-row-v77,.people-bubble),.spaces-context-menu{transition:none!important;animation:none!important;scale:1!important;translate:none!important}
+}

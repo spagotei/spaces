@@ -119,6 +119,8 @@ export type WorkspaceNoteComment = {
   editedAt: number | null
   deletedAt: number | null
   deletedBy: string | null
+  parentCommentId: string | null
+  authorUsername: string
 }
 
 export type WorkspaceBackgroundPreset =
@@ -287,6 +289,7 @@ export type WorkspaceDirectCenter = {
   incomingRequests: WorkspaceDirectConversation[]
   outgoingRequests: WorkspaceDirectConversation[]
   groups: WorkspaceDirectGroup[]
+  friends: WorkspaceDirectConversation[]
 }
 
 export type WorkspaceDirectMessage = {
@@ -407,6 +410,7 @@ export type WorkspaceChatMessage = {
   deletedAt: number | null
   deletedBy: string | null
   attachment: WorkspaceMessageAttachment | null
+  replyToMessageId: string | null
 }
 
 export type WorkspaceAuditAction =
@@ -639,7 +643,7 @@ export type WorkspaceBootstrap = {
   updates: WorkspaceUpdateEntry[]
 }
 
-export type WorkspacePingNotificationKind = 'message' | 'mention' | 'everyone' | 'here' | 'role' | 'support' | 'direct' | 'group' | 'friend_request'
+export type WorkspacePingNotificationKind = 'message' | 'mention' | 'everyone' | 'here' | 'role' | 'support' | 'direct' | 'group' | 'friend_request' | 'comment'
 
 export type WorkspacePingNotification = {
   id: string
@@ -654,4 +658,14 @@ export type WorkspacePingNotification = {
   mentionLabel: string
   conversationId?: string | null
   groupId?: string | null
+  noteTitle?: string | null
+  supportTicketNumber?: string | null
+  supportTicketStaff?: boolean
+}
+
+
+export type WorkspaceTypingUser = {
+  userId: string
+  displayName: string
+  updatedAt: number
 }

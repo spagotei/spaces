@@ -1,0 +1,71 @@
+/* Spaces v68 — friends are relationships, not only open DMs */
+
+.person-plus-icon-v68 {
+  position: relative;
+  width: 18px;
+  height: 18px;
+  display: inline-grid;
+  place-items: center;
+  flex: 0 0 auto;
+}
+
+.person-plus-icon-v68 > i {
+  position: absolute;
+  right: -3px;
+  bottom: -2px;
+  min-width: 10px;
+  height: 10px;
+  padding: 0 2px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: var(--app-accent);
+  color: white;
+  font-size: 9px;
+  font-style: normal;
+  font-weight: 900;
+  line-height: 1;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--panel) 94%, #000 6%);
+}
+
+/* Role editing belongs in the opened profile / right-click menu, not on every People card. */
+.members-view-v63 .people-role-add-v63 {
+  display: none !important;
+}
+
+.profile-role-add-v68 {
+  width: 24px;
+  height: 24px;
+  min-width: 24px;
+  display: inline-grid;
+  place-items: center;
+  margin-left: 7px;
+  padding: 0;
+  border: 1px dashed rgba(255,255,255,.14);
+  border-radius: 999px;
+  background: rgba(255,255,255,.025);
+  color: var(--muted);
+  vertical-align: middle;
+}
+
+.profile-role-add-v68:hover {
+  color: var(--text);
+  border-color: color-mix(in srgb, var(--app-accent) 52%, rgba(255,255,255,.14));
+  background: color-mix(in srgb, var(--app-accent) 12%, rgba(255,255,255,.025));
+}
+
+.direct-people-grid-v23 > button.friend-relationship-v68 {
+  min-height: 62px;
+}
+
+.direct-people-grid-v23 > button.friend-relationship-v68 > span:not(.support-reply-avatar-v53) {
+  min-width: 0;
+}
+
+.direct-friend-closed-v68 {
+  opacity: .86;
+}
+
+.direct-friend-closed-v68:hover {
+  opacity: 1;
+}

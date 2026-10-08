@@ -1,0 +1,158 @@
+/* Spaces v66 — Discord-like behavior, Spaces visual identity */
+
+.spaces-context-menu-v64 {
+  width: min(272px, calc(100vw - 16px)) !important;
+  padding: 5px !important;
+}
+
+.spaces-context-menu-title-v64 {
+  padding: 6px 8px 6px !important;
+  margin-bottom: 4px !important;
+}
+
+.spaces-context-menu-action-v64 {
+  min-height: 34px;
+  padding: 6px 8px !important;
+  border-radius: 7px !important;
+}
+
+.spaces-context-menu-icon-v64 {
+  width: 22px !important;
+  height: 22px !important;
+}
+
+.direct-profile-name-v66 {
+  appearance: none;
+  padding: 0;
+  margin: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.direct-profile-name-v66:hover strong {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.direct-person-card-scrim-v66 {
+  position: fixed;
+  inset: 0;
+  z-index: 2147482800;
+  border: 0;
+  background: rgba(0,0,0,.18);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+}
+
+.direct-person-card-v66 {
+  position: fixed;
+  z-index: 2147482900;
+  right: 24px;
+  top: 72px;
+  width: min(330px, calc(100vw - 32px));
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,.09);
+  border-radius: 18px;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--app-accent) 10%, transparent), transparent 120px),
+    rgba(12,12,16,.985);
+  box-shadow: 0 28px 90px rgba(0,0,0,.5);
+  backdrop-filter: blur(22px);
+  -webkit-backdrop-filter: blur(22px);
+}
+
+.direct-person-card-v66 .direct-profile-banner-v66 {
+  height: 76px;
+  background:
+    radial-gradient(circle at 20% 20%, color-mix(in srgb, var(--direct-profile-accent) 36%, transparent), transparent 60%),
+    rgba(255,255,255,.025);
+  border-bottom: 1px solid rgba(255,255,255,.05);
+}
+
+.direct-person-card-v66 .direct-profile-body-v66 {
+  position: relative;
+  padding: 0 16px 16px;
+}
+
+.direct-person-card-v66 .direct-profile-avatar-v66 {
+  margin-top: -34px;
+  width: fit-content;
+  padding: 4px;
+  border-radius: 18px;
+  background: rgba(12,12,16,.98);
+}
+
+.direct-person-card-v66 .direct-profile-close-v66 {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+}
+
+.direct-person-card-v66 .direct-profile-copy-v66 {
+  display: grid;
+  gap: 3px;
+  margin-top: 8px;
+}
+
+.direct-person-card-v66 .direct-profile-copy-v66 strong {
+  font-size: 18px;
+}
+
+.direct-person-card-v66 .direct-profile-copy-v66 small {
+  color: var(--muted);
+}
+
+.direct-person-card-v66 .direct-profile-actions-v66 {
+  display: flex;
+  gap: 7px;
+  margin-top: 14px;
+}
+
+.direct-person-card-v66 .direct-profile-actions-v66 button {
+  height: 34px;
+  min-width: 34px;
+  padding: 0 11px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 9px;
+  background: rgba(255,255,255,.035);
+}
+
+.direct-person-card-v66 .direct-profile-actions-v66 button:hover {
+  background: rgba(255,255,255,.075);
+}
+
+.sidebar-dm-row-v54 {
+  position: relative;
+}
+
+.sidebar-dm-row-v54.thread-muted-v66 .sidebar-dm-open-v54 {
+  opacity: .62;
+}
+
+.sidebar-dm-row-v54.thread-muted-v66::after {
+  content: "";
+  position: absolute;
+  left: 44px;
+  right: 34px;
+  bottom: 4px;
+  height: 1px;
+  background: rgba(255,255,255,.045);
+}
+
+@media (max-width: 700px) {
+  .direct-person-card-v66 {
+    right: 12px;
+    left: 12px;
+    top: auto;
+    bottom: 12px;
+    width: auto;
+  }
+}

@@ -32,6 +32,11 @@ export type SpacesPreferences = {
   supportReceivedSounds: boolean
   supportOutgoingSounds: boolean
   notificationPreviews: boolean
+  commentNotifications: boolean
+  friendRequestNotifications: boolean
+  groupNotifications: boolean
+  directNotifications: boolean
+  mobileSystemNotifications: boolean
   appTheme: AppTheme
   presence: PresenceStatus
   customStatus: string
@@ -69,6 +74,11 @@ const DEFAULTS: SpacesPreferences = {
   supportReceivedSounds: true,
   supportOutgoingSounds: true,
   notificationPreviews: true,
+  commentNotifications: true,
+  friendRequestNotifications: true,
+  groupNotifications: true,
+  directNotifications: true,
+  mobileSystemNotifications: true,
   appTheme: 'obsidian',
   presence: 'online',
   customStatus: '',
@@ -177,12 +187,20 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
     document.documentElement.style.setProperty('--spaces-message-text-scale', String(clampScale(preferences.messageTextScale)))
   }, [accountId, preferences])
 
+  function savePreferenceV72<K extends keyof SpacesPreferences>(key: K, next: SpacesPreferences[K]) {
+    setPreferences(current => {
+      const updated = { ...current, [key]: next }
+      try { localStorage.setItem(storageKey(accountId), JSON.stringify(updated)) } catch { /* effect will retry */ }
+      return updated
+    })
+  }
+
   const value = useMemo<PreferencesContextValue>(() => ({
     preferences,
     effectivePresence,
-    setPreference: (key, next) => setPreferences(current => ({ ...current, [key]: next })),
+    setPreference: savePreferenceV72,
     resetPreferences: () => setPreferences(DEFAULTS),
-  }), [effectivePresence, preferences])
+  }), [effectivePresence, preferences, accountId])
 
   return <PreferencesContext.Provider value={value}>{children}</PreferencesContext.Provider>
 }
