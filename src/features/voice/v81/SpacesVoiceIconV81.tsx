@@ -9,8 +9,8 @@ type GlyphProps = Omit<SVGProps<SVGSVGElement>, 'name'> & {
 }
 
 const GLYPHS: Record<SpacesVoiceIconNameV81, readonly string[]> = {
-  phone: ['M22 16.92v3a2 2 0 0 1-2.18 2A19.8 19.8 0 0 1 3.09 5.18 2 2 0 0 1 5.08 3h3a2 2 0 0 1 2 1.72l.42 2.81a2 2 0 0 1-.57 1.73L8.1 11.1a16 16 0 0 0 4.8 4.8l1.84-1.83a2 2 0 0 1 1.73-.57l2.81.42A2 2 0 0 1 22 16.92Z'],
-  'phone-off': ['M3 3l18 18','M10.3 5.2l.2 1.5a2 2 0 0 1-.6 1.7L8.1 10.2','M13.8 15.6l.9-.9a2 2 0 0 1 1.7-.6l2.8.4a2 2 0 0 1 1.7 2v3a2 2 0 0 1-.4 1.2','M5 3h3a2 2 0 0 1 1.4.6','M3.4 5a19.8 19.8 0 0 0 15.6 15.6'],
+  phone: [], // Drawn as a clean filled handset below.
+  'phone-off': [], // Drawn as a horizontal receiver below.
   video: ['M15 10l5-3v10l-5-3','M3 7h10a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2Z'],
   'video-off': ['M2 2l20 20','M9.5 7H13a2 2 0 0 1 2 2v1l5-3v10l-2.2-1.3','M3 7h1M3 7a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h10a2 2 0 0 0 1.7-1'],
   'screen-share': ['M3 4h18v12H3z','M8 20h8','M12 16v4','M12 12V7','M9 10l3-3 3 3'],
@@ -29,7 +29,9 @@ const GLYPHS: Record<SpacesVoiceIconNameV81, readonly string[]> = {
   eye: ['M2 12s4-7 10-7 10 7 10 7-4 7-10 7-10-7-10-7Z','M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z'],
 }
 
-/** Presentational only; controls must be connected to authenticated actions elsewhere. */
+/** V81.2.1: Clean handset silhouette; horizontal receiver for end-call.
+ * Other media/permission icons retain their existing vector appearance.
+ * Presentational only; controls must be connected to authenticated actions elsewhere. */
 export function SpacesVoiceIconV81({ name, size = 20, title, ...props }: GlyphProps) {
   return (
     <svg
@@ -39,7 +41,11 @@ export function SpacesVoiceIconV81({ name, size = 20, title, ...props }: GlyphPr
       {...props}
     >
       {title ? <title>{title}</title> : null}
-      {GLYPHS[name].map((d, i) => <path key={i} d={d} />)}
+      {name === 'phone' ? (
+        <path fill="currentColor" stroke="none" d="M6.62 10.79a15.05 15.05 0 0 0 6.59 6.59l2.2-2.2a1 1 0 0 1 1.02-.24c1.12.37 2.33.56 3.57.56a1 1 0 0 1 1 1V20a1 1 0 0 1-1 1C10.61 21 3 13.39 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.45.56 3.57a1 1 0 0 1-.25 1.02l-2.19 2.2Z" />
+      ) : name === 'phone-off' ? (
+        <path fill="currentColor" stroke="none" d="M2.5 13.2c5-4.2 14-4.2 19 0l.7 2.9c.2.8-.2 1.4-1 1.7l-3.4 1.1c-.8.3-1.5-.1-1.7-.8l-.8-2.8c-2.1-.6-4.6-.6-6.6 0l-.8 2.8c-.2.7-.9 1.1-1.7.8l-3.4-1.1c-.8-.3-1.2-.9-1-1.7l.7-2.9Z" />
+      ) : GLYPHS[name].map((d, i) => <path key={i} d={d} />)}
     </svg>
   )
 }

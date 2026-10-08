@@ -109,11 +109,11 @@ function durationMinutesFromInput(value: string): number | null {
   return Number.isFinite(numeric) && numeric > 0 ? Math.round(numeric) : null
 }
 
-export function SupportOperationsV48({ mode }: { mode: 'accounts' | 'restrictions' | 'team' }) {
+export function SupportOperationsV48({ mode, initialQuery = '' }: { mode: 'accounts' | 'restrictions' | 'team'; initialQuery?: string }) { // SPACES_V81_3_TEAM_PREFILL
   const dialog = useAppDialog()
   const { apiUrl, session, searchSupportUsers, pushToast } = useSpaces()
   const access = useSupportV48Access()
-  const [query, setQuery] = useState('')
+  const [query, setQuery] = useState(initialQuery)
   const [users, setUsers] = useState<WorkspaceSupportUser[]>([])
   const [searching, setSearching] = useState(false)
   const [inspector, setInspector] = useState<Inspector | null>(null)

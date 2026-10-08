@@ -240,6 +240,20 @@ export class SpacesPeerCallV81 {
       void this.sounds.play('stopped_streaming')
     }
   }
+  /** SPACES_V81_3_LEVELS: stats-only speaking indicator; no extra media/network requests. */
+  async getVoiceActivityV813(): Promise<{ local: boolean; remote: boolean }> {
+    if (!this.pc || this.state !== 'connected') return { local: false, remote: false }
+    const stats = await this.pc.getStats()
+    let local = false, remote = false
+    stats.forEach(item => {
+      const row = item as { kind?: string; mediaType?: string; audioLevel?: number; type: string; remoteSource?: boolean }
+      if (row.kind !== 'audio' && row.mediaType !== 'audio') return
+      const level = typeof row.audioLevel === 'number' ? row.audioLevel : 0
+      if (row.type === 'inbound-rtp' || (row.type === 'track' && row.remoteSource)) remote ||= level > .035
+      if (row.type === 'media-source' || (row.type === 'track' && !row.remoteSource)) local ||= level > .035
+    })
+    return { local: local && !this.localMuted, remote: remote && !this.localDeafened }
+  }
   /** Call on navigation, logout, or app shutdown; stops every local capture track. */
   destroy(): void { this.end(true) }
   private end(markDestroyed: boolean): void {

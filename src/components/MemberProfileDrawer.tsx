@@ -466,6 +466,8 @@ export function MemberProfileDrawer({ memberId, onClose }: { memberId: string; o
             <span className="drawer-avatar profile-avatar-presence">
               <Avatar name={member.displayName} initials={member.initials} src={member.avatarUrl} size={78} accent={topRole?.color} animation="always" />
               <i className={`presence-symbol presence-${status}`} />
+              {/* SPACES_V81_3_FOUNDER_SHIELD: platform team, never per-Space roles. */}
+              {profile?.platformRole === 'founder' && member.profileId !== profile.id && <button type="button" className="spaces-founder-shield-v813 spaces-founder-profile-shield-v813" aria-label={`Manage Spaces Staff and Support for ${member.displayName}`} title="Founder · Manage Spaces team" onClick={() => { window.dispatchEvent(new CustomEvent('spaces-founder-team-v813', { detail: { username: member.username } })); onClose() }}><Icon name="shield" size={14}/></button>}
             </span>
             <div className="drawer-name-row">
               <div><h2 style={topRole ? { color: topRole.color } : undefined}>{member.displayName}</h2><span>@{member.username}</span></div>

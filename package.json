@@ -1,7 +1,7 @@
 {
   "name": "spaces-standalone",
   "private": true,
-  "version": "0.2.27",
+  "version": "0.2.28",
   "type": "module",
   "scripts": {
     "dev": "node scripts/sync-spaces-version.mjs && vite",
@@ -26,7 +26,9 @@
     "beta:android": "npm run beta:gate && npm run android:apk",
     "beta:web": "npm run beta:gate && npm run build:web",
     "beta:archives": "node scripts/archive-readiness-v80.mjs",
-    "voice:check": "node scripts/v81-media-foundation-check.cjs"
+    "voice:check": "node scripts/v81-media-foundation-check.cjs",
+    "voice:dm:check": "node scripts/v81_2_source_check.cjs",
+    "voice:polish:check": "node scripts/v81_3_source_check.cjs"
   },
   "dependencies": {
     "@tauri-apps/api": "^2.8.0",

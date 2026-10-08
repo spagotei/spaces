@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Avatar } from './Avatar'
+import '../styles/voice-polish-v81-3.css'
 import { Icon } from './Icon'
 import { Modal } from './Modal'
 import { useAppDialog } from './AppDialog'
@@ -21,6 +22,8 @@ import type {
 import { timeAgo } from '../utils/format'
 import { platformRoleLabel } from '../utils/permissions'
 import { SupportGlyphV73 } from '../features/support/SupportTicketsV73'
+import { SpacesVoiceIconV81 } from '../features/voice/v81/SpacesVoiceIconV81'
+import { startSpacesDmCallV812 } from '../features/voice/v81/SpacesVoiceApiV812'
 import { SupportMemberV77 } from '../features/support/v77/SupportMemberV77'
 import { dispatchSupportIntakeV77, openProfileV77 } from '../features/support/v77/support-v77-api'
 
@@ -241,8 +244,16 @@ export function DirectMessagesCenter({
     const linkPattern = /https?:\/\/[^\s<>()]+/giu
     const append = (id: string, sender: string, body: string, createdAt: number) => {
       items.push({ id: `message:${id}`, kind: 'message', title: sender, preview: body, createdAt })
-      for (const [index, link] of [...body.matchAll(linkPattern)].entries()) {
-        items.push({ id: `link:${id}:${index}`, kind: 'link', title: link[0], subtitle: sender, preview: body, createdAt })
+      // SPACES_V81_3_DM_SEARCH: Media/Files filters recognize safe HTTPS attachment links.
+      for (const [index, match] of [...body.matchAll(linkPattern)].entries()) {
+        const raw = match[0].replace(/[.,!?]+$/u, '')
+        let path = ''
+        try { path = new URL(raw).pathname.toLowerCase() } catch { continue }
+        const isMedia = /\.(?:png|jpe?g|gif|webp|avif|svg|mp4|mov|webm|mp3|ogg|wav)$/u.test(path)
+        const isFile = /\.(?:pdf|txt|zip|rar|7z|docx?|xlsx?|pptx?|csv|json|md)$/u.test(path)
+        const openLink = () => window.open(raw, '_blank', 'noopener,noreferrer')
+        items.push({ id: `link:${id}:${index}`, kind: 'link', title: raw, subtitle: sender, preview: body, createdAt, onOpen: openLink })
+        if (isMedia || isFile) items.push({ id: `asset:${id}:${index}`, kind: isMedia ? 'media' : 'file', title: raw.split('/').pop() || raw, subtitle: sender, preview: raw, createdAt, onOpen: openLink })
       }
     }
 
@@ -879,6 +890,7 @@ export function DirectMessagesCenter({
           ) : selected ? (
             <DirectThread
               conversation={selected}
+              isFounderV813={profile?.platformRole === 'founder'}
               messages={messages}
               draft={draft}
               setDraft={value => selected && updateDirectDraftV72(value, 'dm', selected.id, setDraft)}
@@ -904,6 +916,8 @@ export function DirectMessagesCenter({
               onProfile={() => openProfileV77(selected.person.id, selected.person)}
               onMore={(x, y) => threadMenu.open(selected.person.displayName, directHeaderActions(selected), x, y, `@${selected.person.username}`)}
               onOpenProfile={() => setDirectProfilePerson(selected.person)}
+              onVoiceCall={() => startSpacesDmCallV812({conversationId:selected.id,displayName:selected.person.displayName,avatarUrl:selected.person.avatarUrl})}
+              onVideoCall={() => startSpacesDmCallV812({conversationId:selected.id,displayName:selected.person.displayName,video:true,avatarUrl:selected.person.avatarUrl})}
             />
           ) : selectedGroup ? (
             <div className={`direct-group-shell-v67 ${groupMembersOpen ? 'members-open' : ''}`}>
@@ -1606,6 +1620,9 @@ function DirectThread({
   onProfile,
   onMore,
   onOpenProfile,
+  onVoiceCall,
+  onVideoCall,
+  isFounderV813,
 }: {
   conversation: WorkspaceDirectConversation
   messages: WorkspaceDirectMessage[]
@@ -1633,6 +1650,9 @@ function DirectThread({
   onProfile: () => void
   onMore: (x: number, y: number) => void
   onOpenProfile: () => void
+  onVoiceCall: () => void
+  onVideoCall: () => void
+  isFounderV813: boolean
 }) {
   const incoming = conversation.status === 'pending' && !conversation.requestedByMe
   const outgoing = conversation.status === 'pending' && conversation.requestedByMe
@@ -1640,9 +1660,12 @@ function DirectThread({
   return (
     <div className="direct-thread-v23 direct-thread-v63">
       <header>
-        <button className="direct-profile-avatar-button-v77" title="View profile" onClick={onProfile} onContextMenu={event => { event.preventDefault(); onMore(event.clientX, event.clientY) }}>
-          <Avatar name={conversation.person.displayName} initials={conversation.person.initials} src={conversation.person.avatarUrl} size={38} accent={conversation.person.profileAccent} />
-        </button>
+        <span className="spaces-founder-avatar-v813">
+          <button className="direct-profile-avatar-button-v77" title="View profile" onClick={onProfile} onContextMenu={event => { event.preventDefault(); onMore(event.clientX, event.clientY) }}>
+            <Avatar name={conversation.person.displayName} initials={conversation.person.initials} src={conversation.person.avatarUrl} size={38} accent={conversation.person.profileAccent} />
+          </button>
+          {isFounderV813 && <button type="button" className="spaces-founder-shield-v813" title="Spaces team · Founder only" aria-label={`Manage Spaces team role for ${conversation.person.displayName}`} onClick={() => window.dispatchEvent(new CustomEvent('spaces-founder-team-v813', { detail: { username: conversation.person.username } }))}><Icon name="shield" size={13}/></button>}
+        </span>
         <div>
           <button
           type="button"
@@ -1660,7 +1683,9 @@ function DirectThread({
           </span>
         </div>
         <PlatformVerifiedBadge role={conversation.person.platformRole} />
+        {/* SPACES_V81_2_DM_HEADER */}
         <div className="direct-thread-tools-v63">
+          {conversation.status === 'accepted' && !blocked && <><button className="direct-thread-tool-v63" type="button" title="Start voice call" aria-label="Start voice call" onClick={onVoiceCall}><SpacesVoiceIconV81 name="phone" size={17}/></button><button className="direct-thread-tool-v63" type="button" title="Start video call" aria-label="Start video call" onClick={onVideoCall}><SpacesVoiceIconV81 name="video" size={18}/></button></>}
           <button className={`direct-thread-tool-v63 ${pinsOpen ? 'active' : ''}`} title="Pinned messages" onClick={onPinsOpen}><Icon name="pin" size={15}/>{pinnedMessages.length > 0 && <small>{pinnedMessages.length > 9 ? '9+' : pinnedMessages.length}</small>}</button>
           <button className="direct-thread-tool-v63" title="Report" onClick={onReport}><Icon name="shield" size={15}/></button>
           <button className="direct-thread-tool-v63" title="More" onClick={event => onMore(event.clientX, event.clientY)}><Icon name="more" size={16}/></button>

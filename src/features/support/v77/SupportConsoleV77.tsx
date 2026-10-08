@@ -45,7 +45,7 @@ function statusOrder(status: SupportV77CaseStatus) {
   return status === 'waiting' ? 0 : status === 'reviewing' ? 1 : status === 'resolved' ? 2 : 3
 }
 
-export function SupportConsoleV77({ onClose, onOpenSecurity: _onOpenSecurity, mobile = false }: { onClose: () => void; onOpenSecurity?: () => void; mobile?: boolean }) {
+export function SupportConsoleV77({ onClose, onOpenSecurity: _onOpenSecurity, mobile = false, initialTab = 'overview', initialLookup = '' }: { onClose: () => void; onOpenSecurity?: () => void; mobile?: boolean; initialTab?: Tab; initialLookup?: string }) { // SPACES_V81_3_TEAM_TAB
   const dialog = useAppDialog()
   const {
     apiUrl, session, profile, pushToast,
@@ -53,7 +53,7 @@ export function SupportConsoleV77({ onClose, onOpenSecurity: _onOpenSecurity, mo
   } = useSpaces()
   const menu = useContextMenu()
   const [access, setAccess] = useState<SupportV77Access | null>(null)
-  const [tab, setTab] = useState<Tab>('overview')
+  const [tab, setTab] = useState<Tab>(initialTab)
   const [cases, setCases] = useState<SupportV77Case[]>([])
   const [selectedId, setSelectedId] = useState('')
   const [detail, setDetail] = useState<SupportV77Case | null>(null)
@@ -312,7 +312,7 @@ export function SupportConsoleV77({ onClose, onOpenSecurity: _onOpenSecurity, mo
             </> : <div className="support-console-empty-v77"><Icon name="shield" size={24}/><strong>Select a case</strong><span>The case, member profile, history, and moderation controls will appear here.</span></div>}
           </section>
         </> : tab === 'accounts' ? <div className="support-legacy-host-v77"><SupportOperationsV48 mode="accounts" /></div>
-          : tab === 'team' ? <div className="support-legacy-host-v77"><SupportOperationsV48 mode="team" /></div>
+          : tab === 'team' ? <div className="support-legacy-host-v77"><SupportOperationsV48 mode="team" initialQuery={initialLookup} /></div>
           : tab === 'restrictions' ? <section className="support-wide-panel-v77"><header><div><span className="eyebrow">SAFETY</span><h2>Active Restrictions</h2></div><button className="secondary-button compact" onClick={() => void loadRestrictions()}><Icon name="refresh" size={13}/> Refresh</button></header><div className="support-restriction-list-v77">{restrictions.length ? restrictions.map(item => <article key={item.id}><span className="support-case-type-v77"><Icon name="lock" size={14}/></span><div><strong>{item.targetLabel}</strong><small>{item.targetType} · {item.capability.replaceAll('_', ' ')}</small><p>{item.reasonCategory}{item.note ? ` · ${item.note}` : ''}</p><small>{item.expiresAt ? `Expires ${new Date(item.expiresAt).toLocaleString()}` : 'Until removed'} · by {item.createdByName}</small></div><button className="ghost-danger" disabled={busy === `revoke:${item.id}`} onClick={() => void revokeRestriction(item)}>Remove</button></article>) : <div className="support-console-empty-v77"><Icon name="check" size={22}/><strong>No active restrictions</strong></div>}</div></section>
           : tab === 'audit' ? <section className="support-wide-panel-v77"><header><div><span className="eyebrow">ACCOUNTABILITY</span><h2>Audit Log</h2></div><button className="secondary-button compact" onClick={() => void loadAudit()}><Icon name="refresh" size={13}/> Refresh</button></header><div className="support-audit-list-v77">{audit.map(item => <article key={item.id}><span><Icon name="activity" size={13}/></span><div><strong>{item.action.replaceAll('.', ' ')}</strong><small>{item.actorName} · {item.targetLabel || `${item.targetType} ${item.targetId}`}</small><p>{item.reasonCategory}{item.note ? ` · ${item.note}` : ''}</p></div><time>{timeAgo(item.createdAt)}</time></article>)}</div></section>
           : tab === 'staff_chat' ? <section className="support-staff-chat-v77"><header><div><span className="eyebrow">INTERNAL</span><h2>Staff Chat</h2></div></header><div>{staffMessages.map(item => <article key={item.id}><strong>{item.senderName}</strong><p>{item.body}</p><time>{timeAgo(item.createdAt)}</time></article>)}</div><footer><textarea value={staffDraft} onChange={event => setStaffDraft(event.target.value)} onKeyDown={event => { if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); void sendStaffChat() } }} placeholder="Message the Support team…"/><button className="primary-button" disabled={!staffDraft.trim() || busy === 'staff-chat'} onClick={() => void sendStaffChat()}><Icon name="send" size={14}/></button></footer></section>

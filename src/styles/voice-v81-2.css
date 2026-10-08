@@ -1,0 +1,41 @@
+/* Spaces V81.2 global DM voice dock. Accessible on desktop and narrow mobile layouts. */
+.spaces-voice-dock-v812{position:fixed;right:18px;bottom:18px;z-index:9999;width:min(380px,calc(100vw - 24px));border:1px solid rgba(194,167,245,.27);border-radius:18px;background:linear-gradient(155deg,#252032,#15141e);box-shadow:0 20px 70px #0009;color:#f5f0ff;padding:14px;animation:spaces-voice-rise-v812 .24s ease-out}
+.spaces-voice-top-v812{display:flex;align-items:center;gap:11px;margin-bottom:12px}
+.spaces-voice-top-v812>div{flex:1;min-width:0;display:grid;gap:2px}
+.spaces-voice-top-v812 strong{font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.spaces-voice-top-v812 small{font-size:12px;color:#c9bdda}
+.spaces-voice-icon-v812{display:grid;place-items:center;width:39px;height:39px;border-radius:13px;background:#7e5bb944;color:#d6baff}
+.spaces-voice-indicator-v812{width:9px;height:9px;border-radius:50%;background:#c8aaf4;box-shadow:0 0 0 4px #c8aaf41b}
+.spaces-voice-indicator-v812.connected{background:#6de2ae;box-shadow:0 0 0 4px #6de2ae22}
+.spaces-voice-indicator-v812.reconnecting{background:#f4c276}
+.spaces-voice-actions-v812{display:flex;justify-content:center;gap:9px;flex-wrap:wrap}
+.spaces-voice-actions-v812 button{min-width:45px;min-height:42px;border:1px solid #ffffff25;background:#ffffff0d;border-radius:12px;color:inherit;display:inline-flex;align-items:center;justify-content:center;gap:7px;cursor:pointer;transition:background .17s ease,transform .17s ease,border-color .17s ease}
+.spaces-voice-actions-v812 button:hover:not(:disabled){background:#ffffff20;transform:translateY(-2px);border-color:#bba3ed77}
+.spaces-voice-actions-v812 button:focus-visible{outline:2px solid #caa8ff;outline-offset:2px}
+.spaces-voice-actions-v812 button.active{background:#7d5fbc55;border-color:#b7a0e5}
+.spaces-voice-actions-v812 button:disabled{opacity:.4;cursor:not-allowed}
+.spaces-voice-actions-v812 .spaces-voice-hangup-v812{background:#a7334a;color:white;border-color:#d44a64}
+.spaces-voice-actions-v812 .spaces-voice-accept-v812{background:#25845d;color:white;border-color:#42b98a;padding:0 18px}
+.spaces-voice-error-v812{font-size:12px;color:#ffd0d8;margin:0 0 10px;line-height:1.4}
+.spaces-voice-videos-v812:not([hidden]){display:flex;gap:8px;margin-bottom:12px}
+.spaces-voice-videos-v812[hidden]{display:none}
+.spaces-voice-videos-v812 video{background:#0b0b11;width:calc(50% - 4px);aspect-ratio:16/10;object-fit:contain;border-radius:10px}
+@keyframes spaces-voice-rise-v812{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+@media(max-width:650px){.spaces-voice-dock-v812{bottom:max(12px,env(safe-area-inset-bottom));right:12px;left:12px;width:auto;border-radius:16px}}
+@media(prefers-reduced-motion:reduce){.spaces-voice-dock-v812,.spaces-voice-actions-v812 button{animation:none;transition:none}}
+
+/* V81.2.1 call status visuals: subtle animations, no distracting emoji. */
+.spaces-voice-indicator-v812{width:28px;height:28px;flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;border-radius:9px;background:#8e76bb22;border:1px solid #b7a0e544;color:#cab6f1;box-shadow:none}
+.spaces-voice-indicator-v812.connected{background:#47cb9340;border-color:#65d8a180;color:#66e2a9;box-shadow:0 0 0 3px #65d8a111}
+.spaces-voice-indicator-v812.incoming{background:#39956933;border-color:#61db9a66;color:#78ffc1;animation:spaces-incoming-pulse-v812 1.65s ease-in-out infinite}
+.spaces-voice-indicator-v812.calling{background:#8865d030;border-color:#a28ce566;animation:spaces-incoming-pulse-v812 2.2s ease-in-out infinite}
+.spaces-voice-indicator-v812.reconnecting,.spaces-voice-indicator-v812.connecting{background:#edbb5733;border-color:#e7bb6955;color:#ffdc9c}
+.spaces-voice-signal-v812{display:flex;gap:2px;align-items:flex-end;height:13px}
+.spaces-voice-signal-v812 i{display:block;width:3px;border-radius:2px;background:currentColor}
+.spaces-voice-signal-v812 i:nth-child(1){height:5px}.spaces-voice-signal-v812 i:nth-child(2){height:9px}.spaces-voice-signal-v812 i:nth-child(3){height:13px}
+.spaces-voice-dots-v812{display:inline-flex;align-items:center;gap:3px;vertical-align:middle;margin-left:3px}
+.spaces-voice-dots-v812 i{width:3px;height:3px;background:currentColor;border-radius:50%;animation:spaces-voice-dots-pulse-v812 1.15s ease-in-out infinite}
+.spaces-voice-dots-v812 i:nth-child(2){animation-delay:.16s}.spaces-voice-dots-v812 i:nth-child(3){animation-delay:.32s}
+@keyframes spaces-voice-dots-pulse-v812{0%,60%,100%{transform:translateY(0);opacity:.35}30%{transform:translateY(-3px);opacity:1}}
+@keyframes spaces-incoming-pulse-v812{0%,100%{box-shadow:0 0 0 0 #61db9a15}50%{box-shadow:0 0 0 6px #61db9a20}}
+@media(prefers-reduced-motion:reduce){.spaces-voice-indicator-v812,.spaces-voice-dots-v812 i{animation:none}}

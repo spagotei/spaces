@@ -49,6 +49,7 @@ import '../../styles/standalone-v54.css'
 import '../../styles/standalone-v55.css'
 import '../../styles/standalone-v56.css'
 import { SupportIntakeHostV77 } from '../support/v77/SupportIntakeV77'
+import { SpacesDmCallHostV812 } from '../voice/v81/SpacesDmCallHostV812'
 import { GlobalProfileHostV77 } from '../support/v77/GlobalProfileV77'
 
 const navItems: { view: AppView; label: string; icon: IconName }[] = [
@@ -117,6 +118,18 @@ export function AppShell() {
   const [categoryPermissionTarget, setCategoryPermissionTarget] = useState<ChannelCategoryMeta | null>(null)
   const [pendingPermissionMoveV70, setPendingPermissionMoveV70] = useState<{ channelId: string; targetCategoryId: string; beforeChannelId: string | null } | null>(null)
   const [supportConsoleOpen, setSupportConsoleOpen] = useState(false)
+  // SPACES_V81_3_TEAM_NAV: the Founder alone sees this shortcut. Server checks every mutation.
+  const [founderTeamLookupV813, setFounderTeamLookupV813] = useState('')
+  useEffect(() => {
+    const openTeam = (event: Event) => {
+      if (profile?.platformRole !== 'founder') return
+      const username = (event as CustomEvent<{ username?: string }>).detail?.username ?? ''
+      setFounderTeamLookupV813(username.slice(0,48))
+      setSupportConsoleOpen(true)
+    }
+    window.addEventListener('spaces-founder-team-v813', openTeam)
+    return () => window.removeEventListener('spaces-founder-team-v813', openTeam)
+  }, [profile?.platformRole])
   const [mobileStaffOpenV77, setMobileStaffOpenV77] = useState(false)
   const [supportQueueCount, setSupportQueueCount] = useState(0)
   const supportQueueInitialized = useRef(false)
@@ -1654,11 +1667,13 @@ export function AppShell() {
       {noticePeek && <IncomingNotificationPeek item={noticePeek} onOpen={() => void openNotificationItem(noticePeek)} onClose={() => setNoticePeek(null)} />}
       <div className="toast-stack">{toasts.map(toast => <div key={toast.id} className={`toast toast-${toast.tone}`}><span /><p>{toast.message}</p></div>)}</div>
 
+      {/* SPACES_V81_2_GLOBAL_CALL_HOST */}
+      <SpacesDmCallHostV812 />
       <SupportIntakeHostV77 />
       <GlobalProfileHostV77 />
       {mobileStaffOpenV77 && <MobileStaffPanelV77 onClose={() => setMobileStaffOpenV77(false)} />}
       {profileDialog && <PersonalSettings initialTab={profileDialog} onClose={() => setProfileDialog(null)} />}
-      {supportConsoleOpen && <SupportConsole onClose={() => setSupportConsoleOpen(false)} onOpenSecurity={() => { setSupportConsoleOpen(false); setProfileDialog('security') }} />}
+      {supportConsoleOpen && <SupportConsole initialTab={founderTeamLookupV813 && profile?.platformRole === 'founder' ? 'team' : 'overview'} initialLookup={founderTeamLookupV813} onClose={() => { setSupportConsoleOpen(false); setFounderTeamLookupV813('') }} onOpenSecurity={() => { setSupportConsoleOpen(false); setProfileDialog('security') }} />}
       {workspacePrivacyOpen && <WorkspacePrivacyModal workspaceId={workspacePrivacyOpen.id} workspaceName={workspacePrivacyOpen.name} onClose={() => setWorkspacePrivacyOpen(null)} />}
       {selectedRailMember && <MemberProfileDrawer memberId={selectedRailMember} onClose={() => setSelectedRailMember(null)} />}
 
