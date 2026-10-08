@@ -46,6 +46,7 @@ android {
 
     buildTypes {
         getByName("debug") {
+            applicationIdSuffix = ".debug"
             manifestPlaceholders["usesCleartextTraffic"] = "true"
             isDebuggable = true
             isJniDebuggable = true
@@ -65,6 +66,8 @@ android {
             }
 
             isMinifyEnabled = true
+            isShrinkResources = true
+            ndk.debugSymbolLevel = "SYMBOL_TABLE" // SPACES_V81_4_OPTIMIZED
             proguardFiles(
                 *fileTree(".") { include("**/*.pro") }
                     .plus(getDefaultProguardFile("proguard-android-optimize.txt"))
@@ -99,4 +102,3 @@ dependencies {
 }
 
 apply(from = "tauri.build.gradle.kts")
-

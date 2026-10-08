@@ -171,7 +171,71 @@
     <style id="spaces-preboot-style">html,body,#root{margin:0;min-height:100%;background:#09080d}#spaces-preboot{position:fixed;inset:0;display:grid;place-items:center;background:#09080d;overflow:hidden}#spaces-preboot video{display:block;background:transparent}</style>
 
   <style id="spaces-preboot-style-v77">html,body,#root{margin:0;width:100%;min-height:100%;background:#09080d}#spaces-preboot-v77{position:fixed;inset:0;display:grid;place-items:center;background:#09080d;overflow:hidden}#spaces-preboot-v77 video{display:block;width:100%;height:100%;object-fit:contain;background:transparent}</style>
-  </head>
+    <!-- SPACES_ANDROID_STATIC_SPLASH_V25: mobile-only, still logo; desktop video stays unchanged. -->
+  <style id="spaces-mobile-static-startup-style">
+    .spaces-native-boot-logo { display: none !important; }
+    html.spaces-mobile-static-boot #spaces-preboot {
+      background: #09090d !important;
+    }
+    html.spaces-mobile-static-boot #spaces-preboot .spaces-preboot-card { display: none !important; }
+    html.spaces-mobile-static-boot #spaces-preboot > .spaces-native-boot-logo,
+    html.spaces-mobile-static-boot #spaces-preboot-v77 .spaces-native-boot-logo { display: block !important; }
+    html.spaces-mobile-static-boot .spaces-native-boot-logo,
+    html.spaces-mobile-static-boot .spaces-mobile-static-splash img {
+      width: 112px !important;
+      height: 112px !important;
+      object-fit: contain !important;
+      filter: none !important;
+      animation: none !important;
+      transition: none !important;
+    }
+    html.spaces-mobile-static-boot #spaces-preboot-v77 {
+      display: grid !important;
+      place-items: center !important;
+      width: 100% !important;
+      min-height: 100dvh !important;
+      background: #09090d !important;
+    }
+    html.spaces-mobile-static-boot #spaces-preboot-v77 video { display: none !important; }
+    html.spaces-mobile-static-boot .spaces-mobile-static-splash {
+      display: grid !important;
+      place-items: center !important;
+      width: 100% !important;
+      min-height: 100dvh !important;
+      background: #09090d !important;
+      animation: none !important;
+    }
+    #spaces-mobile-startup-recovery {
+      position: fixed;
+      inset: 0;
+      z-index: 2147483647;
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      gap: 16px;
+      padding: 32px;
+      background: #09090d;
+      color: #fff;
+      text-align: center;
+      font: 15px/1.5 system-ui, sans-serif;
+    }
+    #spaces-mobile-startup-recovery img { width: 100px; height: 100px; object-fit: contain; }
+    #spaces-mobile-startup-recovery strong { font-size: 19px; }
+    #spaces-mobile-startup-recovery p { max-width: 320px; margin: 0; color: #b8b3c1; }
+    #spaces-mobile-startup-recovery button {
+      margin-top: 6px;
+      min-height: 46px;
+      padding: 0 26px;
+      border: 0;
+      border-radius: 12px;
+      background: #8b6ca8;
+      color: #fff;
+      font: 650 15px system-ui, sans-serif;
+    }
+  </style>
+</head>
   <body>
     <!-- SPACES_STARTUP_LOADING_BODY -->
 <div id="spaces-preboot" role="status" aria-live="polite" aria-label="Loading Spaces">
@@ -183,10 +247,47 @@
     </div>
     <div class="spaces-preboot-progress" aria-hidden="true"></div>
   </div>
+  <img class="spaces-native-boot-logo" src="/icon-256.png" alt="Spaces" />
 </div>
 
-    <div id="root"><main id="spaces-preboot-v77"><video autoplay muted loop playsinline preload="auto" src="/Spaces-Bootloading-V77-transparent.webm"></video></main></div>
+    <div id="root"><main id="spaces-preboot-v77"><video autoplay muted loop playsinline preload="auto" src="/Spaces-Bootloading-V77-transparent.webm"></video><img class="spaces-native-boot-logo" src="/icon-256.png" alt="Spaces" /></main></div>
 
+    <!-- SPACES_ANDROID_STATIC_SPLASH_V25: start even if the React JavaScript bundle never initializes. -->
+    <script id="spaces-mobile-boot-watchdog">
+    (function () {
+      if (!/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) return;
+      document.documentElement.classList.add('spaces-mobile-static-boot');
+      var ready = false;
+      window.addEventListener('spaces:mobile-ui-ready', function () {
+        ready = true;
+        var recovery = document.getElementById('spaces-mobile-startup-recovery');
+        if (recovery) recovery.remove();
+      }, { once: true });
+      // If the bundle fails to load or session restore never completes, stop showing a silent splash.
+      window.setTimeout(function () {
+        if (ready) return;
+        var panel = document.createElement('section');
+        panel.id = 'spaces-mobile-startup-recovery';
+        panel.setAttribute('role', 'alert');
+        var logo = document.createElement('img');
+        logo.src = '/icon-256.png';
+        logo.alt = 'Spaces';
+        var title = document.createElement('strong');
+        title.textContent = 'Spaces could not finish starting';
+        var message = document.createElement('p');
+        message.textContent = 'Please try again. If it still stops here, the Android app needs a startup diagnostic.';
+        var retry = document.createElement('button');
+        retry.type = 'button';
+        retry.textContent = 'Try again';
+        retry.addEventListener('click', function () { window.location.reload(); });
+        panel.appendChild(logo);
+        panel.appendChild(title);
+        panel.appendChild(message);
+        panel.appendChild(retry);
+        document.body.appendChild(panel);
+      }, 12000);
+    })();
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

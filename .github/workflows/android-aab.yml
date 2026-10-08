@@ -162,6 +162,27 @@ jobs:
           echo "Play versionCode: $actual" >> "$GITHUB_STEP_SUMMARY"
           echo "NOTE: The AAB is NOT uploaded to Google Play automatically." >> "$GITHUB_STEP_SUMMARY"
 
+      # SPACES_V814_PLAY_SIZE_REPORT: observable bundle size and Play symbol diagnostics.
+      - name: Report Android bundle size and native symbols
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo '### Spaces Android release diagnostics' >> "$GITHUB_STEP_SUMMARY"
+          find src-tauri/gen/android/app/build/outputs/bundle -type f -name '*.aab' -printf '%p %s bytes\n' | tee /tmp/spaces-aab-size.txt
+          cat /tmp/spaces-aab-size.txt >> "$GITHUB_STEP_SUMMARY"
+          if test -s src-tauri/gen/android/app/build/outputs/native-debug-symbols/release/native-debug-symbols.zip; then
+            echo 'Native debug symbols ZIP generated.' | tee -a "$GITHUB_STEP_SUMMARY"
+          else
+            echo 'WARNING: no external native symbols ZIP detected. Confirm embedded symbols in Play Console.' | tee -a "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Preserve native debug symbols (if generated)
+        uses: actions/upload-artifact@v7
+        with:
+          name: Spaces-Android-Native-Debug-Symbols
+          path: src-tauri/gen/android/app/build/outputs/native-debug-symbols/release/native-debug-symbols.zip
+          if-no-files-found: ignore
+
       - name: Upload signed Spaces Google Play AAB
         uses: actions/upload-artifact@v7
         with:

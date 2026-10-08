@@ -230,8 +230,18 @@ function readWorkspaceCacheV70(workspaceId: string): WorkspaceBootstrap | null {
   try { const raw = localStorage.getItem(workspaceCacheKeyV70(workspaceId)); return raw ? JSON.parse(raw) as WorkspaceBootstrap : null }
   catch { return null }
 }
+// SPACES_CACHE_WRITE_THROTTLE_V814: best-effort UI snapshot, never the source of truth.
+// Throttle disk serialization when the 2.5-second server sync finds small changes.
+const lastWorkspaceCacheWriteV814 = new Map<string, number>()
 function writeWorkspaceCacheV70(workspaceId: string, value: WorkspaceBootstrap) {
-  try { localStorage.setItem(workspaceCacheKeyV70(workspaceId), JSON.stringify(value)) } catch { /* cache is best effort */ }
+  const now = Date.now()
+  if (now - (lastWorkspaceCacheWriteV814.get(workspaceId) ?? 0) < 12_000) return
+  try {
+    const snapshot = JSON.stringify(value)
+    if (snapshot.length > 1_500_000) return // Don't exhaust WebView localStorage on large Spaces.
+    localStorage.setItem(workspaceCacheKeyV70(workspaceId), snapshot)
+    lastWorkspaceCacheWriteV814.set(workspaceId, now)
+  } catch { /* cache is best effort; the server retains all data */ }
 }
 
 function notificationTargetReadStorageKeyV71(userId: string | undefined) {

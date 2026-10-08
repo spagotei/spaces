@@ -1,0 +1,14 @@
+{
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "title": "Spaces",
+        "visible": true
+      }
+    ]
+  },
+  "build": {
+    "beforeBuildCommand": "npm run build:android"
+  }
+}

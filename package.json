@@ -28,7 +28,8 @@
     "beta:archives": "node scripts/archive-readiness-v80.mjs",
     "voice:check": "node scripts/v81-media-foundation-check.cjs",
     "voice:dm:check": "node scripts/v81_2_source_check.cjs",
-    "voice:polish:check": "node scripts/v81_3_source_check.cjs"
+    "voice:polish:check": "node scripts/v81_3_source_check.cjs",
+    "build:android": "npm run build && node scripts/prune-android-assets-v814.cjs"
   },
   "dependencies": {
     "@tauri-apps/api": "^2.8.0",

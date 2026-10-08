@@ -85,6 +85,10 @@ import './styles/standalone-v78.css'
 import './styles/standalone-v79.css'
 import './styles/legal-v80.css'
 function StartupLoadingScreen() {
+  // SPACES_ANDROID_STATIC_SPLASH_V25: native mobile splash is only the Spaces logo, no animated movie.
+  if (/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+    return <div className="startup-loading-screen spaces-mobile-static-splash" aria-label="Opening Spaces"><img src="/icon-256.png" alt="Spaces" /></div>
+  }
   return <div className="startup-loading-screen startup-loading-v77" aria-label="Opening Spaces"><video autoPlay muted loop playsInline preload="auto" src="/Spaces-Bootloading-V77-transparent.webm" /></div>
 }
 
@@ -93,6 +97,12 @@ const launcherModeV70 = new URLSearchParams(window.location.search).get('launche
 function SpacesRoot() {
   const { session, loading } = useSpaces()
   const [welcomeDone, setWelcomeDone] = useState(() => localStorage.getItem('spaces.welcome.v1') === '1')
+  // Notify the independent Android watchdog after React has a usable screen.
+  useEffect(() => {
+    if (!loading && /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+      window.dispatchEvent(new Event('spaces:mobile-ui-ready'))
+    }
+  }, [loading])
   useEffect(() => { if (!loading && isTauriDesktopRuntime()) void invoke('finish_startup').catch(() => undefined) }, [loading])
 
   // Do not unmount LoginScreen while a login/2FA request is in flight.
@@ -124,4 +134,3 @@ export default function App() {
     </>
   )
 }
-
