@@ -1,0 +1,39 @@
+/* SPACES_V82_MOBILE_FIXES — responsive UI, protected system gesture edges, mobile staff visibility. */
+@media (max-width: 900px) {
+  :root { --spaces-v82-safe-top: env(safe-area-inset-top, 0px); --spaces-v82-safe-bottom: env(safe-area-inset-bottom, 0px); --spaces-v82-tabs: 67px; }
+  html, body, #root { width:100% !important; max-width:100% !important; min-width:0 !important; height:100% !important; min-height:0 !important; margin:0 !important; overflow:hidden !important; }
+  body { overscroll-behavior:none !important; }
+  .spaces-web-runtime-v78, .tauri-desktop-content, .tauri-desktop-content > div, .spaces-app-shell { box-sizing:border-box !important; width:100% !important; max-width:100% !important; min-width:0 !important; height:100dvh !important; max-height:100dvh !important; min-height:0 !important; overflow:hidden !important; }
+  .main-stage { width:100% !important; max-width:100% !important; min-width:0 !important; height:100% !important; min-height:0 !important; padding-top:max(24px,var(--spaces-v82-safe-top)) !important; display:flex !important; flex-direction:column !important; }
+  .topbar { width:100% !important; max-width:100% !important; flex:0 0 56px !important; min-width:0 !important; padding-inline:10px !important; }
+  .view-host { width:100% !important; max-width:100% !important; min-width:0 !important; min-height:0 !important; flex:1 1 auto !important; overflow:hidden !important; padding-bottom:calc(var(--spaces-v82-tabs) + max(9px,var(--spaces-v82-safe-bottom))) !important; box-sizing:border-box !important; }
+  .view-transition-frame, .view-scroll, .direct-center-v23, .direct-center-main-v23, .direct-thread-v23, .direct-thread-v63, .chat-view { min-width:0 !important; max-width:100% !important; min-height:0 !important; box-sizing:border-box !important; }
+  .view-transition-frame { height:100% !important; overflow:hidden !important; }
+  .view-scroll { overflow-y:auto !important; overscroll-behavior:contain !important; }
+  .direct-center-v23, .direct-center-main-v23 { width:100% !important; height:100% !important; max-height:100% !important; overflow:hidden !important; }
+  .direct-thread-v23 { width:100% !important; height:100% !important; max-height:100% !important; display:flex !important; flex-direction:column !important; }
+  .mobile-homebar { display:grid !important; grid-template-columns:repeat(4,minmax(0,1fr)) !important; min-height:58px !important; height:62px !important; bottom:max(7px,var(--spaces-v82-safe-bottom)) !important; left:8px !important; right:8px !important; gap:3px !important; z-index:300 !important; }
+  .mobile-homebar button { min-width:0 !important; min-height:47px !important; font-size:10px !important; padding:4px 1px !important; touch-action:manipulation !important; }
+  .mobile-homebar button svg { width:19px; height:19px; }
+  /* Staff management is for desktop and full web; member support tickets remain available. */
+  .support-console-launcher, .support-console-v77, .support-mobile-panel-v77, .mobile-staff-panel-v77, .staff-sidebar-section, .sidebar-management button:has(svg[data-icon="shield"]) { display:none !important; }
+  /* All close controls remain below the status bar and reachable with 44px touch targets. */
+  .member-profile-drawer, .profile-v77-drawer, .direct-profile-dialog-v66, .direct-profile-sheet-v76 { box-sizing:border-box !important; top:0 !important; max-height:100dvh !important; height:100dvh !important; padding-top:var(--spaces-v82-safe-top) !important; padding-bottom:var(--spaces-v82-safe-bottom) !important; overflow:hidden !important; }
+  .member-profile-drawer-scroll, .profile-v77-drawer > div, .direct-profile-sheet-v76 > div { max-height:100% !important; min-height:0 !important; overflow-y:auto !important; }
+  .profile-drawer-close, .profile-close-v65, .direct-profile-close-v66, .direct-profile-close-v76, .profile-v77-drawer header button[aria-label="Close profile"] { min-width:44px !important; min-height:44px !important; display:grid !important; place-items:center !important; z-index:1200 !important; touch-action:manipulation !important; }
+  .profile-drawer-close, .profile-close-v65 { top:max(12px,calc(var(--spaces-v82-safe-top) + 8px)) !important; right:14px !important; }
+  .direct-profile-close-v76 { top:max(12px,calc(var(--spaces-v82-safe-top) + 8px)) !important; right:12px !important; }
+  .profile-v77-drawer header { padding-top:12px !important; min-height:56px !important; }
+  /* Remove unwanted seam between user banner and profile-picture overlap. */
+  .member-profile-drawer-banner, .direct-profile-banner-v76, .profile-v77-banner { border-bottom:0 !important; box-shadow:none !important; background-clip:padding-box !important; }
+  .member-profile-drawer-banner::after, .direct-profile-banner-v76::after { display:none !important; }
+  .member-profile-drawer-identity, .direct-profile-identity-v76 { border-top:0 !important; box-shadow:none !important; }
+  .member-profile-drawer-identity .drawer-avatar, .member-profile-drawer-identity .avatar, .direct-profile-identity-v76 .avatar { border-color:#111017 !important; box-shadow:0 0 0 3px #111017 !important; }
+  /* Disable desktop-only decorations on native mobile. */
+  .spaces-founder-shield-v813, .spaces-founder-profile-shield-v813 { display:none !important; }
+}
+@media(max-width:430px) {
+ .mobile-homebar { left:5px !important; right:5px !important; }
+ .mobile-homebar button { font-size:9.5px !important; }
+ .topbar-left strong { max-width:45vw !important; }
+}

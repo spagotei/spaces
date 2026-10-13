@@ -1,0 +1,53 @@
+/* V90.3: desktop/web sizing. Does not touch the mobile swipe/sidebar layout. */
+@media(min-width:901px){
+ .spaces-app-shell{min-width:0;min-height:0}
+ .spaces-app-shell .main-stage,.spaces-app-shell .view-host,.spaces-app-shell .view-transition-frame{min-width:0;width:100%;min-height:0}
+ .spaces-app-shell .view-transition-frame>.modal-embedded-v55,
+ .spaces-app-shell .direct-center-embedded-v55,.spaces-app-shell .direct-center-main-v23,
+ .spaces-app-shell .direct-thread-v23{min-width:0;width:100%;max-width:none}
+ .spaces-app-shell.channel-nav-compact-v903:not(.channel-nav-collapsed) .channel-sidebar{width:76px}
+ .spaces-app-shell.channel-nav-compact-v903 .channel-sidebar .space-header{padding:8px 4px;justify-content:center}
+ .spaces-app-shell.channel-nav-compact-v903 .channel-sidebar .space-header-copy,
+ .spaces-app-shell.channel-nav-compact-v903 .channel-sidebar .space-header-menu-chevron-v18,
+ .spaces-app-shell.channel-nav-compact-v903 .channel-sidebar .sidebar-section-label span,
+ .spaces-app-shell.channel-nav-compact-v903 .channel-sidebar .sidebar-section-label>button>span,
+ .spaces-app-shell.channel-nav-compact-v903 .channel-sidebar .sidebar-item>span:not(.person-plus-icon-v68),
+ .spaces-app-shell.channel-nav-compact-v903 .channel-sidebar .sidebar-item>small,
+ .spaces-app-shell.channel-nav-compact-v903 .channel-sidebar .channel-row>small,
+ .spaces-app-shell.channel-nav-compact-v903 .channel-sidebar .channel-thread-toggle-v38,
+ .spaces-app-shell.channel-nav-compact-v903 .channel-sidebar .sidebar-dm-open-v54>div,
+ .spaces-app-shell.channel-nav-compact-v903 .channel-sidebar .sidebar-dm-unread-v54,
+ .spaces-app-shell.channel-nav-compact-v903 .channel-sidebar .private-chip,
+ .spaces-app-shell.channel-nav-compact-v903 .channel-sidebar .support-console-launcher>div,
+ .spaces-app-shell.channel-nav-compact-v903 .channel-sidebar .account-identity>span:last-child {display:none !important}
+ .spaces-app-shell.channel-nav-compact-v903 .channel-sidebar .sidebar-scroll{overflow-x:hidden}
+ .spaces-app-shell.channel-nav-compact-v903 .channel-sidebar .sidebar-item,
+ .spaces-app-shell.channel-nav-compact-v903 .channel-sidebar .channel-row{width:48px;min-height:42px;justify-content:center;display:flex;align-items:center;margin-inline:auto;padding:7px}
+ .spaces-app-shell.channel-nav-compact-v903 .channel-sidebar .sidebar-dm-list-v54{padding-inline:4px}
+ .spaces-app-shell.channel-nav-compact-v903 .channel-sidebar .sidebar-dm-pin-v54{display:none}
+ .spaces-app-shell.channel-nav-compact-v903 .channel-sidebar .sidebar-dm-open-v54{justify-content:center}
+ .spaces-app-shell.channel-nav-compact-v903 .channel-sidebar .sidebar-category-label-v17>button{min-width:0;width:42px}
+ .spaces-app-shell.channel-nav-compact-v903 .channel-sidebar .account-dock{padding:6px 2px;justify-content:center}
+ .spaces-app-shell.channel-nav-compact-v903 .channel-sidebar .account-dock>.icon-button{display:none}
+ .member-rail{position:relative}
+ .member-rail-resize-v903{position:absolute;left:-5px;top:58px;bottom:0;z-index:30;width:11px;cursor:ew-resize;border:0;padding:0;background:transparent;touch-action:none}
+ .member-rail-resize-v903:hover,.member-rail-resize-v903:focus-visible{background:rgba(171,162,195,.18);outline:0}
+ .spaces-app-shell.member-resizing-v903,.spaces-app-shell.member-resizing-v903 *{cursor:ew-resize !important;user-select:none !important}
+ .desktop-channel-compact-v903{flex:0 0 auto}
+ /* Conversation-specific right profile pane. Chat grows and shrinks with it. */
+ .direct-center-embedded-v55.has-dm-profile-v903{grid-template-columns:minmax(0,1fr) var(--dm-profile-width-v903,280px) !important}
+ .direct-center-embedded-v55 .dm-profile-panel-v903{grid-column:2;min-width:0;position:relative;overflow-y:auto;display:flex;flex-direction:column;gap:12px;padding:30px 18px 22px;border-left:1px solid rgba(255,255,255,.08);background:rgba(18,18,23,.75);backdrop-filter:blur(14px)}
+ .dm-profile-panel-v903 .dm-profile-resize-v903{position:absolute;left:0;top:0;bottom:0;width:9px;border:0;background:transparent;cursor:ew-resize;touch-action:none}
+ .dm-profile-panel-v903 .dm-profile-resize-v903:hover{background:rgba(160,160,180,.22)}
+ .dm-profile-panel-v903 .dm-profile-identity-v903{display:grid;justify-items:start;gap:7px;min-width:0;overflow-wrap:anywhere}
+ .dm-profile-panel-v903 .dm-profile-identity-v903 strong{font-size:17px;color:#eee}
+ .dm-profile-panel-v903 .dm-profile-identity-v903 small{color:#aaa}
+ .direct-center-embedded-v55 .dm-profile-toggle-v903{position:absolute;z-index:12;right:18px;bottom:90px;border:1px solid rgba(255,255,255,.12);border-radius:11px;background:rgba(32,32,40,.88);backdrop-filter:blur(12px);color:#e2e2e9;padding:8px 12px;display:flex;align-items:center;gap:6px;cursor:pointer}
+ .direct-center-embedded-v55.has-dm-profile-v903 .dm-profile-toggle-v903{right:calc(var(--dm-profile-width-v903,280px) + 16px)}
+ .dm-profile-panel-v903 .dm-profile-actions-v903{display:flex;gap:8px;flex-wrap:wrap;margin-top:4px}
+ .dm-profile-panel-v903 .dm-profile-actions-v903 button{border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.06);color:#eee;border-radius:10px;padding:8px 11px;cursor:pointer}
+}
+.spaces-returning-boot-v903{width:100%;height:100%;min-height:100vh;display:grid;place-items:center;background:#08090d}
+.spaces-returning-boot-v903 img{width:44px;height:44px;opacity:.8}
+@media(max-width:900px){.member-rail-resize-v903,.desktop-channel-compact-v903,.dm-profile-toggle-v903,.dm-profile-panel-v903{display:none !important}}
+@media(prefers-reduced-motion:reduce){.spaces-app-shell .channel-sidebar,.spaces-app-shell .member-rail,.dm-profile-panel-v903{transition:none !important}}

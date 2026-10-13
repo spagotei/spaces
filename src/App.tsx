@@ -1,4 +1,9 @@
-import { useEffect, useState } from 'react'
+import { SpacesNativeCallPopoutV91 } from './features/voice/v91/SpacesNativeCallPopoutV91' // SPACES_V91_NATIVE_CALLOUT
+import { useEffect as useEffectV89WindowFrame } from 'react'; // SPACES_V89_WINDOW_FRAME
+import { installSpacesWindowFrameV89 } from './utils/window-frame-v89';
+import './styles/workspace-v89.css';
+import { StaffSupportCenterV84_2 } from './features/support/v77/StaffSupportCenterV84_2'
+import { lazy, Suspense, useEffect, useState } from 'react'
 import { invoke } from '@tauri-apps/api/core'
 import { DesktopTitlebar, isTauriDesktopRuntime } from './components/DesktopTitlebar'
 import { CustomCursor } from './components/CustomCursor'
@@ -7,7 +12,6 @@ import { AppDialogProvider } from './components/AppDialog'
 import { LoginScreen } from './features/auth/LoginScreen'
 import { BetaProfileSetup } from './features/auth/BetaProfileSetup'
 import { StartupLauncher } from './components/StartupLauncher'
-import { AppShell } from './features/shell/AppShell'
 import { PreferencesProvider } from './state/PreferencesContext'
 import { SpacesProvider, useSpaces } from './state/SpacesContext'
 import './styles/tokens.css'
@@ -84,7 +88,26 @@ import './styles/standalone-v77.css'
 import './styles/standalone-v78.css'
 import './styles/standalone-v79.css'
 import './styles/legal-v80.css'
+import './styles/layout-v90-3.css'
+import './styles/layout-v90-4.css'
+import './styles/call-v91.css'
+import './styles/glass-v86.css' // SPACES_V86_GLASS
+import './styles/polish-v87.css' // SPACES_V87_POLISH
+import './styles/popout-v88.css' // SPACES_V88_OVERLAY
+import './styles/recent-dm-rail-v88-1.css' // SPACES_V88_1_DM_AVATARS
+import './styles/mobile-v82.css'
+import './styles/web-fullscreen-v82-6.css'
+import './styles/polish-v921.css' // SPACES_V92_1_UI_POLISH
+import './styles/v922-repair.css' // SPACES_V92_2_VISUAL_REPAIR
+import './styles/v923-finish.css' // SPACES_V923_STYLE
+// SPACES_V81_4_LAZY_SPLITS — load the signed-in application only when needed.
+const AppShell = lazy(() => import('./features/shell/AppShell').then(m => ({ default: m.AppShell })))
+
 function StartupLoadingScreen() {
+  // SPACES_V90_3_RETURNING_STARTUP: browser boot movie plays at most once per origin.
+  const [watchedBootV903] = useState(() => { try { return localStorage.getItem('spaces:web-boot-seen:v77') === '1' } catch { return false } })
+  useEffect(() => { if (!watchedBootV903) { try { localStorage.setItem('spaces:web-boot-seen:v77', '1') } catch { /* private browsing */ } } }, [watchedBootV903])
+  if (watchedBootV903 && !/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) return <div className="spaces-returning-boot-v903" aria-label="Loading Spaces"><img src="/icon-256.png" alt="Spaces" /></div>
   // SPACES_ANDROID_STATIC_SPLASH_V25: native mobile splash is only the Spaces logo, no animated movie.
   if (/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
     return <div className="startup-loading-screen spaces-mobile-static-splash" aria-label="Opening Spaces"><img src="/icon-256.png" alt="Spaces" /></div>
@@ -111,10 +134,15 @@ function SpacesRoot() {
   if (!welcomeDone) return <WelcomeToSpaces onContinue={() => { localStorage.setItem('spaces.welcome.v1', '1'); setWelcomeDone(true) }} />
   if (!session) return <LoginScreen />
   if (session.profileSetupRequired) return <BetaProfileSetup />
-  return <AppShell />
+  // SPACES_V84_2_STAFF_PORTAL_ROUTE: auth and developer-mode are rechecked inside this view.
+  if (new URLSearchParams(window.location.search).get('staff-support') === '1') return <StaffSupportCenterV84_2 />
+  return <Suspense fallback={<div className="startup-loading-screen" role="status" aria-label="Opening Spaces">Opening Spaces…</div>}><AppShell /></Suspense>
 }
 
 export default function App() {
+  if (isTauriDesktopRuntime() && new URLSearchParams(window.location.search).get('spaces-popout') === 'v91') return <SpacesNativeCallPopoutV91 />
+  useEffectV89WindowFrame(()=>{let clean:(()=>void)|undefined;let cancelled=false;void installSpacesWindowFrameV89().then(fn=>{if(cancelled)fn();else clean=fn});return()=>{cancelled=true;clean?.()}},[])
+
   if (launcherModeV70) return <StartupLauncher />
   const desktopRuntime = isTauriDesktopRuntime()
 

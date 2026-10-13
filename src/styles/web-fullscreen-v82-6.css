@@ -1,0 +1,61 @@
+/* SPACES_V82_6_WEB_VIEWPORT — browser-only full-height app, preserve Tauri window/titlebar. */
+.spaces-web-runtime-v78 {
+  display: block;
+  position: relative;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  height: 100vh;
+  height: 100dvh;
+  max-height: 100dvh;
+  min-height: 0;
+  overflow: hidden;
+}
+.spaces-web-runtime-v78 > .spaces-app-shell {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+.spaces-web-runtime-v78 .main-stage {
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+  max-height: 100%;
+  overflow: hidden;
+}
+.spaces-web-runtime-v78 .view-host {
+  min-width: 0;
+  min-height: 0;
+  flex: 1 1 0%;
+  overflow: hidden;
+}
+.spaces-web-runtime-v78 .view-transition-frame {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+  overflow: hidden;
+}
+/* Let scrollable content scroll inside the shell, not behind the browser window. */
+@media (min-width: 901px) {
+  .spaces-web-runtime-v78 .view-scroll,
+  .spaces-web-runtime-v78 .home-view-v78,
+  .spaces-web-runtime-v78 .workspace-overview {
+    min-height: 0;
+    max-height: 100%;
+    overflow-y: auto;
+    overflow-x: hidden;
+    overscroll-behavior-y: contain;
+  }
+}
+/* V82 mobile tabs and Android gesture safe-areas are owned by mobile-v82.css. */
+@media (max-width: 900px) {
+  .spaces-web-runtime-v78 { width: 100% !important; height: 100dvh !important; }
+  .spaces-web-runtime-v78 > .spaces-app-shell { height: 100% !important; }
+}

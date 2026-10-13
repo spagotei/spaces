@@ -1,0 +1,22 @@
+/* V91 -- real banner behind DM profile, clear glass actions, reliable sound controls. */
+.dm-profile-panel-v903 { isolation:isolate; position:relative; overflow:hidden; background:linear-gradient(180deg,rgba(18,19,25,.80),rgba(10,11,15,.96))!important; }
+.dm-profile-panel-v903 .dm-profile-banner-v91 { position:absolute; z-index:-1; inset:0 0 auto 0; height:min(42%,330px); background-size:cover; background-position:center 30%; opacity:.83; pointer-events:none; }
+.dm-profile-panel-v903 .dm-profile-banner-v91::after {content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(10,12,18,.18),rgba(10,12,18,.76) 68%,rgba(10,12,18,1));}
+.dm-profile-panel-v903 .dm-profile-identity-v903 { position:relative;z-index:1; padding-top:clamp(40px,7vh,95px); text-shadow:0 2px 14px rgba(0,0,0,.7); }
+.dm-profile-panel-v903 .dm-profile-actions-v903 { position:relative;z-index:1;display:flex;gap:8px;flex-wrap:wrap;padding:12px; }
+.dm-profile-panel-v903 .dm-profile-actions-v903 button { min-height:38px; flex:1; border:1px solid rgba(255,255,255,.19)!important;border-radius:13px!important;background:rgba(53,56,67,.52)!important;color:#f3f4f8!important;backdrop-filter:blur(18px) saturate(125%);-webkit-backdrop-filter:blur(18px) saturate(125%);box-shadow:0 2px 10px rgba(0,0,0,.25);transition:background 160ms ease,transform 160ms ease; }
+.dm-profile-panel-v903 .dm-profile-actions-v903 button:hover { background:rgba(91,96,112,.68)!important; transform:translateY(-1px); }
+.dm-profile-panel-v903 .dm-profile-bio-v91 {color:#e2e3ea;font-size:12px;line-height:1.5;padding:0 14px;position:relative;z-index:1;white-space:pre-wrap;overflow-wrap:anywhere;}
+.spaces-v91-enable-audio { min-height:36px;border-radius:13px;border:1px solid rgba(152,171,205,.38);background:rgba(62,79,104,.42);padding:7px 12px;font-size:12px;font-weight:700;color:#eef5ff;cursor:pointer;backdrop-filter:blur(12px); }
+.spaces-v91-enable-audio:hover {background:rgba(82,105,138,.65)}
+.spaces-v91-native-popout { position:fixed;inset:0;display:flex;flex-direction:column;background:linear-gradient(145deg,#272831,#0b0d13);color:#f5f5f8;padding:8px 11px;font-family:system-ui,sans-serif;box-sizing:border-box; }
+.spaces-v91-native-drag { display:flex;justify-content:space-between;align-items:center;gap:8px;user-select:none;font-size:10px;font-weight:800;letter-spacing:.13em;color:#9ca2b5;cursor:grab; }
+.spaces-v91-native-drag button {background:rgba(255,255,255,.1);color:white;border:0;border-radius:8px;cursor:pointer;padding:3px 10px;font-size:18px}
+.spaces-v91-native-person { display:flex;align-items:center;gap:11px;flex:1;padding:9px 3px;min-width:0; }
+.spaces-v91-native-person img,.spaces-v91-native-avatar {width:52px;height:52px;border-radius:18px;object-fit:cover;flex-shrink:0;border:1px solid rgba(255,255,255,.18);background:#343040;display:grid;place-items:center;font-size:24px;animation:spaces-v91-float 4s ease-in-out infinite alternate;}
+.spaces-v91-native-person-copy {flex:1;min-width:0;display:grid;gap:5px} .spaces-v91-native-person-copy strong {overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:15px} .spaces-v91-native-person-copy span {font-size:12px;color:#bdc2cf}
+.spaces-v91-native-dot {height:9px;width:9px;border-radius:50%;background:#55c998;box-shadow:0 0 11px #55c99875;}
+.spaces-v91-native-popout footer {font-size:9px;color:#9396a2;padding:2px 3px}
+@keyframes spaces-v91-float { from {transform:translateY(0)} to {transform:translateY(-3px)} }
+@media (prefers-reduced-motion:reduce) {.spaces-v91-native-person img,.spaces-v91-native-avatar{animation:none}.dm-profile-panel-v903 .dm-profile-actions-v903 button{transition:none}}
+@media (max-width:900px) {.dm-profile-panel-v903 .dm-profile-identity-v903 {padding-top:45px}}

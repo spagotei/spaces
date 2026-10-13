@@ -16,6 +16,7 @@
     "core:window:allow-set-overlay-icon",
     "core:window:allow-show",
     "core:window:allow-set-focus",
-    "notification:default"
+    "notification:default",
+    "core:webview:allow-create-webview-window"
   ]
 }

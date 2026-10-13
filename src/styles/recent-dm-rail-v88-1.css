@@ -1,0 +1,40 @@
+/* V88.1 — private-message portraits in far-left rail. Spaces remain below the list.
+ * Text chrome/tab badge and Windows taskbar 9+ behavior are independent. */
+.spaces-app-shell .spaces-v881-dm-rail{
+  display:flex; flex-direction:column; flex:0 1 auto; align-items:center; gap:7px;
+  padding:4px 5px 9px; margin:1px 0 3px; min-height:0;
+  max-height:min(37vh,410px); overflow-y:auto; overflow-x:hidden;
+  scrollbar-width:thin; scrollbar-color:rgba(215,216,230,.25) transparent;
+  overscroll-behavior:contain; isolation:isolate;
+}
+.spaces-app-shell .spaces-v881-dm-avatar{
+  appearance:none; flex:0 0 auto; position:relative;
+  display:grid; place-items:center; width:52px; height:52px; padding:4px;
+  border:1px solid rgba(222,226,234,.13); border-radius:18px;
+  background:linear-gradient(160deg,rgba(47,50,59,.78),rgba(11,12,16,.78));
+  color:inherit; cursor:pointer; box-shadow:0 4px 18px rgba(0,0,0,.25);
+  transition:transform .17s ease,border-color .17s ease,background .17s ease,border-radius .17s ease;
+}
+.spaces-app-shell .spaces-v881-dm-avatar:where(:hover,:focus-visible),
+.spaces-app-shell .spaces-v881-dm-avatar.active{
+  transform:translateY(-2px); border-color:rgba(206,184,247,.55);
+  border-radius:15px; background:rgba(63,59,77,.86);
+}
+.spaces-app-shell .spaces-v881-dm-avatar:focus-visible{outline:2px solid #d5bdff;outline-offset:2px}
+.spaces-app-shell .spaces-v881-dm-avatar.has-unread{border-color:rgba(148,159,181,.56)}
+.spaces-app-shell .spaces-v881-dm-count{
+  position:absolute;right:-1px;bottom:-1px;z-index:3;
+  display:grid;place-items:center;min-width:19px;height:19px;padding:0 4px;
+  border:2px solid #111218;border-radius:999px;
+  background:#cb455c;color:#fff;font:700 10px/1 system-ui,sans-serif;
+  letter-spacing:-.02em;box-shadow:0 2px 8px rgba(0,0,0,.55);
+}
+.spaces-app-shell .spaces-v881-dm-avatar.has-unread::before{
+  content:'';position:absolute;left:-4px;top:50%;transform:translateY(-50%);
+  width:3px;height:19px;background:#e1d7ee;border-radius:999px;
+}
+@media(max-width:680px){
+  .spaces-app-shell .spaces-v881-dm-rail{max-height:min(32vh,300px);gap:5px}
+  .spaces-app-shell .spaces-v881-dm-avatar{width:48px;height:48px}
+}
+@media(prefers-reduced-motion:reduce){.spaces-app-shell .spaces-v881-dm-avatar{transition:none!important}}

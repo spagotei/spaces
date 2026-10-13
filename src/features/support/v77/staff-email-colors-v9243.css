@@ -1,0 +1,5 @@
+/* V92.4.3 dark glass color controls */
+.v9243-color-toolbar{display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap;margin:8px 0 11px}
+.v9243-color-toolbar label{display:grid;gap:5px;flex:1;min-width:134px;color:#aaa4b0;font-size:11px;font-weight:650}
+.v9243-color-toolbar select{width:100%;min-height:36px;border:1px solid rgba(255,255,255,.11);border-radius:9px;background:rgba(19,19,27,.87);color:#f0edf5;padding:8px 10px}
+.v9243-color-toolbar select:focus-visible{outline:2px solid var(--app-accent,#8b6ca8);outline-offset:2px}

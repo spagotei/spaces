@@ -1,13 +1,18 @@
+import { StaffEmailHubV913 } from './StaffEmailHubV913' // SPACES_V913_EMAIL_HUB
+import { ProgramReviewsV90 } from './ProgramReviewsV90' // SPACES_V90_REVIEW_TAB
+import '../../../styles/programs-v90.css'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Avatar } from '../../../components/Avatar'
 import { ContextMenu, useContextMenu, type ContextAction } from '../../../components/ContextMenu'
 import { Icon, type IconName } from '../../../components/Icon'
 import { useAppDialog } from '../../../components/AppDialog'
+import { StaffSupportCenterV84_2 } from './StaffSupportCenterV84_2'
 import { useSpaces } from '../../../state/SpacesContext'
 import { timeAgo } from '../../../utils/format'
 import { platformRoleLabel } from '../../../utils/permissions'
 import { SupportOperationsV48 } from '../SupportOperationsV48'
 import { SupportFormattedTextV77 } from './SupportFormattedTextV77'
+import { BroadcastEditorV84 } from './BroadcastEditorV84' // SPACES_V83_BROADCAST_EDITOR
 import {
   openProfileV77,
   supportCaseTypeLabelV77,
@@ -20,7 +25,7 @@ import {
   type SupportV77Restriction,
 } from './support-v77-api'
 
-type Tab = 'overview' | 'waiting' | 'reviewing' | 'resolved' | 'archive' | 'user_reports' | 'space_reports' | 'bugs' | 'appeals' | 'accounts' | 'restrictions' | 'audit' | 'staff_chat' | 'team'
+type Tab = 'overview' | 'waiting' | 'reviewing' | 'resolved' | 'archive' | 'user_reports' | 'space_reports' | 'bugs' | 'appeals' | 'accounts' | 'restrictions' | 'audit' | 'staff_chat' | 'team' | 'programs' | 'broadcast' | 'email' | 'center'
 
 type StaffMessage = { id: string; senderUserId: string; senderName: string; body: string; createdAt: number }
 
@@ -38,7 +43,11 @@ const tabs: { id: Tab; label: string; icon: IconName }[] = [
   { id: 'restrictions', label: 'Restrictions', icon: 'lock' },
   { id: 'audit', label: 'Audit Log', icon: 'notes' },
   { id: 'staff_chat', label: 'Staff Chat', icon: 'message' },
+  { id: 'broadcast', label: 'Broadcasts', icon: 'bell' },
+  { id: 'email', label: 'Email', icon: 'send' },
+  { id: 'center', label: 'Support Center', icon: 'message' }, // SPACES_V84_2_STAFF_CENTER_TAB
   { id: 'team', label: 'Team & Permissions', icon: 'roles' },
+  { id: 'programs', label: 'Verification & Partners', icon: 'check' },
 ]
 
 function statusOrder(status: SupportV77CaseStatus) {
@@ -145,7 +154,7 @@ export function SupportConsoleV77({ onClose, onOpenSecurity: _onOpenSecurity, mo
       if (tab === 'space_reports' && item.caseType !== 'space_report') return false
       if (tab === 'bugs' && item.caseType !== 'bug_report') return false
       if (tab === 'appeals' && item.caseType !== 'appeal') return false
-      if (['accounts','restrictions','audit','staff_chat','team'].includes(tab)) return false
+      if (['accounts','restrictions','audit','staff_chat','team','broadcast','email','center'].includes(tab)) return false
       if (!search) return true
       return `${item.caseNumber} ${item.subject} ${item.reporter.displayName} ${item.reporter.username} ${item.targetUser?.displayName ?? ''} ${item.targetSpaceName ?? ''}`.toLowerCase().includes(search)
     })
@@ -257,7 +266,7 @@ export function SupportConsoleV77({ onClose, onOpenSecurity: _onOpenSecurity, mo
     finally { setBusy('') }
   }
 
-  const operationalTab = !['accounts','restrictions','audit','staff_chat','team'].includes(tab)
+  const operationalTab = !['accounts','restrictions','audit','staff_chat','team','broadcast','email','center'].includes(tab)
 
   return <div className={`support-console-v77 ${mobile ? 'mobile' : ''}`}>
     <header className="support-console-top-v77">
@@ -268,15 +277,23 @@ export function SupportConsoleV77({ onClose, onOpenSecurity: _onOpenSecurity, mo
     <div className="support-console-body-v77">
       <aside className="support-console-nav-v77">
         <div className="support-console-user-v77"><Avatar name={profile?.displayName} initials={profile?.initials} src={profile?.avatarUrl} size={32} accent={profile?.profileAccent}/><span><strong>{profile?.displayName}</strong><small>{profile?.platformRole ? platformRoleLabel(profile.platformRole) : 'Member'}</small></span></div>
-        <nav>{tabs.map(item => {
-          if (item.id === 'team' && !access?.founder) return null
-          const count = item.id in counts ? counts[item.id as keyof typeof counts] : 0
-          return <button key={item.id} className={tab === item.id ? 'active' : ''} onClick={() => { setTab(item.id); if (mobile) setSelectedId('') }}><Icon name={item.icon} size={15}/><span>{item.label}</span>{count > 0 && <b>{count > 99 ? '99+' : count}</b>}</button>
-        })}</nav>
+                 <div className="v90-staff-sections">{([
+          {label:'Tickets',ids:['overview','waiting','reviewing','resolved','archive']},
+          {label:'Reports',ids:['user_reports','space_reports','bugs','appeals']},
+          {label:'Accounts & Trust',ids:['accounts','restrictions','audit','programs']},
+          {label:'Email & Outreach',ids:['email','broadcast']}, // SPACES_V92_2_EMAIL_VISIBLE
+          {label:'Team',ids:['staff_chat','team']}
+         ] as const).map(group => <details className="v90-section" key={group.label} open={group.ids.some(id=>id===tab)}><summary>{group.label}</summary><nav aria-label={group.label}>{tabs.filter(item=>group.ids.some(id=>id===item.id)).map(item => {
+           if (item.id === 'team' && !access?.founder) return null
+           if ((item.id === 'email' || item.id === 'broadcast') && profile?.platformRole !== 'founder' && profile?.platformRole !== 'staff') return null
+           if (item.id === 'programs' && !(access?.founder || access?.role === 'staff')) return null
+           const count = item.id in counts ? counts[item.id as keyof typeof counts] : 0
+           return <button key={item.id} className={tab === item.id ? 'active' : ''} onClick={() => { setTab(item.id); if (mobile) setSelectedId('') }}><Icon name={item.icon} size={15}/><span>{item.label}</span>{count > 0 && <b>{count > 99 ? '99+' : count}</b>}</button>
+         })}</nav></details>)}</div>
       </aside>
 
-      <main className="support-console-main-v77">
-        {operationalTab ? <>
+      <main className={`support-console-main-v77 ${tab === 'email' ? 'v923-email-open' : ''}`}> {/* SPACES_V923_EMAIL_WIDE */}
+        {tab === 'center' ? <StaffSupportCenterV84_2 /> : tab === 'email' ? <StaffEmailHubV913 /> : tab === 'broadcast' ? <BroadcastEditorV84 /> : (tab !== 'programs' && operationalTab) ? <>
           <section className="support-case-column-v77">
             <header><div><span className="eyebrow">{tabs.find(item => item.id === tab)?.label.toUpperCase()}</span><h2>{tab === 'overview' ? 'Support Queue' : tabs.find(item => item.id === tab)?.label}</h2></div><label><Icon name="search" size={14}/><input value={query} onChange={event => setQuery(event.target.value)} placeholder="Search cases, people, Spaces…" /></label></header>
             <div className="support-case-list-v77">
@@ -311,7 +328,8 @@ export function SupportConsoleV77({ onClose, onOpenSecurity: _onOpenSecurity, mo
               </div>
             </> : <div className="support-console-empty-v77"><Icon name="shield" size={24}/><strong>Select a case</strong><span>The case, member profile, history, and moderation controls will appear here.</span></div>}
           </section>
-        </> : tab === 'accounts' ? <div className="support-legacy-host-v77"><SupportOperationsV48 mode="accounts" /></div>
+        </> : tab === 'programs' ? <ProgramReviewsV90 />
+          : tab === 'accounts' ? <div className="support-legacy-host-v77"><SupportOperationsV48 mode="accounts" /></div>
           : tab === 'team' ? <div className="support-legacy-host-v77"><SupportOperationsV48 mode="team" initialQuery={initialLookup} /></div>
           : tab === 'restrictions' ? <section className="support-wide-panel-v77"><header><div><span className="eyebrow">SAFETY</span><h2>Active Restrictions</h2></div><button className="secondary-button compact" onClick={() => void loadRestrictions()}><Icon name="refresh" size={13}/> Refresh</button></header><div className="support-restriction-list-v77">{restrictions.length ? restrictions.map(item => <article key={item.id}><span className="support-case-type-v77"><Icon name="lock" size={14}/></span><div><strong>{item.targetLabel}</strong><small>{item.targetType} · {item.capability.replaceAll('_', ' ')}</small><p>{item.reasonCategory}{item.note ? ` · ${item.note}` : ''}</p><small>{item.expiresAt ? `Expires ${new Date(item.expiresAt).toLocaleString()}` : 'Until removed'} · by {item.createdByName}</small></div><button className="ghost-danger" disabled={busy === `revoke:${item.id}`} onClick={() => void revokeRestriction(item)}>Remove</button></article>) : <div className="support-console-empty-v77"><Icon name="check" size={22}/><strong>No active restrictions</strong></div>}</div></section>
           : tab === 'audit' ? <section className="support-wide-panel-v77"><header><div><span className="eyebrow">ACCOUNTABILITY</span><h2>Audit Log</h2></div><button className="secondary-button compact" onClick={() => void loadAudit()}><Icon name="refresh" size={13}/> Refresh</button></header><div className="support-audit-list-v77">{audit.map(item => <article key={item.id}><span><Icon name="activity" size={13}/></span><div><strong>{item.action.replaceAll('.', ' ')}</strong><small>{item.actorName} · {item.targetLabel || `${item.targetType} ${item.targetId}`}</small><p>{item.reasonCategory}{item.note ? ` · ${item.note}` : ''}</p></div><time>{timeAgo(item.createdAt)}</time></article>)}</div></section>

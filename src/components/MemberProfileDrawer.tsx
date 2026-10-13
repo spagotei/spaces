@@ -466,8 +466,7 @@ export function MemberProfileDrawer({ memberId, onClose }: { memberId: string; o
             <span className="drawer-avatar profile-avatar-presence">
               <Avatar name={member.displayName} initials={member.initials} src={member.avatarUrl} size={78} accent={topRole?.color} animation="always" />
               <i className={`presence-symbol presence-${status}`} />
-              {/* SPACES_V81_3_FOUNDER_SHIELD: platform team, never per-Space roles. */}
-              {profile?.platformRole === 'founder' && member.profileId !== profile.id && <button type="button" className="spaces-founder-shield-v813 spaces-founder-profile-shield-v813" aria-label={`Manage Spaces Staff and Support for ${member.displayName}`} title="Founder · Manage Spaces team" onClick={() => { window.dispatchEvent(new CustomEvent('spaces-founder-team-v813', { detail: { username: member.username } })); onClose() }}><Icon name="shield" size={14}/></button>}
+
             </span>
             <div className="drawer-name-row">
               <div><h2 style={topRole ? { color: topRole.color } : undefined}>{member.displayName}</h2><span>@{member.username}</span></div>
@@ -577,7 +576,8 @@ export function MemberProfileDrawer({ memberId, onClose }: { memberId: string; o
             )}</span><small>{1 + memberRoles.length + (member.platformRole ? 1 : 0)}</small></div>
             <div className="drawer-role-chips">
               {member.platformRole && <span className={`profile-role-chip platform-role-chip platform-${member.platformRole} ${member.platformRole === 'founder' ? 'founder-distinct-v56' : ''}`}><Icon name={member.platformRole === 'founder' ? 'sparkle' : 'shield'} size={11}/>{platformRoleLabel(member.platformRole)}</span>}
-              <span className={`profile-role-chip base role-${member.role}`}><Icon name={member.role === 'owner' ? 'shield' : 'roles'} size={11}/>{data?.workspace.id ? workspaceRoleDisplayName(data.workspace.id, member.role) : member.role}</span>
+              {/* SPACES_V84_2_FOUNDER_PROFILE_ROLE: no duplicate Owner chip for platform Founder. */}
+              {member.platformRole !== 'founder' && <span className={`profile-role-chip base role-${member.role}`}><Icon name={member.role === 'owner' ? 'shield' : 'roles'} size={11}/>{data?.workspace.id ? workspaceRoleDisplayName(data.workspace.id, member.role) : member.role}</span>}
               {memberRoles.map(role => <span className="profile-role-chip" key={role.id} style={{ color: role.color, borderColor: role.color }}><i style={{ background: role.color }}/>{role.name}</span>)}
             </div>
 

@@ -1,0 +1,9 @@
+/* Spaces V92.3.1: Gmail-style recipient chips, dark glass, keyboard accessible. */
+.v9231-recipient-box{display:flex;align-items:center;flex-wrap:wrap;gap:7px;min-height:51px;padding:7px;border:1px solid rgba(255,255,255,.16);border-radius:12px;background:rgba(5,6,10,.58);backdrop-filter:blur(10px);transition:border-color .15s ease,box-shadow .15s ease}
+.v9231-recipient-box:focus-within{border-color:rgba(190,175,234,.72);box-shadow:0 0 0 3px rgba(170,144,223,.12)}
+.v9231-recipient-box .v9231-recipient-chip{display:inline-flex;align-items:center;max-width:100%;gap:6px;border:1px solid rgba(190,177,220,.24);background:rgba(136,124,159,.22);color:#f0edf5;border-radius:9px;padding:3px 5px 3px 10px;font-size:12px;font-weight:600;overflow-wrap:anywhere}
+.v9231-recipient-chip > span{overflow-wrap:anywhere}
+.spaces-v913-email .v9231-recipient-chip button{display:grid;place-items:center;flex:none;min-width:22px;min-height:22px;padding:0;border:0;border-radius:6px;background:rgba(255,255,255,.09);color:#f6f2fc;font-size:18px;line-height:1}
+.spaces-v913-email .v9231-recipient-chip button:hover{background:rgba(255,255,255,.2)}
+.spaces-v913-email .v9231-recipient-box input{flex:1 1 175px;min-width:130px;width:auto!important;max-width:100%;border:0!important;padding:7px!important;background:transparent!important;box-shadow:none!important;outline:0;color:#f5f4f9}
+@media(max-width:620px){.v9231-recipient-box{gap:5px}.v9231-recipient-box .v9231-recipient-chip{font-size:11px}}

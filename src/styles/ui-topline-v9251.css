@@ -1,0 +1,29 @@
+/* SPACES_V92_5_1_TOP_LINE_FIX
+   The persistent line in desktop screenshots came from the native-style titlebar,
+   not the channel sidebar patched in V92.5. Keep its 1px box sizing stable but
+   make the divider transparent. Also remove the repeating content-header seam. */
+
+/* Present only in Tauri desktop. Removing its border without altering height
+   prevents a 1px jump in the draggable/window-controls area. */
+html body .desktop-titlebar {
+  border-bottom: 1px solid transparent !important;
+  border-bottom-color: transparent !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+/* The app's persistent header also draws a horizontal grey divider on every tab.
+   Keep all other borders (cards, controls, note sections) unchanged. */
+html body .spaces-app-shell .main-stage > .topbar,
+html body .spaces-app-shell .main-stage .topbar,
+html body .spaces-app-shell .channel-sidebar > .space-header {
+  border-bottom-color: transparent !important;
+  box-shadow: none !important;
+}
+
+/* The transparent seam can be made conspicuous by a pseudo-element introduced
+   by a theme. Restrict this override to the titlebar itself. */
+html body .desktop-titlebar::after {
+  border-bottom: 0 !important;
+  box-shadow: none !important;
+}

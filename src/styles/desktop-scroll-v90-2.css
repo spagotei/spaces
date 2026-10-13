@@ -1,0 +1,6 @@
+/* V90.2 Desktop browsing polish. Chat-message auto-follow remains native. */
+@media (hover:hover) and (pointer:fine){
+.spaces-app-shell :is(.sidebar-scroll,.view-scroll,.note-list,.direct-center-sidebar-v23,.support-console-nav-v77 nav,.support-inspector-scroll-v77){scroll-behavior:smooth;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:rgba(180,171,198,.22) transparent}
+.spaces-app-shell :is(.sidebar-item,.server-button,.channel-row,.note-list-item,.member-rail-row){transition:background-color 165ms ease,transform 165ms cubic-bezier(.2,.8,.2,1),box-shadow 165ms ease}
+}
+@media (prefers-reduced-motion:reduce){.spaces-app-shell *{scroll-behavior:auto!important}}

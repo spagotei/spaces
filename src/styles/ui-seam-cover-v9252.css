@@ -1,0 +1,14 @@
+/* SPACES_V92_5_2_SEAM_COVER
+   Cover the remaining 1–2px Windows titlebar/content join, rather than
+   attempting to recolor the native frame. Tauri desktop only. */
+@supports selector(body:has(.desktop-titlebar)) {
+  html body:has(.desktop-titlebar) .spaces-app-shell {
+    position: relative;
+    top: -2px;
+    min-height: calc(100% + 2px);
+  }
+  /* Avoid a stray dark strip along the bottom in constrained windows. */
+  html body:has(.desktop-titlebar) .spaces-app-shell .main-stage {
+    min-height: 0;
+  }
+}

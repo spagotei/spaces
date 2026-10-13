@@ -1,0 +1,112 @@
+/* SPACES_V92_2_VISUAL_REPAIR
+   Loaded after previous UI themes; no permission or service changes. */
+
+/* One smooth treatment instead of V41's overlay, V92.1's extra overlay,
+   and profile-header backgrounds stacking into horizontal dark bands. */
+.profile-editor-preview,
+.profile-v77-drawer,
+.member-profile-drawer {
+  isolation: isolate;
+}
+.profile-editor-preview .profile-editor-banner,
+.member-profile-drawer .member-profile-drawer-banner,
+.profile-v77-drawer .profile-v77-banner,
+.space-settings-v32-banner {
+  position: relative !important;
+  overflow: hidden !important;
+  isolation: isolate;
+  border-bottom: 0 !important;
+  box-shadow: none !important;
+  background-clip: padding-box;
+}
+.profile-editor-preview .profile-editor-banner::before {
+  content: none !important;
+  display: none !important;
+}
+.profile-editor-preview .profile-editor-banner::after,
+.member-profile-drawer .member-profile-drawer-banner::after,
+.profile-v77-drawer .profile-v77-banner::after {
+  content: '' !important;
+  display: block !important;
+  pointer-events: none !important;
+  position: absolute !important;
+  inset: 0 !important;
+  z-index: 1 !important;
+  background: linear-gradient(180deg, rgba(7,8,12,.10) 0%, rgba(7,8,12,.20) 65%, rgba(7,8,12,.28) 100%) !important;
+}
+.profile-editor-preview .profile-editor-banner .animated-backdrop-v41,
+.member-profile-drawer-banner .animated-backdrop-v41,
+.profile-v77-banner .animated-backdrop-v41,
+.space-settings-v32-banner .animated-backdrop-v41,
+.space-header.has-space-banner-v42 .space-header-full-banner-v42 {
+  inset: -1px !important;
+  width: calc(100% + 2px) !important;
+  height: calc(100% + 2px) !important;
+  border: none !important;
+  border-radius: 0 !important;
+  transform: none !important;
+  background-repeat: no-repeat !important;
+  pointer-events: none !important;
+}
+.profile-editor-preview .profile-editor-banner .animated-backdrop-v41 > img,
+.member-profile-drawer-banner .animated-backdrop-v41 > img,
+.profile-v77-banner .animated-backdrop-v41 > img,
+.space-settings-v32-banner .animated-backdrop-v41 > img,
+.space-header.has-space-banner-v42 .space-header-full-banner-v42 > img {
+  display:block !important;
+  width:100% !important;
+  height:100% !important;
+  object-fit:cover !important;
+  object-position:center !important;
+  border:0 !important;
+  box-shadow:none !important;
+  transform:none !important;
+}
+.profile-editor-preview .profile-editor-banner > button,
+.profile-v77-banner > button,
+.member-profile-drawer-banner > button { position:relative; z-index:2; }
+.profile-editor-preview .profile-editor-identity,
+.member-profile-drawer .member-profile-drawer-identity {
+  border-top: none !important;
+  box-shadow: none !important;
+}
+/* Space banner: a continuous image with one gradient, no border line. */
+.space-header.has-space-banner-v42,
+.space-header.has-space-banner-v42 > .space-header-identity-v16 {
+  border-bottom: 0 !important;
+  box-shadow: none !important;
+}
+.space-header.has-space-banner-v42::after {
+  background: linear-gradient(90deg,rgba(8,9,13,.12),rgba(8,9,13,.48)) !important;
+}
+
+/* Member list belongs to the shell, but the left edge is a soft rounded surface. */
+@media (min-width:901px) {
+  .spaces-app-shell.with-member-rail > .member-rail,
+  .spaces-app-shell.with-member-rail .member-rail {
+    min-width:0 !important;
+    margin:6px 0 6px 0 !important;
+    border-left:0 !important;
+    border-top:0 !important;
+    border-bottom:0 !important;
+    border-radius:18px 0 0 18px !important;
+    overflow:hidden !important;
+    background:var(--glass-strong,rgba(18,19,25,.93)) !important;
+    box-shadow:none !important;
+    background-clip:padding-box;
+  }
+  .spaces-app-shell.with-member-rail .member-rail > header {
+    border-bottom:0 !important;
+    background:transparent !important;
+  }
+  .spaces-app-shell.with-member-rail .member-rail-scroll {
+    min-height:0;
+    border:0 !important;
+  }
+  .spaces-app-shell.with-member-rail .member-rail-group {
+    border:0 !important;
+  }
+}
+@media (max-width:900px) {
+  .spaces-app-shell .member-rail {margin:0 !important; border-radius:0 !important;}
+}

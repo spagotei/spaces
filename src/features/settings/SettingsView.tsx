@@ -1,3 +1,5 @@
+import { SpaceProgramsV90 } from './SpaceProgramsV90' // SPACES_V90_PROGRAMS
+import '../../styles/programs-v90.css'
 import { useEffect, useRef, useState, type ChangeEvent, type CSSProperties } from 'react'
 import { Avatar } from '../../components/Avatar'
 import { AnimatedBackdrop } from '../../components/AnimatedImage'
@@ -12,9 +14,8 @@ import { hasWorkspacePermission } from '../../utils/permissions'
 import { gifFileToDataUrl, imageFileToRawDataUrl, isGifDataUrl, isGifFile } from '../../utils/image'
 import { getWorkspaceNumber } from '../../utils/workspace-local-meta'
 import type { WorkspaceBackgroundPreset, WorkspaceChannel, WorkspaceIconDecoration } from '../../types/spaces'
-import { LegalSettingsEntryV80 } from '../legal/v80/LegalSettingsEntryV80' // SPACES_V80_LEGAL_SETTINGS
 
-type SpaceSettingsTab = 'profile' | 'appearance' | 'notifications' | 'channels' | 'access' | 'advanced'
+type SpaceSettingsTab = 'profile' | 'appearance' | 'notifications' | 'channels' | 'access' | 'advanced' | 'programs'
 
 const iconDecorations: { id: WorkspaceIconDecoration; label: string }[] = [
   { id: 'none', label: 'None' },
@@ -252,13 +253,13 @@ export function SettingsView({ initialTab }: { initialTab?: SpaceSettingsTab }) 
     { id: 'notifications', label: 'Notifications', icon: 'bell' },
     { id: 'channels', label: 'Channels', icon: 'hash', hidden: !canManageChannels },
     { id: 'access', label: 'Access', icon: 'shield', hidden: !(canManageSpace || canManageMembers || canManageRoles || canInvite || canViewActivity) },
+    { id: 'programs', label: 'Verification & Partners', icon: 'shield', hidden: !isOwner },
     { id: 'advanced', label: 'Advanced', icon: 'settings' },
   ]
 
   return (
     <div className="view-scroll space-settings-v32 space-settings-v36 page-enter">
-<LegalSettingsEntryV80 />
-
+{/* SPACES_V923_LEGAL_MOVED: platform policies live in Personal Settings */}
       <header className="space-settings-v32-heading space-settings-heading-v36">
         <div>
           <span className="eyebrow">SPACE SETTINGS</span>
@@ -398,6 +399,8 @@ export function SettingsView({ initialTab }: { initialTab?: SpaceSettingsTab }) 
         {managementShortcuts.length > 0 && <section className="space-settings-v32-card"><div className="space-settings-v32-card-head"><div><span className="eyebrow">MANAGEMENT</span><h2>Space tools</h2><p>Only tools your role can manage are shown here.</p></div></div><div className="space-settings-v32-tools">{managementShortcuts.map(item => <button type="button" key={item.view} onClick={() => setView(item.view)}><Icon name={item.icon} size={18}/><span><strong>{item.title}</strong><small>{item.note}</small></span><Icon name="chevron" size={13}/></button>)}</div></section>}
         <section className="space-settings-v32-card"><div className="space-settings-v32-card-head"><div><span className="eyebrow">HIERARCHY</span><h2>Access model</h2><p>Owner stays highest. Administrators, Staff and custom roles can only manage members and roles beneath their own position.</p></div></div><div className="space-access-summary-v36"><article><Icon name="shield" size={16}/><div><strong>Owner</strong><span>Permanent highest Space authority</span></div></article><article><Icon name="roles" size={16}/><div><strong>Administrator</strong><span>Full Space administration below Owner</span></div></article><article><Icon name="members" size={16}/><div><strong>Staff & custom roles</strong><span>Permissions and hierarchy determine what each role can manage</span></div></article></div></section>
       </>}
+
+      {tab === 'programs' && <SpaceProgramsV90 spaceId={workspace.id} isOwner={Boolean(isOwner)} />}
 
       {tab === 'advanced' && <section className={`space-settings-v32-card space-settings-v32-danger ${isHub ? 'protected' : ''}`}>
         <div className="space-settings-v32-card-head"><div><span className="eyebrow">MEMBERSHIP</span><h2>{isHub ? 'Permanent Space' : 'Danger zone'}</h2><p>Actions here affect membership or permanently remove this Space.</p></div></div>

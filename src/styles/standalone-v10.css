@@ -10,7 +10,7 @@
   align-items:center;
   justify-content:space-between;
   user-select:none;
-  border-bottom:1px solid rgba(255,255,255,.055);
+  border-bottom: 0;
   background:rgba(8,8,11,.985);
   color:#8a858e;
   -webkit-backdrop-filter:blur(20px);

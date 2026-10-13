@@ -34,7 +34,14 @@ export class SpacesCallSoundsV81 {
   private destroyed = false
 
   constructor(options: SpacesSoundOptions = {}) { this.opts = { ...options } }
-  configure(options: Partial<SpacesSoundOptions>): void { this.opts = { ...this.opts, ...options }; this.refreshSettings() }
+  configure(options: Partial<SpacesSoundOptions>): void {
+    this.opts = { ...this.opts, ...options }
+    for (const [id, audio] of this.playing) {
+      const entry = SOUND_MAP.get(id)
+      if (entry) audio.volume = Math.min(1,Math.max(0,this.opts.volume ?? 1)) * entry.recommended_volume
+    }
+    this.refreshSettings()
+  }
   /** Call when external SPACES DND/sound settings change. */
   refreshSettings(): void { if (this.opts.isDoNotDisturb?.() === true || this.opts.isSoundsEnabled?.() === false) this.stopAll() }
   private allowed(id: SpacesCallSoundId, entry: SoundEntry): boolean {
@@ -55,7 +62,8 @@ export class SpacesCallSoundsV81 {
       for (const loop of LOOP_IDS) if (loop !== id) this.stop(loop)
     }
     this.lastPlayed.set(id, now)
-    const audio = new Audio(`${BASE}/${LOOP_IDS.has(id) ? entry.files.wav : entry.files.mp3}`)
+    const soundPath = id === 'outgoing_call' ? '/spaces-call-sounds/v87/outgoing-ring-v87.mp3' /* SPACES_V87_RING */ : `${BASE}/${LOOP_IDS.has(id) ? entry.files.wav : entry.files.mp3}`
+    const audio = new Audio(soundPath) // SPACES_V86_RINGBACK
     audio.preload = 'auto'
     audio.loop = Boolean(entry.loop)
     audio.volume = Math.min(1, Math.max(0, this.opts.volume ?? 1)) * entry.recommended_volume

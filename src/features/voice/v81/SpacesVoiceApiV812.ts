@@ -49,7 +49,7 @@ export class SpacesVoiceApiV812 {
   }
 }
 
-export type SpacesDmCallRequestV812 = { conversationId: string; displayName: string; video?: boolean; avatarUrl?: string | null } // SPACES_V81_3_AVATAR
+export type SpacesDmCallRequestV812 = { conversationId: string; displayName: string; video?: boolean; personId?: string; avatarUrl?: string | null } // SPACES_V81_3_AVATAR
 export function startSpacesDmCallV812(request: SpacesDmCallRequestV812): void {
   window.dispatchEvent(new CustomEvent<SpacesDmCallRequestV812>('spaces-dm-call-v812', { detail: request }))
 }

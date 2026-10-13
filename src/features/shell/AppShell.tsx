@@ -1,33 +1,37 @@
-import { useEffect, useMemo, useRef, useState, type ChangeEvent, type CSSProperties, type ReactNode, type PointerEvent as ReactPointerEvent } from 'react'
+import { SpaceTrustBadgeV90 } from './SpaceTrustBadgeV90' // SPACES_V90_TRUST_BADGES
+import { lazy, Suspense, useEffect, useMemo, useRef, useState, type ChangeEvent, type CSSProperties, type ReactNode, type PointerEvent as ReactPointerEvent } from 'react'
 import { Avatar } from '../../components/Avatar'
 import { AnimatedBackdrop } from '../../components/AnimatedImage'
 import { SpacesLogo } from '../../components/SpacesLogo'
+import { BroadcastSurfaceV83 } from '../../components/BroadcastSurfaceV83' // SPACES_V83_BROADCAST_CLIENT
 import { Icon, type IconName } from '../../components/Icon'
 import { Modal } from '../../components/Modal'
 import { ImageCropper } from '../../components/ImageCropper'
 import { MemberProfileDrawer } from '../../components/MemberProfileDrawer'
 import { NotificationCenter } from '../../components/NotificationCenter'
-import { DirectMessagesCenter, type DirectTab } from '../../components/DirectMessagesCenter'
+import type { DirectTab } from '../../components/DirectMessagesCenter'
 import { WorkspacePrivacyModal } from '../../components/WorkspacePrivacyModal'
 import { ContextMenu, useContextMenu, type ContextAction } from '../../components/ContextMenu'
 import { ContentSearchPanel, type ContentSearchItem } from '../../components/ContentSearchPanel'
 import { CategoryPermissionsEditor, ChannelPermissionsEditor } from '../../components/ChannelPermissionsEditor'
-import { ActivityView } from '../activity/ActivityView'
-import { ChatView } from '../chat/ChatView'
-import { HomeView } from '../home/HomeView'
-import { InvitesView } from '../invites/InvitesView'
-import { MembersView } from '../members/MembersView'
-import { NotesView } from '../notes/NotesView'
-import { RolesView } from '../roles/RolesView'
-import { SettingsView } from '../settings/SettingsView'
-import { WorkspaceOverview } from '../overview/WorkspaceOverview'
-import { PersonalSettings, type PersonalSettingsTab } from '../account/PersonalSettings'
-import { SupportConsoleV77 as SupportConsole, MobileStaffPanelV77 } from '../support/v77/SupportConsoleV77'
+
+
+
+
+
+
+
+
+
+import type { PersonalSettingsTab } from '../account/PersonalSettings'
+
 import { SupportGlyphV73 } from '../support/SupportTicketsV73'
 import { useAppDialog } from '../../components/AppDialog'
-import { StaffView } from '../staff/StaffView'
+
 import { useSpaces, type AppView, type SpacesNotification } from '../../state/SpacesContext'
 import { usePreferences } from '../../state/PreferencesContext'
+import { useDesktopWheelSmoothV902 } from '../../utils/useDesktopWheelSmoothV902' // SPACES_V90_2_DESKTOP_SCROLL
+import '../../styles/desktop-scroll-v90-2.css'
 import { normalizeChannelName } from '../../utils/format'
 import { EMOJI_CATEGORIES } from '../../utils/default-emojis'
 import {
@@ -44,6 +48,8 @@ import { sendMobileNotificationV72, sendMobileTextNotificationV72 } from '../../
 import { hasWorkspacePermission, platformRoleLabel } from '../../utils/permissions'
 import { updateSocialPresence } from '../../api/social-api'
 import { dismissNotifications } from '../../utils/notification-read'
+import { syncBrowserUnreadV88 } from '../../utils/browser-unread-v88' // SPACES_V88_BROWSER_BADGE
+import { isTauriDesktopRuntime } from '../../components/DesktopTitlebar'
 import type { WorkspaceChannel, WorkspaceSummary, WorkspaceDirectCenter } from '../../types/spaces'
 import '../../styles/standalone-v54.css'
 import '../../styles/standalone-v55.css'
@@ -51,6 +57,21 @@ import '../../styles/standalone-v56.css'
 import { SupportIntakeHostV77 } from '../support/v77/SupportIntakeV77'
 import { SpacesDmCallHostV812 } from '../voice/v81/SpacesDmCallHostV812'
 import { GlobalProfileHostV77 } from '../support/v77/GlobalProfileV77'
+
+// SPACES_V81_4_LAZY_SPLITS — screens loaded on first visit, not during sign-in/launch.
+const DirectMessagesCenter = lazy(() => import('../../components/DirectMessagesCenter').then(m => ({ default: m.DirectMessagesCenter })))
+const ActivityView = lazy(() => import('../activity/ActivityView').then(m => ({ default: m.ActivityView })))
+const ChatView = lazy(() => import('../chat/ChatView').then(m => ({ default: m.ChatView })))
+const HomeView = lazy(() => import('../home/HomeView').then(m => ({ default: m.HomeView })))
+const InvitesView = lazy(() => import('../invites/InvitesView').then(m => ({ default: m.InvitesView })))
+const MembersView = lazy(() => import('../members/MembersView').then(m => ({ default: m.MembersView })))
+const NotesView = lazy(() => import('../notes/NotesView').then(m => ({ default: m.NotesView })))
+const RolesView = lazy(() => import('../roles/RolesView').then(m => ({ default: m.RolesView })))
+const SettingsView = lazy(() => import('../settings/SettingsView').then(m => ({ default: m.SettingsView })))
+const WorkspaceOverview = lazy(() => import('../overview/WorkspaceOverview').then(m => ({ default: m.WorkspaceOverview })))
+const PersonalSettings = lazy(() => import('../account/PersonalSettings').then(m => ({ default: m.PersonalSettings })))
+const StaffView = lazy(() => import('../staff/StaffView').then(m => ({ default: m.StaffView })))
+const SupportConsole = lazy(() => import('../support/v77/SupportConsoleV77').then(m => ({ default: m.SupportConsoleV77 })))
 
 const navItems: { view: AppView; label: string; icon: IconName }[] = [
   { view: 'members', label: 'People', icon: 'members' },
@@ -75,6 +96,7 @@ const channelIconPresets: { id: string; label: string; icon: IconName }[] = [
 export function AppShell() {
   const dialog = useAppDialog()
   const { effectivePresence, preferences, setPreference } = usePreferences()
+  useDesktopWheelSmoothV902(preferences.reducedMotion)
   const contextMenu = useContextMenu()
   const {
     apiUrl, session, profile, workspaces, activeWorkspaceId, activeWorkspace, data, activeChannel, view,
@@ -118,21 +140,23 @@ export function AppShell() {
   const [categoryPermissionTarget, setCategoryPermissionTarget] = useState<ChannelCategoryMeta | null>(null)
   const [pendingPermissionMoveV70, setPendingPermissionMoveV70] = useState<{ channelId: string; targetCategoryId: string; beforeChannelId: string | null } | null>(null)
   const [supportConsoleOpen, setSupportConsoleOpen] = useState(false)
-  // SPACES_V81_3_TEAM_NAV: the Founder alone sees this shortcut. Server checks every mutation.
-  const [founderTeamLookupV813, setFounderTeamLookupV813] = useState('')
-  useEffect(() => {
-    const openTeam = (event: Event) => {
-      if (profile?.platformRole !== 'founder') return
-      const username = (event as CustomEvent<{ username?: string }>).detail?.username ?? ''
-      setFounderTeamLookupV813(username.slice(0,48))
-      setSupportConsoleOpen(true)
-    }
-    window.addEventListener('spaces-founder-team-v813', openTeam)
-    return () => window.removeEventListener('spaces-founder-team-v813', openTeam)
-  }, [profile?.platformRole])
-  const [mobileStaffOpenV77, setMobileStaffOpenV77] = useState(false)
   const [supportQueueCount, setSupportQueueCount] = useState(0)
   const supportQueueInitialized = useRef(false)
+  // SPACES_V90_3_RESIZABLE: persist each workspace layout locally.
+  const [channelNavCompactV903, setChannelNavCompactV903] = useState(() => { try { return localStorage.getItem('spaces.channelNavCompact.v903') === '1' } catch { return false } })
+  const [memberRailWidthV903, setMemberRailWidthV903] = useState(() => { try { return Math.max(200,Math.min(430,Number(localStorage.getItem('spaces.memberRailWidth.v903') || 240))) } catch { return 240 } })
+  const [memberResizingV903, setMemberResizingV903] = useState(false)
+  const memberResizeRefV903 = useRef<{x:number;width:number}|null>(null)
+  useEffect(() => {
+    if (!memberResizingV903) return
+    const move=(event:PointerEvent)=>{const item=memberResizeRefV903.current;if(item)setMemberRailWidthV903(Math.max(200,Math.min(430,item.width+item.x-event.clientX)))}
+    const stop=()=>{memberResizeRefV903.current=null;setMemberResizingV903(false)}
+    window.addEventListener('pointermove',move);window.addEventListener('pointerup',stop);window.addEventListener('pointercancel',stop)
+    return ()=>{window.removeEventListener('pointermove',move);window.removeEventListener('pointerup',stop);window.removeEventListener('pointercancel',stop)}
+  },[memberResizingV903])
+  useEffect(()=>{try{localStorage.setItem('spaces.memberRailWidth.v903',String(memberRailWidthV903))}catch{}},[memberRailWidthV903])
+  useEffect(()=>{try{localStorage.setItem('spaces.channelNavCompact.v903',channelNavCompactV903?'1':'0')}catch{}},[channelNavCompactV903])
+  function beginMemberResizeV903(event:ReactPointerEvent<HTMLButtonElement>){if(window.innerWidth<=900)return;event.preventDefault();memberResizeRefV903.current={x:event.clientX,width:memberRailWidthV903};setMemberResizingV903(true)}
   const [channelNavCollapsed, setChannelNavCollapsed] = useState(false)
   const [channelNavWidth, setChannelNavWidth] = useState(() => {
     const stored = Number(localStorage.getItem('spaces.channelNavWidth.v53') || 238)
@@ -228,18 +252,20 @@ export function AppShell() {
       if (!drag) return
       const raw = drag.startWidth + event.clientX - drag.startX
       drag.lastRaw = raw
-      setChannelNavWidth(Math.max(184, Math.min(360, raw)))
+      setChannelNavWidth(Math.max(76, Math.min(480, raw)))
     }
     const up = () => {
       const drag = channelNavResizeState.current
       channelNavResizeState.current = null
       setChannelNavResizing(false)
       if (!drag) return
-      if (drag.allowCollapse && drag.lastRaw < 164) {
-        setChannelNavCollapsed(true)
+      if (drag.allowCollapse && drag.lastRaw < 145) {
+        setChannelNavCompactV903(true)
+        setChannelNavCollapsed(false)
         return
       }
-      const next = Math.max(184, Math.min(360, drag.lastRaw))
+      setChannelNavCompactV903(false)
+      const next = Math.max(184, Math.min(480, drag.lastRaw))
       setChannelNavWidth(next)
       localStorage.setItem('spaces.channelNavWidth.v53', String(Math.round(next)))
     }
@@ -259,8 +285,8 @@ export function AppShell() {
     setChannelNavCollapsed(false)
     channelNavResizeState.current = {
       startX: event.clientX,
-      startWidth: channelNavWidth,
-      lastRaw: channelNavWidth,
+      startWidth: channelNavCompactV903 ? 76 : channelNavWidth,
+      lastRaw: channelNavCompactV903 ? 76 : channelNavWidth,
       allowCollapse: Boolean(activeWorkspaceId),
     }
     setChannelNavResizing(true)
@@ -269,7 +295,11 @@ export function AppShell() {
     const onTouchStart = (event: TouchEvent) => {
       if (window.innerWidth > 900 || event.touches.length !== 1) return
       const touch = event.touches[0]
-      if (!mobileNavOpen && touch.clientX > 34) { mobileSwipeStart.current = null; return }
+      // SPACES_V82_MOBILE_FIXES: avoid Android's 0-24px OS Back-gesture zone.
+      if (!mobileNavOpen && (touch.clientX < 26 || touch.clientX > Math.min(142, window.innerWidth * .39))) { mobileSwipeStart.current = null; return }
+      if (mobileNavOpen && touch.clientX > Math.min(375, window.innerWidth * .92)) { mobileSwipeStart.current = null; return }
+      const target = event.target instanceof Element ? event.target : null
+      if (target?.closest('input,textarea,select,[contenteditable="true"],[data-no-swipe],.mobile-space-strip,.direct-message-list')) { mobileSwipeStart.current = null; return }
       mobileSwipeStart.current = { x: touch.clientX, y: touch.clientY }
     }
     const onTouchEnd = (event: TouchEvent) => {
@@ -279,7 +309,7 @@ export function AppShell() {
       const touch = event.changedTouches[0]
       const dx = touch.clientX - start.x
       const dy = touch.clientY - start.y
-      if (Math.abs(dx) < 56 || Math.abs(dx) <= Math.abs(dy) * 1.25) return
+      if (Math.abs(dx) < 72 || Math.abs(dx) <= Math.abs(dy) * 1.45) return
       if (!mobileNavOpen && dx > 0) setMobileNavOpen(true)
       else if (mobileNavOpen && dx < 0) setMobileNavOpen(false)
     }
@@ -293,6 +323,25 @@ export function AppShell() {
   useEffect(() => {
     if (directCenterOpen || profileDialog) setMobileNavOpen(false)
   }, [directCenterOpen, profileDialog, setMobileNavOpen])
+  // SPACES_V82_MOBILE_FIXES: native Android Back / gesture dismisses an overlay, never a random channel.
+  useEffect(() => {
+    if (!/Android/i.test(navigator.userAgent) || !('__TAURI_INTERNALS__' in window)) return
+    const active=Boolean(mobileNavOpen || directCenterOpen || selectedRailMember || profileDialog || notificationOpen || commandOpen)
+    if (!active) return
+    const state=window.history.state as Record<string, unknown> | null
+    if (!state?.spacesV82Overlay) window.history.pushState({ ...(state||{}), spacesV82Overlay:true }, '', window.location.href)
+    const onBack=() => {
+      if (selectedRailMember) setSelectedRailMember(null)
+      else if (profileDialog) setProfileDialog(null)
+      else if (notificationOpen) setNotificationOpen(false)
+      else if (commandOpen) setCommandOpen(false)
+      else if (mobileNavOpen) setMobileNavOpen(false)
+      else if (directConversationId || directGroupId) openDirectPage('friends')
+      else if (directCenterOpen) openSpacesHome()
+    }
+    window.addEventListener('popstate',onBack)
+    return () => window.removeEventListener('popstate',onBack)
+  }, [mobileNavOpen, directCenterOpen, directConversationId, directGroupId, selectedRailMember, profileDialog, notificationOpen, commandOpen, setMobileNavOpen, setCommandOpen])
   useEffect(() => {
     if (!activeWorkspaceId) setMobileNavOpen(false)
   }, [activeWorkspaceId, setMobileNavOpen])
@@ -757,13 +806,54 @@ export function AppShell() {
     '--app-accent': preferences.appAccent,
     '--workspace-accent': activeWorkspace?.accentColor ?? preferences.appAccent,
     '--active-accent-2': secondaryAccent,
-    '--channel-rail': channelNavCollapsed && activeWorkspaceId ? '0px' : `${channelNavWidth}px`,
+    '--channel-rail': channelNavCollapsed && activeWorkspaceId ? '0px' : channelNavCompactV903 ? '76px' : `${channelNavWidth}px`,
+    '--member-rail': `${memberRailWidthV903}px`,
   } as CSSProperties
 
   const hasPersonalDirectAttentionV755 = visibleNotifications.some(item => item.kind === 'direct')
   const hasSupportAttentionV70 = supportQueueCount > 0 || waitingSupportTicketsV753 > 0
   const notificationBadgeTone = hasPersonalDirectAttentionV755 ? 'blue' : hasSupportAttentionV70 ? 'orange' : 'blue'
   const desktopUnreadCountV70 = visibleNotifications.filter(item => !(item.kind === 'support' && item.supportTicketStaff)).length + (hasSupportAttentionV70 ? 1 : 0)
+  // SPACES_V88_1_DM_AVATARS: exact per-conversation unread counts; latest activity wins.
+  const recentDmAvatarsV881 = useMemo(() => {
+    const unreadByConversation = new Map<string, { count: number; mostRecent: number }>()
+    for (const event of visibleNotifications) {
+      if (event.kind !== 'direct' || !event.conversationId) continue
+      const previous = unreadByConversation.get(event.conversationId) ?? { count: 0, mostRecent: 0 }
+      unreadByConversation.set(event.conversationId, {
+        count: previous.count + 1,
+        mostRecent: Math.max(previous.mostRecent, Number(event.createdAt) || 0),
+      })
+    }
+    return directSidebarCenter.conversations
+      .filter(item => item.status === 'accepted')
+      .map(item => {
+        const key = 'dm:' + item.id
+        const unread = unreadByConversation.get(item.id)
+        const at = Math.max(
+          Number(item.lastMessageAt) || 0,
+          Number(directActivityV69[key]?.at) || 0,
+          Number(directRecentV70[key]?.lastAt) || 0,
+          unread?.mostRecent ?? 0,
+        )
+        return {
+          id: item.id,
+          person: item.person,
+          unread: unread?.count ?? 0,
+          at,
+          active: directCenterOpen && !activeWorkspaceId && directConversationId === item.id,
+        }
+      })
+      .filter(item => item.unread > 0 && !item.active) // SPACES_V92_1_UNREAD_ONLY
+      .sort((a,b) => b.at - a.at || b.unread - a.unread || a.person.displayName.localeCompare(b.person.displayName))
+      .slice(0,24)
+  }, [directSidebarCenter.conversations, visibleNotifications, directActivityV69, directRecentV70, directCenterOpen, activeWorkspaceId, directConversationId])
+  const browserUnreadV88 = visibleNotifications.filter(item => !(item.kind === 'support' && item.supportTicketStaff)).length
+  useEffect(() => {
+    if (isTauriDesktopRuntime()) return
+    syncBrowserUnreadV88(browserUnreadV88)
+    return () => syncBrowserUnreadV88(0)
+  }, [browserUnreadV88]) // SPACES_V88_TAB_BADGE
 
   useEffect(() => {
     void syncDesktopUnread(desktopUnreadCountV70, notificationBadgeTone)
@@ -1534,9 +1624,20 @@ export function AppShell() {
   }
 
   return (
-    <div className={`spaces-app-shell bg-${background} ${activeWorkspaceId ? 'has-space' : 'home-mode'} ${showMemberRail ? 'with-member-rail' : ''} ${channelNavCollapsed && activeWorkspaceId ? 'channel-nav-collapsed' : ''} ${channelNavResizing ? 'channel-nav-resizing-v53' : ''}`} style={appStyle}>
+    <div className={`spaces-app-shell bg-${background} ${activeWorkspaceId ? 'has-space' : 'home-mode'} ${showMemberRail ? 'with-member-rail' : ''} ${channelNavCollapsed && activeWorkspaceId ? 'channel-nav-collapsed' : ''} ${channelNavResizing ? 'channel-nav-resizing-v53' : ''} ${channelNavCompactV903 ? 'channel-nav-compact-v903' : ''} ${memberResizingV903 ? 'member-resizing-v903' : ''}`} style={appStyle}>
       <aside className="server-rail">
         <button className={`server-home ${!activeWorkspaceId && !directCenterOpen ? 'active' : ''}`} onClick={openSpacesHome} title="Home"><div className="brand-mark brand-home"><Icon name="home" size={22} /></div><span className="server-pill" /></button>
+        {recentDmAvatarsV881.length > 0 && <nav className="spaces-v881-dm-rail" aria-label="Recent direct messages">
+          {recentDmAvatarsV881.map(item => <button type="button" key={item.id}
+            className={`spaces-v881-dm-avatar ${item.active ? 'active' : ''} ${item.unread ? 'has-unread' : ''}`}
+            onClick={() => openDirectPage('friends', item.id)}
+            aria-label={`Message ${item.person.displayName}${item.unread ? `, ${item.unread} unread messages` : ''}`}
+            title={`${item.person.displayName} (@${item.person.username})${item.unread ? ` · ${item.unread > 99 ? '99+' : item.unread} unread` : ''}`}
+            aria-current={item.active ? 'page' : undefined}>
+            <Avatar name={item.person.displayName} initials={item.person.initials} src={item.person.avatarUrl} size={46} accent={item.person.profileAccent}/>
+            {item.unread > 0 && <span className="spaces-v881-dm-count" aria-hidden="true">{item.unread > 99 ? '99+' : item.unread}</span>}
+          </button>)}
+        </nav>}
         <div className="server-divider" />
         <div className="server-list">
           {visibleWorkspaces.map(space => { const unread = workspaceUnreadCount(space.id); return <button {...contextMenu.bind(space.name, compactWorkspaceActions(space), space.id === 'spaces-hub' ? undefined : 'Space')} key={space.id} className={`server-button ${activeWorkspaceId === space.id ? 'active' : ''} ${unread ? 'has-unread-v41' : ''}`} onClick={() => openWorkspace(space.id)} title={unread ? `${space.name} · ${unread > 9 ? '9+' : unread} unread` : space.name} style={{ '--server-accent': space.accentColor, '--server-accent2': localStorage.getItem(`spaces.theme2.${space.id}`) || '#342044' } as CSSProperties}><span className="server-pill" /><span className={`server-avatar-shell space-icon-decor icon-decor-${space.iconDecoration ?? 'ring'}`} style={{ '--decor-accent': space.accentColor } as CSSProperties}><Avatar name={space.name} initials={space.initials} src={space.avatarUrl} size={46} accent={space.accentColor} /></span>{unread > 0 && <span className="server-unread-count-v41" aria-label={`${unread} unread`}>{unread > 9 ? '9+' : unread}</span>}</button> })}
@@ -1548,7 +1649,7 @@ export function AppShell() {
         <button className="channel-sidebar-resize-v53" aria-label="Resize Space navigation" title="Drag to resize · drag left to collapse" onPointerDown={beginChannelNavResize} />
         <header className={`space-header ${activeWorkspace?.bannerUrl ? 'has-space-banner-v42' : ''}`}>
           {activeWorkspace?.bannerUrl && <AnimatedBackdrop src={activeWorkspace.bannerUrl} className="space-header-full-banner-v42" mode={channelNavCollapsed && !mobileNavOpen ? 'still' : 'always'}/>}
-          {activeWorkspace ? <><button {...contextMenu.bind(activeWorkspace.name, workspaceActions(activeWorkspace), 'Space actions')} className="space-header-identity-v16 space-header-menu-v18" title="Open Space menu" onClick={event => { const rect = event.currentTarget.getBoundingClientRect(); contextMenu.open(activeWorkspace.name, workspaceActions(activeWorkspace), rect.left + 14, rect.bottom + 8, 'Space actions') }}><span className={`space-icon-decor icon-decor-${activeWorkspace.iconDecoration ?? 'ring'}`} style={{ '--decor-accent': activeWorkspace.accentColor } as CSSProperties}><Avatar name={activeWorkspace.name} initials={activeWorkspace.initials} src={activeWorkspace.avatarUrl} size={34} accent={activeWorkspace.accentColor}/></span><div className="space-header-copy"><span className="eyebrow">SPACE</span><strong>{activeWorkspace.name}</strong><small>{canManageSpace ? 'Space menu · settings & tools' : 'Space menu'}</small></div><span className="space-header-menu-chevron-v18"><Icon name="chevron" size={13}/></span></button>{canManageSpace && <button className="icon-button" title="Space settings" onClick={() => setView('settings')}><Icon name="settings" size={16} /></button>}</> : <><div className="space-header-copy"><span className="eyebrow">SPACES</span><strong>{directCenterOpen ? 'Friends' : 'Home'}</strong></div><div className="private-chip"><Icon name={directCenterOpen ? 'message' : 'lock'} size={12} /> {directCenterOpen ? 'Direct' : 'Private'}</div></>}
+          {activeWorkspace ? <><button {...contextMenu.bind(activeWorkspace.name, workspaceActions(activeWorkspace), 'Space actions')} className="space-header-identity-v16 space-header-menu-v18" title="Open Space menu" onClick={event => { const rect = event.currentTarget.getBoundingClientRect(); contextMenu.open(activeWorkspace.name, workspaceActions(activeWorkspace), rect.left + 14, rect.bottom + 8, 'Space actions') }}><span className={`space-icon-decor icon-decor-${activeWorkspace.iconDecoration ?? 'ring'}`} style={{ '--decor-accent': activeWorkspace.accentColor } as CSSProperties}><Avatar name={activeWorkspace.name} initials={activeWorkspace.initials} src={activeWorkspace.avatarUrl} size={34} accent={activeWorkspace.accentColor}/></span><div className="space-header-copy"><span className="eyebrow">SPACE</span><strong>{activeWorkspace.name}</strong><SpaceTrustBadgeV90 spaceId={activeWorkspace.id} /><small>{canManageSpace ? 'Space menu · settings & tools' : 'Space menu'}</small></div><span className="space-header-menu-chevron-v18"><Icon name="chevron" size={13}/></span></button>{canManageSpace && <button className="icon-button" title="Space settings" onClick={() => setView('settings')}><Icon name="settings" size={16} /></button>}</> : <><div className="space-header-copy"><span className="eyebrow">SPACES</span><strong>{directCenterOpen ? 'Friends' : 'Home'}</strong></div><div className="private-chip"><Icon name={directCenterOpen ? 'message' : 'lock'} size={12} /> {directCenterOpen ? 'Direct' : 'Private'}</div></>}
         </header>
 
         <div className="sidebar-scroll" {...(activeWorkspace ? contextMenu.bind(activeWorkspace.name, sidebarActions(), 'Space sidebar actions') : {})}>
@@ -1620,12 +1721,12 @@ export function AppShell() {
               {rootChannelCategories.sort((a, b) => a.order - b.order).map(category => renderCategorySection(category))}
               {draggingCategoryId && <div data-sidebar-category-end="true" className={`sidebar-category-drop-tail-v33 ${dragOverKey === 'category:end' ? 'active' : ''}`}>Move category here</div>}
               {uncategorizedChannels.length > 0 && <div data-sidebar-uncategorized="true" className={`sidebar-section ${dragOverKey === 'category:uncategorized' ? 'drag-over-category-v33' : ''}`}><div data-sidebar-uncategorized="true" className="sidebar-section-label sidebar-category-label-v17"><button type="button" className={groupCollapsed('uncategorized') ? 'collapsed' : ''} onClick={() => { if (sidebarClickSuppressed()) return; toggleGroup('uncategorized') }}><Icon name="chevron" size={11}/><span>UNCATEGORIZED</span></button>{canCreateChannel && <button data-no-press-drag="true" title="Create uncategorized channel" onClick={() => openChannelCreator(null)}><Icon name="plus" size={13}/></button>}</div>{!groupCollapsed('uncategorized') && uncategorizedChannels.map(channel => renderChannelRow(channel))}</div>}
-              <div className="sidebar-section sidebar-management"><div className="sidebar-section-label sidebar-category-label-v17"><button type="button" className={groupCollapsed('space-tools') ? 'collapsed' : ''} onClick={() => toggleGroup('space-tools')}><Icon name="chevron" size={11}/><span>SPACE</span></button></div>{!groupCollapsed('space-tools') && navItems.filter(canAccessNavItem).map(item => <button key={item.view} className={`sidebar-item ${view === item.view ? 'active' : ''}`} onClick={() => { setView(item.view); setMobileNavOpen(false) }}><Icon name={item.icon} size={16} /><span>{item.label}</span>{item.view === 'members' && <small>{data?.members.length ?? 0}</small>}</button>)}</div>
+              <div className="sidebar-section sidebar-management"><div className="sidebar-section-label sidebar-category-label-v17"><button type="button" className={groupCollapsed('space-tools') ? 'collapsed' : ''} onClick={() => toggleGroup('space-tools')}><Icon name="chevron" size={11}/><span>SPACE</span></button></div>{!groupCollapsed('space-tools') && navItems.filter(item => canAccessNavItem(item) && (window.innerWidth > 900 || item.view !== 'staff')).map(item => <button key={item.view} className={`sidebar-item ${view === item.view ? 'active' : ''}`} onClick={() => { setView(item.view); setMobileNavOpen(false) }}><Icon name={item.icon} size={16} /><span>{item.label}</span>{item.view === 'members' && <small>{data?.members.length ?? 0}</small>}</button>)}</div>
             </>
           )}
         </div>
 
-        {canOpenSupportConsole && <button data-support-waiting={supportQueueCount + waitingSupportTicketsV753 > 0} className={`support-console-launcher ${supportQueueCount > 0 ? 'has-queue-v31' : ''}`} onClick={() => setSupportConsoleOpen(true)} title="Open Support Console"><span><Icon name="shield" size={15}/>{supportQueueCount > 0 && <i className="support-queue-dot-v31"/>}</span><div><strong>Support Console</strong><small>{supportQueueCount + waitingSupportTicketsV753 > 0 ? `${supportQueueCount + waitingSupportTicketsV753} waiting` : platformRoleLabel(profile?.platformRole ?? 'support')}</small></div>{supportQueueCount > 0 && <b className="support-queue-count-v31">{supportQueueCount > 99 ? '99+' : supportQueueCount}</b>}<Icon name="chevron" size={12}/>{supportQueueCount + waitingSupportTicketsV753 > 0 && <b className="support-console-launcher-badge-v755">{supportQueueCount + waitingSupportTicketsV753 > 99 ? '99+' : supportQueueCount + waitingSupportTicketsV753}</b>}</button>}
+        {canOpenSupportConsole && window.innerWidth > 900 && !/Android|iPhone|iPad|iPod/i.test(navigator.userAgent) && <button data-support-waiting={supportQueueCount + waitingSupportTicketsV753 > 0} className={`support-console-launcher ${supportQueueCount > 0 ? 'has-queue-v31' : ''}`} onClick={() => setSupportConsoleOpen(true)} title="Open Support Console"><span><Icon name="shield" size={15}/>{supportQueueCount > 0 && <i className="support-queue-dot-v31"/>}</span><div><strong>Support Console</strong><small>{supportQueueCount + waitingSupportTicketsV753 > 0 ? `${supportQueueCount + waitingSupportTicketsV753} waiting` : platformRoleLabel(profile?.platformRole ?? 'support')}</small></div>{supportQueueCount > 0 && <b className="support-queue-count-v31">{supportQueueCount > 99 ? '99+' : supportQueueCount}</b>}<Icon name="chevron" size={12}/>{supportQueueCount + waitingSupportTicketsV753 > 0 && <b className="support-console-launcher-badge-v755">{supportQueueCount + waitingSupportTicketsV753 > 99 ? '99+' : supportQueueCount + waitingSupportTicketsV753}</b>}</button>}
 
         <footer className="account-dock">
           <button className="account-identity" onClick={() => setAccountMenuOpen(value => !value)} title="Account">
@@ -1639,7 +1740,7 @@ export function AppShell() {
 
       <main className="main-stage">
         <header className="topbar">
-          <div className="topbar-left"><button className={`mobile-menu-button nav-arrow-toggle-v19 ${mobileNavOpen ? 'open' : 'closed'}`} aria-label={mobileNavOpen ? 'Close Space navigation' : 'Open Space navigation'} aria-expanded={mobileNavOpen} onClick={() => setMobileNavOpen(!mobileNavOpen)}><Icon name="chevron" size={17} /></button>{activeWorkspace && <button className={`desktop-nav-toggle nav-arrow-toggle-v19 ${channelNavCollapsed ? 'collapsed' : 'expanded'}`} aria-label={channelNavCollapsed ? 'Show Space navigation' : 'Hide Space navigation'} aria-expanded={!channelNavCollapsed} title={channelNavCollapsed ? 'Show Space navigation' : 'Hide Space navigation'} onClick={() => setChannelNavCollapsed(value => !value)}><Icon name="chevron" size={16}/></button>}{activeWorkspace ? <><span className="topbar-symbol"><Icon name={view === 'notes' ? 'notes' : view === 'chat' ? 'hash' : navItems.find(item => item.view === view)?.icon ?? 'home'} size={18} /></span><div><strong>{view === 'chat' || view === 'notes' ? activeChannel?.name ?? activeWorkspace.name : navItems.find(item => item.view === view)?.label ?? 'Overview'}</strong><span>{cleanThreadDescription(activeChannel?.description) || activeWorkspace.description || 'Spaces'}</span></div></> : directCenterOpen ? <><span className="topbar-symbol"><Icon name={directPageTab === 'support' ? 'shield' : directPageTab === 'groups' ? 'chat' : directPageTab === 'requests' ? 'message' : directPageTab === 'add' ? 'plus' : 'members'} /></span><div><strong>{directConversationId ? (directSidebarCenter.conversations.find(item => item.id === directConversationId)?.person.displayName ?? 'Direct Message') : directGroupId ? (directSidebarCenter.groups.find(item => item.id === directGroupId)?.name ?? 'Group Chat') : directPageTab === 'support' ? 'Support Tickets' : directPageTab === 'requests' ? 'Requests' : directPageTab === 'groups' ? 'Group Chats' : directPageTab === 'add' ? 'Add Friend' : 'Friends'}</strong><span>Friends & Messages</span></div></> : <><span className="topbar-symbol"><Icon name="home" /></span><div><strong>Home</strong><span>Everything, one layer up.</span></div></>}</div>
+          <div className="topbar-left"><button className={`mobile-menu-button nav-arrow-toggle-v19 ${mobileNavOpen ? 'open' : 'closed'}`} aria-label={mobileNavOpen ? 'Close Space navigation' : 'Open Space navigation'} aria-expanded={mobileNavOpen} onClick={() => setMobileNavOpen(!mobileNavOpen)}><Icon name="chevron" size={17} /></button>{activeWorkspace && <button type="button" className="icon-button desktop-channel-compact-v903" title={channelNavCompactV903 ? 'Expand channel names' : 'Show channel icons only'} aria-label={channelNavCompactV903 ? 'Expand channel navigation' : 'Compact channel navigation'} onClick={()=>{setChannelNavCollapsed(false);setChannelNavCompactV903(value=>!value)}}><Icon name="grid" size={15}/></button>}{activeWorkspace && <button className={`desktop-nav-toggle nav-arrow-toggle-v19 ${channelNavCollapsed ? 'collapsed' : 'expanded'}`} aria-label={channelNavCollapsed ? 'Show Space navigation' : 'Hide Space navigation'} aria-expanded={!channelNavCollapsed} title={channelNavCollapsed ? 'Show Space navigation' : 'Hide Space navigation'} onClick={() => setChannelNavCollapsed(value => !value)}><Icon name="chevron" size={16}/></button>}{activeWorkspace ? <><span className="topbar-symbol"><Icon name={view === 'notes' ? 'notes' : view === 'chat' ? 'hash' : navItems.find(item => item.view === view)?.icon ?? 'home'} size={18} /></span><div><strong>{view === 'chat' || view === 'notes' ? activeChannel?.name ?? activeWorkspace.name : navItems.find(item => item.view === view)?.label ?? 'Overview'}</strong><span>{cleanThreadDescription(activeChannel?.description) || activeWorkspace.description || 'Spaces'}</span></div></> : directCenterOpen ? <><span className="topbar-symbol"><Icon name={directPageTab === 'support' ? 'shield' : directPageTab === 'groups' ? 'chat' : directPageTab === 'requests' ? 'message' : directPageTab === 'add' ? 'plus' : 'members'} /></span><div><strong>{directConversationId ? (directSidebarCenter.conversations.find(item => item.id === directConversationId)?.person.displayName ?? 'Direct Message') : directGroupId ? (directSidebarCenter.groups.find(item => item.id === directGroupId)?.name ?? 'Group Chat') : directPageTab === 'support' ? 'Support Tickets' : directPageTab === 'requests' ? 'Requests' : directPageTab === 'groups' ? 'Group Chats' : directPageTab === 'add' ? 'Add Friend' : 'Friends'}</strong><span>Friends & Messages</span></div></> : <><span className="topbar-symbol"><Icon name="home" /></span><div><strong>Home</strong><span>Everything, one layer up.</span></div></>}</div>
           <div className="topbar-actions">
             <button className="search-pill" onClick={() => setCommandOpen(true)}><Icon name="search" size={15} /><span>Search Spaces</span><kbd>Ctrl K</kbd></button>
             <button className={`icon-button topbar-icon notification-button badge-${notificationBadgeTone} ${notificationOpen ? 'active' : ''}`} title="Notifications" onClick={() => { setMobileNavOpen(false); setNotificationOpen(value => !value) }}><Icon name="bell" size={17}/>{visibleNotifications.length > 0 && <i>{visibleNotifications.length > 9 ? '9+' : visibleNotifications.length}</i>}</button>
@@ -1649,18 +1750,21 @@ export function AppShell() {
 
         <section className="view-host">
           <div className="view-transition-frame" key={`${activeWorkspaceId || 'spaces-home'}:${directCenterOpen && !activeWorkspaceId ? 'direct' : view}:${activeChannel?.id ?? 'none'}`}>
+            <Suspense fallback={<div className="space-loading-placeholder-v44" role="status" aria-label="Loading section"><div><strong>Opening section…</strong></div></div>}>
             {workspaceLoading ? <div className="space-loading-placeholder-v44"><div><div className="space-loading-brand-v44"><SpacesLogo/><strong>{activeWorkspace?.name ?? 'Spaces'}</strong></div><div className="space-loading-lines-v44"><i/><i/><i/></div></div></div> : directCenterOpen && !activeWorkspaceId ? <DirectMessagesCenter embedded initialTab={directPageTab} initialConversationId={directConversationId} initialGroupId={directGroupId} onClose={openSpacesHome} /> : renderView(view, Boolean(activeWorkspaceId))}
+            </Suspense>
           </div>
         </section>
       </main>
 
       <nav className="mobile-homebar" aria-label="Spaces navigation">
-        <button className={!activeWorkspaceId && !directCenterOpen ? 'active' : ''} onClick={openSpacesHome}><Icon name="home" size={19} /><span>Home</span></button>
-        <button className={mobileNavOpen || Boolean(activeWorkspaceId) ? 'active' : ''} onClick={() => setMobileNavOpen(!mobileNavOpen)}><Icon name="grid" size={19} /><span>Spaces</span></button>
-        <button className={profileDialog ? 'active' : ''} onClick={() => setProfileDialog('profile')}><Icon name="settings" size={19} /><span>Settings</span></button>
+        <button className={!activeWorkspaceId && !directCenterOpen ? 'active' : ''} aria-label="Home" onClick={openSpacesHome}><Icon name="home" size={19} /><span>Home</span></button>
+        <button className={mobileNavOpen || Boolean(activeWorkspaceId) ? 'active' : ''} aria-label="Spaces and channels" onClick={() => setMobileNavOpen(!mobileNavOpen)}><Icon name="grid" size={19} /><span>Spaces</span></button>
+        <button className={directCenterOpen && !activeWorkspaceId ? 'active' : ''} aria-label="Direct messages" onClick={() => {setMobileNavOpen(false);openDirectPage('friends')}}><Icon name="chat" size={19} /><span>DMs</span></button>
+        <button className={profileDialog ? 'active' : ''} aria-label="Settings" onClick={() => {setMobileNavOpen(false);setProfileDialog('profile')}}><Icon name="settings" size={19} /><span>Settings</span></button>
       </nav>
 
-      {showMemberRail && <MemberRail onOpenMember={setSelectedRailMember} onHide={() => setMemberRailOpen(false)} />}
+      {showMemberRail && <MemberRail onOpenMember={setSelectedRailMember} onHide={() => setMemberRailOpen(false)} onResizeStart={beginMemberResizeV903} />}
       {mobileNavOpen && <div className="mobile-scrim" onPointerDown={() => setMobileNavOpen(false)} />}
       {commandOpen && <CommandPalette />}
       <NotificationCenter open={notificationOpen} onClose={() => setNotificationOpen(false)} />
@@ -1671,9 +1775,9 @@ export function AppShell() {
       <SpacesDmCallHostV812 />
       <SupportIntakeHostV77 />
       <GlobalProfileHostV77 />
-      {mobileStaffOpenV77 && <MobileStaffPanelV77 onClose={() => setMobileStaffOpenV77(false)} />}
-      {profileDialog && <PersonalSettings initialTab={profileDialog} onClose={() => setProfileDialog(null)} />}
-      {supportConsoleOpen && <SupportConsole initialTab={founderTeamLookupV813 && profile?.platformRole === 'founder' ? 'team' : 'overview'} initialLookup={founderTeamLookupV813} onClose={() => { setSupportConsoleOpen(false); setFounderTeamLookupV813('') }} onOpenSecurity={() => { setSupportConsoleOpen(false); setProfileDialog('security') }} />}
+      <BroadcastSurfaceV83 />
+      {profileDialog && <Suspense fallback={null}><PersonalSettings initialTab={profileDialog} onClose={() => setProfileDialog(null)} /></Suspense>}
+      {supportConsoleOpen && <Suspense fallback={null}><SupportConsole initialTab="overview" onClose={() => { setSupportConsoleOpen(false) }} onOpenSecurity={() => { setSupportConsoleOpen(false); setProfileDialog('security') }} /></Suspense>}
       {workspacePrivacyOpen && <WorkspacePrivacyModal workspaceId={workspacePrivacyOpen.id} workspaceName={workspacePrivacyOpen.name} onClose={() => setWorkspacePrivacyOpen(null)} />}
       {selectedRailMember && <MemberProfileDrawer memberId={selectedRailMember} onClose={() => setSelectedRailMember(null)} />}
 
@@ -1745,7 +1849,7 @@ function IncomingNotificationPeek({ item, onOpen, onClose }: { item: SpacesNotif
   </aside>
 }
 
-function MemberRail({ onOpenMember, onHide }: { onOpenMember: (memberId: string) => void; onHide: () => void }) {
+function MemberRail({ onOpenMember, onHide, onResizeStart }: { onOpenMember: (memberId: string) => void; onHide: () => void; onResizeStart: (event:ReactPointerEvent<HTMLButtonElement>) => void }) {
   const { data, profile } = useSpaces()
   const [, setRoleLabelVersion] = useState(0)
   const { effectivePresence } = usePreferences()
@@ -1792,7 +1896,7 @@ function MemberRail({ onOpenMember, onHide }: { onOpenMember: (memberId: string)
   const railPresence = (member: (typeof members)[number]) => member.profileId === profile?.id ? effectivePresence : member.status === 'away' ? 'idle' : member.status
   const online = remaining.filter(member => railPresence(member) !== 'offline')
   const offline = remaining.filter(member => railPresence(member) === 'offline')
-  return <aside className="member-rail member-rail-v28" style={{ '--member-rail-top': `${topOffset}px` } as CSSProperties}><button className="member-rail-drag-v28" aria-label="Drag member list down to reduce it" title="Drag down to reduce · double-click to reset" onDoubleClick={() => { setTopOffset(0); localStorage.setItem('spaces.memberRailTop.v28', '0') }} onPointerDown={event => { event.preventDefault(); drag.current = { startY: event.clientY, startOffset: topOffset } }}><i/><span>PEOPLE</span><i/></button><header><strong>{members.length} members</strong><button onClick={onHide} title="Hide people"><Icon name="x" size={12}/></button></header><div className="member-rail-scroll">{ownerMembers.length > 0 && <MemberRailGroup workspaceId={data?.workspace.id ?? ''} title={workspaceRoleDisplayName(data?.workspace.id ?? '', 'owner').toUpperCase()} members={ownerMembers} roles={roles} onOpenMember={onOpenMember} />}{roleGroups.map(group => <MemberRailGroup workspaceId={data?.workspace.id ?? ''} key={group.role.id} title={group.role.name.toUpperCase()} members={group.members} roles={roles} onOpenMember={onOpenMember} />)}{online.length > 0 && <MemberRailGroup workspaceId={data?.workspace.id ?? ''} title="ONLINE" members={online} roles={roles} onOpenMember={onOpenMember} />}{offline.length > 0 && <MemberRailGroup workspaceId={data?.workspace.id ?? ''} title="OFFLINE" members={offline} roles={roles} onOpenMember={onOpenMember} />}</div></aside>
+  return <aside className="member-rail member-rail-v28" style={{ '--member-rail-top': `${topOffset}px` } as CSSProperties}><button className="member-rail-resize-v903" title="Drag to resize the member list" aria-label="Resize member list" onPointerDown={onResizeStart} /><button className="member-rail-drag-v28" aria-label="Drag member list down to reduce it" title="Drag down to reduce · double-click to reset" onDoubleClick={() => { setTopOffset(0); localStorage.setItem('spaces.memberRailTop.v28', '0') }} onPointerDown={event => { event.preventDefault(); drag.current = { startY: event.clientY, startOffset: topOffset } }}><i/><span>PEOPLE</span><i/></button><header><strong>{members.length} members</strong><button onClick={onHide} title="Hide people"><Icon name="x" size={12}/></button></header><div className="member-rail-scroll">{ownerMembers.length > 0 && <MemberRailGroup workspaceId={data?.workspace.id ?? ''} title={ownerMembers.length === 1 && ownerMembers[0]?.platformRole === 'founder' ? 'FOUNDER' /* SPACES_V84_2_FOUNDER_RAIL_GROUP */ : workspaceRoleDisplayName(data?.workspace.id ?? '', 'owner').toUpperCase()} members={ownerMembers} roles={roles} onOpenMember={onOpenMember} />}{roleGroups.map(group => <MemberRailGroup workspaceId={data?.workspace.id ?? ''} key={group.role.id} title={group.role.name.toUpperCase()} members={group.members} roles={roles} onOpenMember={onOpenMember} />)}{online.length > 0 && <MemberRailGroup workspaceId={data?.workspace.id ?? ''} title="ONLINE" members={online} roles={roles} onOpenMember={onOpenMember} />}{offline.length > 0 && <MemberRailGroup workspaceId={data?.workspace.id ?? ''} title="OFFLINE" members={offline} roles={roles} onOpenMember={onOpenMember} />}</div></aside>
 }
 
 function MemberRailGroup({ workspaceId, title, members, roles, onOpenMember }: { workspaceId: string; title: string; members: NonNullable<ReturnType<typeof useSpaces>['data']>['members']; roles: NonNullable<ReturnType<typeof useSpaces>['data']>['roles']; onOpenMember: (memberId: string) => void }) {
@@ -1813,7 +1917,7 @@ function AccountQuickMenu({ onSettings }: { onSettings: () => void }) {
   return <div className="account-quick-menu page-enter">
     <div className="account-quick-head"><div className="account-quick-avatar profile-avatar-presence"><Avatar name={profile?.displayName} initials={profile?.initials} src={profile?.avatarUrl} size={48} accent={profile?.profileAccent}/><span className={`presence-symbol presence-${effectivePresence}`} aria-label={effectivePresence} title={effectivePresence === 'dnd' ? 'Do Not Disturb' : effectivePresence === 'offline' ? 'Invisible' : effectivePresence[0].toUpperCase() + effectivePresence.slice(1)} /></div><div><strong>{profile?.displayName}</strong><span>@{profile?.username}</span></div></div>
     <label className="quick-status-input"><span>STATUS <small>{preferences.customStatus.length}/128</small></span><input value={preferences.customStatus} maxLength={128} onChange={event => setPreference('customStatus', event.target.value)} placeholder="Set a custom status…" /></label>
-    <div className="quick-presence-list">{statusOptions.map(option => <button key={option.id} className={preferences.presence === option.id ? 'active' : ''} onClick={() => setPreference('presence', option.id)}><span className={`presence-symbol presence-${option.id}`} /><div><strong>{option.label}</strong><span>{option.note}</span></div>{preferences.presence === option.id && <Icon name="check" size={14}/>}</button>)}</div>
+    <div className="quick-presence-list">{statusOptions.map(option => <button key={option.id} className={preferences.presence === option.id ? 'active' : ''} onClick={() => setPreference('presence', option.id)}><span className="spaces-v925-presence-avatar"><Avatar name={profile?.displayName} initials={profile?.initials} src={profile?.avatarUrl} size={32} accent={profile?.profileAccent}/><span className={`presence-symbol presence-${option.id}`} /></span><div><strong>{option.label}</strong><span>{option.note}</span></div>{preferences.presence === option.id && <Icon name="check" size={14}/>}</button>)}</div>
     <button className="quick-settings-button" onClick={onSettings}><Icon name="settings" size={15}/><span>Account settings</span><Icon name="chevron" size={13}/></button>
   </div>
 }
@@ -1835,7 +1939,7 @@ function CommandPalette() {
     ...(data?.channels ?? []).map(channel => ({ key: `channel-${channel.id}`, label: `# ${channel.name}`, meta: channel.kind, icon: channel.kind === 'notes' ? 'notes' as IconName : 'hash' as IconName, run: () => chooseChannel(channel.id) })),
     ...(data?.notes ?? []).map(note => ({ key: `note-${note.id}`, label: note.title, meta: 'Note', icon: 'notes' as IconName, run: () => chooseChannel(note.channelId) })),
     ...(data?.members ?? []).map(member => ({ key: `member-${member.id}`, label: `@${member.username}`, meta: member.displayName, icon: 'user' as IconName, run: () => setView('members') })),
-    ...(activeWorkspaceId ? navItems.filter(canAccessNavItem).map(item => ({ key: `view-${item.view}`, label: item.label, meta: 'View', icon: item.icon, run: () => setView(item.view) })) : []),
+    ...(activeWorkspaceId ? navItems.filter(item => canAccessNavItem(item) && (window.innerWidth > 900 || item.view !== 'staff')).map(item => ({ key: `view-${item.view}`, label: item.label, meta: 'View', icon: item.icon, run: () => setView(item.view) })) : []),
   ].filter(item => !q || `${item.label} ${item.meta}`.toLowerCase().includes(q)).slice(0, 14)
 
   function openSelected() {
@@ -1847,4 +1951,3 @@ function CommandPalette() {
 
   return <div className="command-backdrop" onPointerDown={event => event.target === event.currentTarget && setCommandOpen(false)}><section className="command-palette"><div className="command-search"><Icon name="search" /><input autoFocus value={query} onChange={event => { setQuery(event.target.value); setSelected(0) }} onKeyDown={event => { if (event.key === 'ArrowDown') { event.preventDefault(); setSelected(value => commands.length ? (value + 1) % commands.length : 0) } else if (event.key === 'ArrowUp') { event.preventDefault(); setSelected(value => commands.length ? (value - 1 + commands.length) % commands.length : 0) } else if (event.key === 'Enter') { event.preventDefault(); openSelected() } }} placeholder="Jump to a Space, channel, member…" /><kbd>ESC</kbd></div><div className="command-results">{commands.map((item, index) => <button className={selected === index ? 'selected' : ''} key={item.key} onMouseEnter={() => setSelected(index)} onClick={() => { item.run(); setCommandOpen(false) }}><span className="command-icon"><Icon name={item.icon} size={16} /></span><div><strong>{item.label}</strong><span>{item.meta}</span></div>{selected === index && <kbd>↵</kbd>}</button>)}{!commands.length && <div className="command-empty">No results for “{query}”.</div>}</div><footer><span><kbd>↑</kbd><kbd>↓</kbd> Navigate</span><span><kbd>Enter</kbd> Open</span><span><kbd>Esc</kbd> Close</span></footer></section></div>
 }
-

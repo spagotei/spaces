@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react'
+import { NotesFolderTabsV89, type NotesFolderV89 } from './NotesFolderTabsV89' // SPACES_V89_NOTES_FOLDERS
 import { Avatar } from '../../components/Avatar'
 import { ContextMenu, useContextMenu, type ContextAction } from '../../components/ContextMenu'
 import { Icon } from '../../components/Icon'
@@ -16,14 +17,21 @@ const MAX_TXT_BYTES = 256 * 1024
 
 export function NotesView() {
   const dialog = useAppDialog()
-  const { data, activeChannel, activeChannelId, profile, saveNote, deleteNote, addComment, editComment, deleteComment, pushToast } = useSpaces()
+  const { apiUrl, session, activeWorkspaceId, data, activeChannel, activeChannelId, profile, saveNote, deleteNote, addComment, editComment, deleteComment, pushToast } = useSpaces()
   const { preferences } = usePreferences()
   const contextMenu = useContextMenu()
   const commentMenu = useContextMenu()
   const importInput = useRef<HTMLInputElement>(null)
   const replaceInput = useRef<HTMLInputElement>(null)
   const [replaceTargetId, setReplaceTargetId] = useState('')
-  const notes = useMemo(() => (data?.notes ?? []).filter(note => note.channelId === activeChannelId).sort((a, b) => b.updatedAt - a.updatedAt), [activeChannelId, data?.notes])
+  // SPACES_V89_NOTES_DATA: shared folder tab selection, never persisted in localStorage.
+  const [folderTabV89,setFolderTabV89]=useState('all');
+  const [foldersV89,setFoldersV89]=useState<NotesFolderV89[]>([]);
+  const [folderMapV89,setFolderMapV89]=useState<Record<string,string>>({});
+  const [foldersPendingV89,setFoldersPendingV89]=useState(false);
+  const [foldersUnavailableV89,setFoldersUnavailableV89]=useState(false);
+  const allNotesV89=useMemo(()=>(data?.notes??[]).filter(note=>note.channelId===activeChannelId).sort((a,b)=>b.updatedAt-a.updatedAt),[activeChannelId,data?.notes]);
+  const notes=useMemo(()=>allNotesV89.filter(note=>folderTabV89==='all'||(folderTabV89==='unfiled'?!folderMapV89[note.id]:folderMapV89[note.id]===folderTabV89)),[allNotesV89,folderTabV89,folderMapV89]);
   const [selectedId, setSelectedId] = useState('')
   const [creating, setCreating] = useState(false)
   const selected = creating ? null : (notes.find(note => note.id === selectedId) ?? null)
@@ -36,6 +44,44 @@ export function NotesView() {
   const [editingCommentId, setEditingCommentId] = useState<string | null>(null)
   const [editCommentBody, setEditCommentBody] = useState('')
   const [expandedThreads, setExpandedThreads] = useState<string[]>([])
+  const folderUrlV89=`${apiUrl}/v1/workspaces/${encodeURIComponent(activeWorkspaceId ?? '')}/notes-folders`;
+  const folderRequestV89=async(path:string,init:RequestInit={})=>{
+    if(!session?.token)throw Error('Sign in to manage folders');
+    const h=new Headers(init.headers);h.set('Authorization',`Bearer ${session.token}`);if(init.body)h.set('Content-Type','application/json');
+    const res=await fetch(folderUrlV89+path,{...init,headers:h,cache:'no-store'});
+    const jsonBody=await res.json().catch(()=>({})) as {error?:string;message?:string;folders?:NotesFolderV89[];assignments?:{noteId:string;folderId:string}[]};
+    if(!res.ok)throw Error(jsonBody.message||jsonBody.error||`Folder request failed (${res.status})`);return jsonBody;
+  };
+  const refreshFoldersV89=async()=>{if(!activeChannelId||!activeWorkspaceId)return;
+    const next=await folderRequestV89(`?channelId=${encodeURIComponent(activeChannelId ?? '')}`);
+    setFoldersV89(next.folders??[]);setFolderMapV89(Object.fromEntries((next.assignments??[]).map(x=>[x.noteId,x.folderId])));setFoldersUnavailableV89(false);
+  };
+  useEffect(()=>{let cancelled=false;setFolderTabV89('all');setFoldersV89([]);setFolderMapV89({});
+    if(!activeWorkspaceId||!activeChannelId||!session?.token)return;setFoldersPendingV89(true);
+    void folderRequestV89(`?channelId=${encodeURIComponent(activeChannelId ?? '')}`).then(result=>{if(cancelled)return;setFoldersV89(result.folders??[]);setFolderMapV89(Object.fromEntries((result.assignments??[]).map(x=>[x.noteId,x.folderId])));setFoldersUnavailableV89(false)}).catch(()=>{if(!cancelled)setFoldersUnavailableV89(true)}).finally(()=>{if(!cancelled)setFoldersPendingV89(false)});
+    return()=>{cancelled=true};
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  },[activeWorkspaceId,activeChannelId,session?.token,apiUrl]);
+  // SPACES_V92_1_FOLDER_ACTIONS: use existing permission-checked V89 folder API.
+  async function renameFolderV921(folder:NotesFolderV89){
+    const name=await dialog.prompt({title:'Rename Notes folder',message:'This name is shared with members who can view this channel.',label:'Folder name',placeholder:folder.name,maxLength:64,confirmText:'Rename'});
+    if(!name?.trim()||name.trim()===folder.name)return;
+    try{await folderRequestV89('/'+encodeURIComponent(folder.id),{method:'PATCH',body:JSON.stringify({name:name.trim()})});await refreshFoldersV89();pushToast('Folder renamed.','success')}
+    catch(error){pushToast(error instanceof Error?error.message:'Could not rename folder.','danger')}
+  }
+  async function deleteFolderV921(folder:NotesFolderV89){
+    if(!await dialog.confirm({title:'Delete '+folder.name+'?',message:'The folder will be removed, but its notes will stay in this channel without a folder.',confirmText:'Delete folder',danger:true}))return;
+    try{await folderRequestV89('/'+encodeURIComponent(folder.id),{method:'DELETE'});setFolderTabV89('all');await refreshFoldersV89();pushToast('Folder deleted; notes kept.','success')}
+    catch(error){pushToast(error instanceof Error?error.message:'Could not delete folder.','danger')}
+  }
+  async function addFolderV89(){
+    const name=await dialog.prompt({title:'New Notes folder',message:'Shared with members who can view this Notes channel.',label:'Folder name',maxLength:64,confirmText:'Create folder'});
+    if(!name?.trim())return;try{await folderRequestV89('',{method:'POST',body:JSON.stringify({channelId:activeChannelId,name:name.trim()})});await refreshFoldersV89();pushToast('Folder created for this Notes channel.','success')}catch(error){pushToast(error instanceof Error?error.message:'Could not create folder','danger')}
+  }
+  async function moveNoteV89(noteId:string,folderId:string|null){
+    if(!activeChannelId)return;try{await folderRequestV89('/assign',{method:'PUT',body:JSON.stringify({channelId:activeChannelId,noteId,folderId})});await refreshFoldersV89();pushToast(folderId?'Note moved to folder.':'Note moved to Unfiled.','success')}catch(error){pushToast(error instanceof Error?error.message:'Could not move note','danger')}
+  }
+
 
   useEffect(() => {
     if (creating) return
@@ -145,10 +191,11 @@ export function NotesView() {
   }
 
   if (!activeChannel) return <div className="center-empty"><Icon name="notes" /><h2>Select a note channel</h2></div>
-  return <div className={`notes-view page-enter notes-view-v9 notes-view-v70 ${commentsOpen ? 'comments-open-v70' : ''}`}>
+  return <div className={`notes-view page-enter notes-view-v9 notes-view-v70 notes-view-v89 ${commentsOpen ? 'comments-open-v70' : ''}`}>
+    <NotesFolderTabsV89 folders={foldersV89} active={folderTabV89} onChoose={setFolderTabV89} canCreate={!foldersUnavailableV89 && canCreate} canEdit={!foldersUnavailableV89 && canEdit} onAdd={()=>void addFolderV89()} onRename={f=>void renameFolderV921(f)} onDelete={f=>void deleteFolderV921(f)} onMove={(id,fid)=>void moveNoteV89(id,fid)} selectedNoteId={selected?.id??''} assignedFolderId={selected?folderMapV89[selected.id]??null:null} folderLoading={foldersPendingV89} folderUnavailable={foldersUnavailableV89}/>
     <aside className="note-list-panel"><header><div><span className="eyebrow">SHARED NOTES</span><h2>#{activeChannel.name}</h2></div><div className="note-header-actions">{canCreate && <button className="icon-button" title="Import .txt" onClick={() => importInput.current?.click()}><Icon name="upload" size={15}/></button>}<button className="icon-button emphasized" disabled={!canCreate} title={canCreate ? 'New note' : 'Your roles cannot create notes'} onClick={() => void newNote()}><Icon name="plus" /></button></div><input ref={importInput} hidden type="file" accept=".txt,text/plain" onChange={event => void importTxt(event)}/><input ref={replaceInput} hidden type="file" accept=".txt,text/plain" onChange={event => void replaceFromTxt(event)}/></header>
       {canCreate && <div className="note-import-hint"><Icon name="paperclip" size={13}/><span>New note or import a .txt file</span></div>}
-      <div className="note-list">{notes.map(note => { const count = (data?.comments ?? []).filter(item => item.noteId === note.id && !item.deletedAt).length; return <button {...contextMenu.bind(note.title, noteActions(note), 'Right-click or hold for note actions')} className={`note-list-item ${selected?.id === note.id ? 'active' : ''}`} key={note.id} onClick={() => void openNote(note)}><strong>{note.title}</strong><p>{filterContent(note.body, preferences.contentFilter).slice(0, 90) || 'Empty note'}</p><span>Edited {timeAgo(note.updatedAt)}{count > 0 ? ` · ${count} comment${count === 1 ? '' : 's'}` : ''}</span></button> })}{!notes.length && <div className="mini-empty"><Icon name="notes" /><span>No notes in this channel.</span></div>}</div>
+      <div className="note-list">{notes.map(note => { const count = (data?.comments ?? []).filter(item => item.noteId === note.id && !item.deletedAt).length; return <button {...contextMenu.bind(note.title, noteActions(note), 'Right-click or hold for note actions')} className={`note-list-item ${selected?.id === note.id ? 'active' : ''}`} key={note.id} draggable={canEdit} onDragStart={event=>{event.dataTransfer.effectAllowed='move';event.dataTransfer.setData('application/x-spaces-note-v89',note.id)}} onClick={() => void openNote(note)}><strong>{note.title}</strong><p>{filterContent(note.body, preferences.contentFilter).slice(0, 90) || 'Empty note'}</p><span>Edited {timeAgo(note.updatedAt)}{count > 0 ? ` · ${count} comment${count === 1 ? '' : 's'}` : ''}</span></button> })}{!notes.length && <div className="mini-empty"><Icon name="notes" /><span>No notes in this channel.</span></div>}</div>
     </aside>
     <section className="note-editor-panel"><div className="note-editor-toolbar"><span>{selected ? `v${selected.version}` : 'NEW NOTE'}</span><div className="note-editor-actions">{selected && <button className={`secondary-button compact ${commentsOpen ? 'active-v70' : ''}`} onClick={() => setCommentsOpen(value => !value)}><Icon name="chat" size={14}/> Comments{comments.length > 0 && <b className="comments-count-v70">{comments.length}</b>}</button>}{selected && <button className="secondary-button compact" onClick={() => exportTxt(selected)}><Icon name="download" size={14}/> Export</button>}{selected && canEdit && <button className="secondary-button compact" onClick={() => beginReplace(selected)}><Icon name="upload" size={14}/> Import update</button>}{selected && canDelete && <button className="ghost-danger" onClick={() => void removeNote(selected)}><Icon name="trash" size={15}/> Delete</button>}<button className="primary-button compact" disabled={!(selected ? canEdit : canCreate) || saving || !title.trim() || !dirty} onClick={() => void save()}>{saving ? 'Saving...' : dirty ? 'Save note' : 'Saved'}</button></div></div><input className="note-title-input" disabled={selected ? !canEdit : !canCreate} value={title} onChange={event => setTitle(event.target.value)} placeholder="Untitled note"/><textarea className="note-body-input" disabled={selected ? !canEdit : !canCreate} value={(selected ? canEdit : canCreate) ? body : filterContent(body, preferences.contentFilter)} onChange={event => setBody(event.target.value)} placeholder="Start writing..."/><UnsavedChangesBar dirty={dirty} busy={saving} onReset={resetNoteChanges} onSave={save}/></section>
     {commentsOpen && <aside className="comments-panel comments-panel-v70"><header><div><span className="eyebrow">DISCUSSION</span><h3>Comments</h3></div><span className="section-count">{comments.length}</span><button className="icon-button" onClick={() => setCommentsOpen(false)} aria-label="Close comments"><Icon name="x" size={14}/></button></header>{selected ? <><div className="comment-list comment-list-v70">{topComments.map(item => renderComment(item))}{!comments.length && <div className="mini-empty tall"><Icon name="chat"/><strong>No comments yet</strong><span>Start the discussion.</span></div>}</div><div className="comment-composer-wrap-v70">{replyToCommentId && <div className="comment-replying-v70"><span>Replying to {comments.find(item => item.id === replyToCommentId)?.authorName ?? 'comment'}</span><button onClick={() => setReplyToCommentId(null)}><Icon name="x" size={12}/></button></div>}<form className="comment-composer" onSubmit={event => { event.preventDefault(); void submitComment() }}><input value={comment} onChange={event => setComment(event.target.value)} placeholder={replyToCommentId ? 'Write a reply...' : 'Add a comment...'}/><button disabled={!comment.trim()}><Icon name="send" size={15}/></button></form></div></> : <div className="mini-empty tall"><Icon name="reply"/><span>Select a note to open its discussion.</span></div>}</aside>}

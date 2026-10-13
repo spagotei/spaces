@@ -6,6 +6,11 @@ import { LegalCenterV80 } from './features/legal/v80/LegalCenterV80' // SPACES_V
 import { SupportEmailCenterV80 } from './features/support/v80/SupportEmailCenterV80' // SPACES_V80_ROOT
 import { PartnerAdminV80 } from './features/support/v80/PartnerAdminV80' // SPACES_V80_ROOT
 
+import './styles/ui-polish-v925.css'
+import './styles/ui-topline-v9251.css'
+import './styles/ui-seam-cover-v9252.css'
+import './styles/ui-seam-cover-v9253.css'
+
 // SPACES_STARTUP_LOADING_CONTROLLER
 function armSpacesStartupLoading() {
   const overlay = document.getElementById('spaces-preboot')
@@ -13,9 +18,9 @@ function armSpacesStartupLoading() {
   if (!overlay || !root) return
 
   const startedAt = performance.now()
-  const minimumVisibleMs = 720
-  const quietWindowMs = 300
-  const hardTimeoutMs = 5200
+  const minimumVisibleMs = 950
+  const quietWindowMs = 650
+  const hardTimeoutMs = 6500
 
   let finished = false
   let quietTimer = 0

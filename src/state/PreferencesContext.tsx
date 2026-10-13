@@ -14,12 +14,27 @@ export type NotificationLevel = 'all' | 'mentions' | 'none'
 export type AppTheme = 'obsidian' | 'midnight' | 'slate' | 'soft'
 export type PresenceStatus = 'online' | 'idle' | 'dnd' | 'offline'
 export type SidebarDensity = 'comfortable' | 'compact'
+export type V86CallDisplay = 'integrated' | 'floating'
+export type V88OverlayAnchor = 'top-left'|'top-center'|'top-right'|'middle-left'|'center'|'middle-right'|'bottom-left'|'bottom-center'|'bottom-right'
+export type V88CallViewer = 'avatar'|'media' // SPACES_V88_OVERLAY_PREFS
+export type V86GlassTone = 'smoke' | 'black' // SPACES_V86_PREFERENCES
 
 export type SpacesPreferences = {
   contentFilter: ContentFilterLevel
   messageDensity: MessageDensity
   reducedMotion: boolean
   glassEffects: boolean
+  glassToneV86: V86GlassTone
+  dmBannersV86: boolean
+  callDisplayV86: V86CallDisplay
+  callSelfViewV86: boolean
+  callDraggableV86: boolean
+  cameraTileDraggableV86: boolean
+  callSoundVolumeV87: number
+  voiceOutputVolumeV87: number
+  callMemberVolumesV87: Record<string, number> // SPACES_V87_VOLUME_PREFS
+  callOverlayAnchorV88: V88OverlayAnchor
+  callOverlayViewV88: V88CallViewer
   enterToSend: boolean
   showMemberRail: boolean
   notificationLevel: NotificationLevel
@@ -62,6 +77,17 @@ const DEFAULTS: SpacesPreferences = {
   messageDensity: 'comfortable',
   reducedMotion: false,
   glassEffects: true,
+  glassToneV86: 'smoke',
+  dmBannersV86: true,
+  callDisplayV86: 'integrated',
+  callSelfViewV86: true,
+  callDraggableV86: true,
+  cameraTileDraggableV86: true,
+  callSoundVolumeV87: 70,
+  voiceOutputVolumeV87: 100,
+  callMemberVolumesV87: {},
+  callOverlayAnchorV88: 'bottom-right',
+  callOverlayViewV88: 'avatar',
   enterToSend: true,
   showMemberRail: true,
   notificationLevel: 'mentions',
@@ -127,6 +153,19 @@ function normalizePreferences(parsed: Partial<SpacesPreferences>): SpacesPrefere
   return {
     ...DEFAULTS,
     ...parsed,
+    glassToneV86: parsed.glassToneV86 === 'black' ? 'black' : 'smoke',
+    callDisplayV86: parsed.callDisplayV86 === 'floating' ? 'floating' : 'integrated',
+    dmBannersV86: parsed.dmBannersV86 !== false,
+    callSelfViewV86: parsed.callSelfViewV86 !== false,
+    callDraggableV86: parsed.callDraggableV86 !== false,
+    cameraTileDraggableV86: parsed.cameraTileDraggableV86 !== false,
+    callOverlayAnchorV88: (['top-left','top-center','top-right','middle-left','center','middle-right','bottom-left','bottom-center','bottom-right'] as string[]).includes(parsed.callOverlayAnchorV88 ?? '') ? parsed.callOverlayAnchorV88! : 'bottom-right',
+    callOverlayViewV88: parsed.callOverlayViewV88 === 'media' ? 'media' : 'avatar',
+    callSoundVolumeV87: Math.max(0,Math.min(100,Number(parsed.callSoundVolumeV87 ?? 70)||0)),
+    voiceOutputVolumeV87: Math.max(0,Math.min(100,Number(parsed.voiceOutputVolumeV87 ?? 100)||0)),
+    callMemberVolumesV87: parsed.callMemberVolumesV87 && typeof parsed.callMemberVolumesV87 === 'object' && !Array.isArray(parsed.callMemberVolumesV87)
+      ? Object.fromEntries(Object.entries(parsed.callMemberVolumesV87).slice(0,300).filter(([k,v]) => /^[a-zA-Z0-9_-]{1,128}$/.test(k) && typeof v === 'number' && Number.isFinite(v)).map(([k,v]) => [k,Math.max(0,Math.min(100,v as number))]))
+      : {},
     interfaceTextScale: clampScale(parsed.interfaceTextScale),
     sidebarTextScale: clampScale(parsed.sidebarTextScale),
     messageTextScale: clampScale(parsed.messageTextScale),
@@ -174,6 +213,7 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
     localStorage.setItem(storageKey(accountId), JSON.stringify(preferences))
     document.documentElement.dataset.motion = preferences.reducedMotion ? 'reduced' : 'full'
     document.documentElement.dataset.glass = preferences.glassEffects ? 'on' : 'off'
+    document.documentElement.dataset.v86GlassTone = preferences.glassToneV86
     document.documentElement.dataset.density = preferences.messageDensity
     document.documentElement.dataset.theme = preferences.appTheme
     document.documentElement.dataset.presence = preferences.presence

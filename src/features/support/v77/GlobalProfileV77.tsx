@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState, type CSSProperties } from 'react'
 import { AnimatedBackdrop } from '../../../components/AnimatedImage'
+import { useActiveVoicePeerV87, VoiceMemberVolumeV87 } from '../../voice/v87/VoiceMemberVolumeV87' // SPACES_V87_PROFILE_VOLUME
 import { Avatar } from '../../../components/Avatar'
 import { Icon } from '../../../components/Icon'
 import { useSpaces } from '../../../state/SpacesContext'
@@ -15,6 +16,7 @@ import {
 
 export function GlobalProfileHostV77() {
   const { apiUrl, session, profile, requestDirectConversation, pushToast } = useSpaces()
+  const currentCallPeerV87 = useActiveVoicePeerV87()
   const [open, setOpen] = useState<OpenProfileV77Detail | null>(null)
   const [data, setData] = useState<SupportV77Profile | null>(null)
   const [loading, setLoading] = useState(false)
@@ -86,6 +88,7 @@ export function GlobalProfileHostV77() {
         {loading && <div className="profile-v77-loading"><span/><span/><span/></div>}
         {error && !data && <div className="profile-v77-error"><Icon name="lock" size={14}/>{error}<small>The compact DM profile is still shown above.</small></div>}
 
+        {currentCallPeerV87 === openUserId && <VoiceMemberVolumeV87 userId={openUserId} displayName={displayName} />}
         {data?.sharedSpaces?.length ? <section className="profile-v77-section"><header><Icon name="grid" size={14}/><strong>Shared Spaces</strong><small>{data.sharedSpaces.length}</small></header><div className="profile-v77-space-list">{data.sharedSpaces.map(space => <div key={space.id}><span><Icon name="grid" size={12}/></span><div><strong>{space.name}</strong><small>{space.role}</small></div></div>)}</div></section> : null}
 
         {data?.activeRestrictions?.length ? <section className="profile-v77-section staff"><header><Icon name="lock" size={14}/><strong>Active restrictions</strong><small>{data.activeRestrictions.length}</small></header><div className="profile-v77-mini-list">{data.activeRestrictions.map(item => <div key={item.id}><strong>{item.capability.replaceAll('_', ' ')}</strong><small>{item.reasonCategory}{item.expiresAt ? ` · until ${new Date(item.expiresAt).toLocaleString()}` : ' · until removed'}</small></div>)}</div></section> : null}

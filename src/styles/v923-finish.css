@@ -1,0 +1,64 @@
+/* SPACES_V923_FINISH: layout fixes for V92.2, desktop browser and Tauri.
+ * Scoped overrides; no changes to authentication, API or stored theme data. */
+
+/* Personal Settings: platform-wide legal links are a first-class destination. */
+.v923-legal{padding:0;display:grid;gap:16px;max-width:none;color:var(--text,#f2f0f7)}
+.v923-legal-header{display:flex;align-items:center;gap:16px;padding:18px;border:1px solid rgba(255,255,255,.09);border-radius:18px;background:linear-gradient(120deg,rgba(103,108,126,.17),rgba(29,31,40,.48));backdrop-filter:blur(18px)}
+.v923-legal-mark{width:48px;height:48px;flex:0 0 48px;display:grid;place-items:center;font-size:28px;font-weight:750;color:#d3cbe1;border-radius:15px;border:1px solid rgba(255,255,255,.15);background:rgba(235,230,255,.07)}
+.v923-legal-header strong{font-size:17px}.v923-legal-header p{margin:5px 0 0;color:var(--muted,#a3a0aa);line-height:1.55;font-size:12px}
+.v923-legal-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px}
+.v923-legal-card{position:relative;min-width:0;min-height:102px;display:flex;flex-direction:column;align-items:flex-start;gap:8px;padding:17px 34px 17px 16px;text-align:left;border:1px solid rgba(255,255,255,.10);border-radius:16px;color:var(--text,#f3f2f7);background:linear-gradient(145deg,rgba(98,99,115,.15),rgba(22,23,30,.66));backdrop-filter:blur(20px);cursor:pointer;transition:background .2s ease,border-color .2s ease,transform .2s ease}
+.v923-legal-card strong{font-size:13px}.v923-legal-card>span:not(.v923-legal-open){font-size:11px;line-height:1.5;color:var(--muted,#a6a3af)}
+.v923-legal-card:hover,.v923-legal-card:focus-visible{background:rgba(115,105,136,.21);border-color:rgba(186,174,209,.35);transform:translateY(-2px)}
+.v923-legal-open{position:absolute;right:14px;top:14px;color:#c5b8dd;font-size:16px}.v923-legal-footer{margin:0;font-size:11px;color:var(--muted,#a6a3af)}.v923-legal-footer a{color:#d1c3ed}
+
+/* Email is not a ticket-list/inspector split. Take the ENTIRE pane. */
+.support-console-v77 .support-console-main-v77.v923-email-open{display:block!important;grid-template-columns:none!important;min-width:0!important;min-height:0!important;overflow:hidden!important;background:#0b0c10!important}
+.support-console-v77 .support-console-main-v77.v923-email-open > *{width:100%!important;max-width:none!important;min-width:0!important;min-height:0;box-sizing:border-box}
+.support-console-main-v77.v923-email-open .spaces-v913-email{display:block!important;position:relative!important;box-sizing:border-box!important;width:100%!important;max-width:none!important;height:100%!important;min-height:0!important;margin:0!important;overflow-x:hidden!important;overflow-y:auto!important;padding:clamp(14px,2vw,26px)!important}
+.support-console-main-v77.v923-email-open .v913-email-grid{width:100%!important;max-width:none!important;grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important;gap:clamp(12px,1.4vw,22px)!important}
+.support-console-main-v77.v923-email-open .v913-glass{min-width:0!important;max-width:none!important}
+.support-console-main-v77.v923-email-open .v913-preview{min-width:0;max-width:none}
+.support-console-main-v77.v923-email-open .v913-preview iframe{min-height:440px;max-height:70vh}
+@media(max-width:1110px){.support-console-main-v77.v923-email-open .v913-email-grid{grid-template-columns:minmax(0,1fr)!important}.support-console-main-v77.v923-email-open .v913-preview{position:static}}
+@media(max-width:760px){.v923-legal-grid{grid-template-columns:1fr}.support-console-main-v77.v923-email-open .spaces-v913-email{padding:12px!important}}
+
+/* One continuous banner image. Eliminate previous stacked film strips and gradients.
+ * The edge-to-edge image stays below action buttons and the avatar. */
+.profile-editor-preview{isolation:isolate!important}
+.profile-editor-preview .profile-editor-banner,
+.profile-editor-banner,
+.member-profile-drawer-banner,.profile-v77-banner,
+.space-header.has-space-banner-v42{background-image:none!important;box-shadow:none!important;}
+.profile-editor-preview .profile-editor-banner::before,
+.profile-editor-preview .profile-editor-banner::after,
+.profile-editor-preview::before,
+.profile-editor-preview::after,
+.member-profile-drawer-banner::before,
+.member-profile-drawer-banner::after,
+.profile-v77-banner::before,
+.profile-v77-banner::after,
+.space-header.has-space-banner-v42::after,
+.space-settings-v32-banner::after{content:none!important;display:none!important;background:none!important;box-shadow:none!important}
+.profile-editor-preview .profile-editor-banner,.member-profile-drawer-banner,.profile-v77-banner{position:relative!important;isolation:isolate!important;overflow:hidden!important;border:0!important}
+.profile-editor-banner .animated-backdrop-v41,
+.profile-editor-banner-media-v41,.member-profile-drawer-banner .animated-backdrop-v41,
+.profile-v77-banner .animated-backdrop-v41,.space-header-full-banner-v42{
+  position:absolute!important;inset:-2px!important;width:calc(100% + 4px)!important;height:calc(100% + 4px)!important;
+  display:block!important;opacity:1!important;filter:none!important;mix-blend-mode:normal!important;mask-image:none!important;border:0!important;box-shadow:none!important;transform:none!important}
+.profile-editor-banner .animated-backdrop-v41>img,
+.profile-editor-banner-media-v41>img,.member-profile-drawer-banner .animated-backdrop-v41>img,
+.profile-v77-banner .animated-backdrop-v41>img,.space-header-full-banner-v42>img{
+  width:100%!important;height:100%!important;opacity:1!important;filter:none!important;mix-blend-mode:normal!important;mask-image:none!important;object-fit:cover!important;border:0!important;box-shadow:none!important;transform:none!important}
+.profile-editor-preview .profile-editor-identity,.member-profile-drawer-identity{border-top:0!important;box-shadow:none!important}
+.profile-editor-banner .image-upload-button,.profile-editor-banner>button,.profile-v77-banner>button{position:relative!important;z-index:3!important;background:rgba(35,37,45,.58)!important;border:1px solid rgba(255,255,255,.15)!important;backdrop-filter:blur(15px)}
+
+/* Retire the phantom top seam over the Space image/left navigation.
+ * Keep the actual app titlebar and the header bottom separator intact. */
+.spaces-app-shell .channel-sidebar{border-top:0!important;box-shadow:none!important}
+.spaces-app-shell .channel-sidebar::before,
+.spaces-app-shell .channel-sidebar::after{border-top:0!important;box-shadow:none!important}
+.spaces-app-shell .channel-sidebar>.space-header{border-top:0!important;box-shadow:none!important}
+.spaces-app-shell .space-header.has-space-banner-v42{border-top:0!important}
+
+@media(prefers-reduced-motion:reduce){.v923-legal-card{transition:none!important;transform:none!important}}

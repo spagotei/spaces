@@ -42,3 +42,20 @@ APPLY_SAFE_MOBILE_V2*
 .DS_Store
 Thumbs.db
 dist-web/
+
+# V92 local build output
+dist-setup-v*/
+src-tauri/gen/schemas/
+
+# Local backups and temporary files
+*.bak
+*.before-*
+spaces.version.json.before-*
+spaces-v81-3-web-desktop-release-ready.json
+
+# Accidental PowerShell output files
+/V80 and V81 voice foundation*
+/ersldc-cOneDriveDocumentsSpacesApp*
+/olve-Path*
+/tem.IO.File*
+/till detects whitespace problems*

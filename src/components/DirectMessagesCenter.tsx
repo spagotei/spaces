@@ -1,5 +1,9 @@
+// SPACES_V91_PROFILE_BANNER: existing profile imports reused
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Avatar } from './Avatar'
+import { useActiveVoicePeerV87, VoiceMemberVolumeV87 } from '../features/voice/v87/VoiceMemberVolumeV87' // SPACES_V87_DM_VOLUME
+import { AnimatedBackdrop } from './AnimatedImage'
+import { usePreferences } from '../state/PreferencesContext' // SPACES_V86_DM
 import '../styles/voice-polish-v81-3.css'
 import { Icon } from './Icon'
 import { Modal } from './Modal'
@@ -24,8 +28,9 @@ import { platformRoleLabel } from '../utils/permissions'
 import { SupportGlyphV73 } from '../features/support/SupportTicketsV73'
 import { SpacesVoiceIconV81 } from '../features/voice/v81/SpacesVoiceIconV81'
 import { startSpacesDmCallV812 } from '../features/voice/v81/SpacesVoiceApiV812'
+import { useSpacesDmEventsV85 } from '../features/voice/v85/useSpacesDmEventsV85' // SPACES_V85_UI
 import { SupportMemberV77 } from '../features/support/v77/SupportMemberV77'
-import { dispatchSupportIntakeV77, openProfileV77 } from '../features/support/v77/support-v77-api'
+import { dispatchSupportIntakeV77, openProfileV77, supportV77Request, type SupportV77Profile } from '../features/support/v77/support-v77-api'
 
 export type DirectTab = 'friends' | 'support' | 'requests' | 'groups' | 'add'
 
@@ -99,6 +104,7 @@ export function DirectMessagesCenter({
   embedded?: boolean
 }) {
   const dialog = useAppDialog()
+  const { preferences } = usePreferences()
   const {
     apiUrl,
     session,
@@ -134,11 +140,23 @@ export function DirectMessagesCenter({
   const [creatingGroup, setCreatingGroup] = useState(false)
   const [busy, setBusy] = useState(false)
   const [loading, setLoading] = useState(true)
+  const hasLoadedCenterV87 = useRef(false) // SPACES_V87_NO_TAB_FLASH
   const [pinnedMessages, setPinnedMessages] = useState<PinnedDirectMessage[]>([])
   const [pinsOpen, setPinsOpen] = useState(false)
   const [typingUsersV72, setTypingUsersV72] = useState<WorkspaceTypingUser[]>([])
   const typingLastSignalV72 = useRef(0)
   const typingStopTimerV72 = useRef<number | null>(null)
+  // SPACES_V90_3_DM_PROFILE: resizable side panel, no new account permissions.
+  const [dmProfileOpenV903,setDmProfileOpenV903]=useState(false)
+  const [dmProfileWidthV903,setDmProfileWidthV903]=useState(()=>{try{return Math.max(220,Math.min(420,Number(localStorage.getItem('spaces.dmProfileWidth.v903')||280)))}catch{return 280}})
+  const dmDragV903=useRef<{x:number;w:number}|null>(null)
+  useEffect(()=>{
+    const move=(e:PointerEvent)=>{const drag=dmDragV903.current;if(drag)setDmProfileWidthV903(Math.max(220,Math.min(420,drag.w+drag.x-e.clientX)))}
+    const done=()=>{dmDragV903.current=null}
+    window.addEventListener('pointermove',move);window.addEventListener('pointerup',done);window.addEventListener('pointercancel',done)
+    return()=>{window.removeEventListener('pointermove',move);window.removeEventListener('pointerup',done);window.removeEventListener('pointercancel',done)}
+  },[])
+  useEffect(()=>{try{localStorage.setItem('spaces.dmProfileWidth.v903',String(dmProfileWidthV903))}catch{}},[dmProfileWidthV903])
   const [directProfilePerson, setDirectProfilePerson] = useState<WorkspaceDirectConversation['person'] | null>(null)
   const [groupMembersOpen, setGroupMembersOpen] = useState(false)
   const [groupInviteOpen, setGroupInviteOpen] = useState(false)
@@ -154,6 +172,29 @@ export function DirectMessagesCenter({
     ]
     return all.find(item => item.id === selectedId) ?? null
   }, [center, selectedId])
+  const [dmProfileExtraV91,setDmProfileExtraV91] = useState<Pick<SupportV77Profile, "bannerUrl" | "bio" | "customStatus"> | null>(null)
+  useEffect(() => {
+    if (!embedded || !dmProfileOpenV903 || !selected?.person.id || !session?.token) {setDmProfileExtraV91(null);return}
+    let cancelled=false
+    const id=selected.person.id
+    setDmProfileExtraV91(null)
+    void supportV77Request<SupportV77Profile>(apiUrl,session.token,`/v1/support/v77/profiles/${encodeURIComponent(id)}`)
+      .then(data=>{if(!cancelled)setDmProfileExtraV91({bannerUrl:data.bannerUrl ?? null,bio:data.bio ?? "",customStatus:data.customStatus ?? ""})})
+      .catch(()=>{if(!cancelled)setDmProfileExtraV91(null)})
+    return ()=>{cancelled=true}
+  },[apiUrl,embedded,dmProfileOpenV903,selected?.person.id,session?.token])
+
+  const [heroProfileV86, setHeroProfileV86] = useState<{ id: string; bannerUrl: string | null; bio: string } | null>(null)
+  useEffect(() => {
+    const userId = selected?.person.id
+    if (!userId || !session?.token) { setHeroProfileV86(null); return }
+    let cancelled = false
+    setHeroProfileV86(null)
+    void supportV77Request<SupportV77Profile>(apiUrl, session.token, '/v1/support/v77/profiles/' + encodeURIComponent(userId))
+      .then(result => { if (!cancelled) setHeroProfileV86({id:userId,bannerUrl:result.bannerUrl ?? null,bio:result.bio ?? ''}) })
+      .catch(() => { if (!cancelled) setHeroProfileV86(null) })
+    return () => { cancelled = true }
+  }, [apiUrl, session?.token, selected?.person.id])
 
   const selectedGroup = useMemo(
     () => center.groups.find(item => item.id === selectedGroupId) ?? null,
@@ -313,7 +354,7 @@ export function DirectMessagesCenter({
   }
 
   async function reload() {
-    setLoading(true)
+    if (!hasLoadedCenterV87.current) setLoading(true)
     try {
       const next = await getDirectCenter()
       const normalized = {
@@ -325,6 +366,7 @@ export function DirectMessagesCenter({
         supportThread: (next as DirectCenterV59).supportThread ?? null,
       } as DirectCenterV59
       setCenter(normalized)
+      hasLoadedCenterV87.current = true
       if (
         selectedId &&
         ![
@@ -534,7 +576,7 @@ export function DirectMessagesCenter({
     setGroupMemberIds(current =>
       current.includes(userId)
         ? current.filter(id => id !== userId)
-        : current.length >= 9
+        : current.length >= 19
           ? current
           : [...current, userId],
     )
@@ -848,7 +890,7 @@ export function DirectMessagesCenter({
       embedded={embedded}
       hideHeader={embedded}
     >
-      <div className={`direct-center-v23 direct-center-v43 direct-center-v53 ${embedded ? 'direct-center-embedded-v55' : ''}`}>
+      <div style={{'--dm-profile-width-v903':dmProfileWidthV903+'px'} as import('react').CSSProperties} className={`direct-center-v23 direct-center-v43 direct-center-v53 ${embedded ? 'direct-center-embedded-v55' : ''} ${embedded && selected && dmProfileOpenV903 ? 'has-dm-profile-v903' : ''}`}>
         {!embedded && <aside className="direct-center-sidebar-v23 direct-center-sidebar-v43">
           <button
             className={tab === 'friends' ? 'active' : ''}
@@ -890,7 +932,8 @@ export function DirectMessagesCenter({
           ) : selected ? (
             <DirectThread
               conversation={selected}
-              isFounderV813={profile?.platformRole === 'founder'}
+              showBannerV86={preferences.dmBannersV86}
+              headerProfileV86={heroProfileV86?.id === selected.person.id ? heroProfileV86 : null}
               messages={messages}
               draft={draft}
               setDraft={value => selected && updateDirectDraftV72(value, 'dm', selected.id, setDraft)}
@@ -916,8 +959,11 @@ export function DirectMessagesCenter({
               onProfile={() => openProfileV77(selected.person.id, selected.person)}
               onMore={(x, y) => threadMenu.open(selected.person.displayName, directHeaderActions(selected), x, y, `@${selected.person.username}`)}
               onOpenProfile={() => setDirectProfilePerson(selected.person)}
-              onVoiceCall={() => startSpacesDmCallV812({conversationId:selected.id,displayName:selected.person.displayName,avatarUrl:selected.person.avatarUrl})}
-              onVideoCall={() => startSpacesDmCallV812({conversationId:selected.id,displayName:selected.person.displayName,video:true,avatarUrl:selected.person.avatarUrl})}
+              onSidebarProfileToggleV904={() => setDmProfileOpenV903(value => !value)}
+              sidebarProfileOpenV904={dmProfileOpenV903}
+              sidebarProfileAvailableV904={embedded}
+              onVoiceCall={() => startSpacesDmCallV812({conversationId:selected.id,displayName:selected.person.displayName,video:false,personId:selected.person.id,avatarUrl:selected.person.avatarUrl})}
+              onVideoCall={() => startSpacesDmCallV812({conversationId:selected.id,displayName:selected.person.displayName,video:true,personId:selected.person.id,avatarUrl:selected.person.avatarUrl})}
             />
           ) : selectedGroup ? (
             <div className={`direct-group-shell-v67 ${groupMembersOpen ? 'members-open' : ''}`}>
@@ -995,14 +1041,14 @@ export function DirectMessagesCenter({
                     <div className="direct-group-invite-picker-v67">
                       {center.conversations
                         .filter(conversation =>
-                          !selectedGroup.members.some(member => member.id === conversation.person.id),
+                          conversation.status === 'accepted' && !selectedGroup.members.some(member => member.id === conversation.person.id),
                         )
                         .map(conversation => (
                           <button
                             type="button"
                             className="direct-group-invite-person-v67"
                             key={conversation.person.id}
-                            disabled={groupInviteBusy === conversation.person.id}
+                            disabled={selectedGroup.members.length >= 20 || groupInviteBusy === conversation.person.id}
                             onClick={() => void inviteDirectGroupMember(
                               selectedGroup.id,
                               conversation.person.id,
@@ -1311,6 +1357,15 @@ export function DirectMessagesCenter({
           )}
         <DirectTypingIndicatorV72 users={typingUsersV72}/>
         </section>
+        {/* SPACES_V90_4_DM_HEADER_PROFILE: toggled in the DM header, not at the bottom */}
+        {embedded && selected && dmProfileOpenV903 && <aside className="dm-profile-panel-v903" aria-label={selected.person.displayName+' profile'}>
+          <div className="dm-profile-banner-v91" aria-hidden="true" style={dmProfileExtraV91?.bannerUrl ? {backgroundImage:`linear-gradient(180deg,rgba(0,0,0,.10),rgba(0,0,0,.52)),url(${JSON.stringify(dmProfileExtraV91.bannerUrl)})`} : undefined}/>
+          <button className="dm-profile-resize-v903" title="Drag to resize profile" aria-label="Resize DM profile" onPointerDown={event=>{if(window.innerWidth>900){event.preventDefault();dmDragV903.current={x:event.clientX,w:dmProfileWidthV903}}}}/>
+          <div className="dm-profile-identity-v903"><Avatar name={selected.person.displayName} initials={selected.person.initials} src={selected.person.avatarUrl} size={76} accent={selected.person.profileAccent}/><strong>{selected.person.displayName}</strong><small>@{selected.person.username}</small></div>
+          {dmProfileExtraV91?.customStatus && <p className="dm-profile-bio-v91">{dmProfileExtraV91.customStatus}</p>}
+          {dmProfileExtraV91?.bio && <p className="dm-profile-bio-v91">{dmProfileExtraV91.bio}</p>}
+          <div className="dm-profile-actions-v903"><button type="button" onClick={()=>openProfileV77(selected.person.id,selected.person)}>Full profile</button><button type="button" onClick={()=>setDmProfileOpenV903(false)}>Close</button></div>
+        </aside>}
       </div>
       {directProfilePerson && (
         <DirectPersonProfileCard
@@ -1376,7 +1431,7 @@ function CreateGroup({
         <div>
           <span className="eyebrow">NEW GROUP CHAT</span>
           <h2>Create a private group</h2>
-          <p>Choose up to 9 friends. You are included automatically.</p>
+          <p>Choose up to 19 accepted friends. You are included automatically.</p>
         </div>
         <button className="secondary-button compact" onClick={onCancel}>
           Cancel
@@ -1402,7 +1457,7 @@ function CreateGroup({
               key={friend.id}
               className={checked ? 'active' : ''}
               onClick={() => toggleFriend(friend.person.id)}
-              disabled={!checked && selectedIds.length >= 9}
+              disabled={!checked && selectedIds.length >= 19}
             >
               <Avatar
                 name={friend.person.displayName}
@@ -1421,7 +1476,7 @@ function CreateGroup({
         })}
       </div>
       <div className="direct-group-create-footer-v43">
-        <span>{selectedIds.length + 1}/10 members</span>
+        <span>{selectedIds.length + 1}/20 members</span>
         <button
           className="primary-button"
           disabled={busy || !groupName.trim() || selectedIds.length < 1}
@@ -1531,6 +1586,7 @@ function DirectPersonProfileCard({
   onClose: () => void
   onMore: (x: number, y: number) => void
 }) {
+  const activePeerIdV87 = useActiveVoicePeerV87()
   return (
     <>
       <button
@@ -1575,6 +1631,7 @@ function DirectPersonProfileCard({
             <small>@{person.username}</small>
           </div>
 
+          {activePeerIdV87 === person.id && <VoiceMemberVolumeV87 userId={person.id} displayName={person.displayName}/>}
           <div className="direct-profile-actions-v66">
             <button type="button" onClick={onClose}>
               <Icon name="message" size={14}/>
@@ -1601,6 +1658,8 @@ function DirectPersonProfileCard({
 
 function DirectThread({
   conversation,
+  showBannerV86,
+  headerProfileV86,
   messages,
   draft,
   setDraft,
@@ -1620,11 +1679,15 @@ function DirectThread({
   onProfile,
   onMore,
   onOpenProfile,
+  onSidebarProfileToggleV904,
+  sidebarProfileOpenV904,
+  sidebarProfileAvailableV904,
   onVoiceCall,
   onVideoCall,
-  isFounderV813,
 }: {
   conversation: WorkspaceDirectConversation
+  showBannerV86: boolean
+  headerProfileV86: {id:string; bannerUrl:string|null; bio:string} | null
   messages: WorkspaceDirectMessage[]
   draft: string
   setDraft: (value: string) => void
@@ -1650,21 +1713,30 @@ function DirectThread({
   onProfile: () => void
   onMore: (x: number, y: number) => void
   onOpenProfile: () => void
+  onSidebarProfileToggleV904: () => void
+  sidebarProfileOpenV904: boolean
+  sidebarProfileAvailableV904: boolean
   onVoiceCall: () => void
   onVideoCall: () => void
-  isFounderV813: boolean
 }) {
   const incoming = conversation.status === 'pending' && !conversation.requestedByMe
   const outgoing = conversation.status === 'pending' && conversation.requestedByMe
+  const callEventsV85 = useSpacesDmEventsV85(conversation.id)
+  const feedRowsV85 = [
+    ...messages.map(message => ({type: 'message' as const, id: message.id, createdAt: message.createdAt, message})),
+    ...callEventsV85.map(event => ({type: 'call' as const, id: 'call-'+event.callId, createdAt: event.createdAt, event})),
+  ].sort((a,b) => a.createdAt - b.createdAt)
 
   return (
     <div className="direct-thread-v23 direct-thread-v63">
-      <header>
+      <header className="spaces-v86-dm-header">
+        <div className="spaces-v86-header-banner" aria-hidden="true">
+          {showBannerV86 && headerProfileV86?.bannerUrl && <AnimatedBackdrop src={headerProfileV86.bannerUrl} className="spaces-v86-dm-banner-image" mode="always" />}
+        </div>
         <span className="spaces-founder-avatar-v813">
           <button className="direct-profile-avatar-button-v77" title="View profile" onClick={onProfile} onContextMenu={event => { event.preventDefault(); onMore(event.clientX, event.clientY) }}>
             <Avatar name={conversation.person.displayName} initials={conversation.person.initials} src={conversation.person.avatarUrl} size={38} accent={conversation.person.profileAccent} />
           </button>
-          {isFounderV813 && <button type="button" className="spaces-founder-shield-v813" title="Spaces team · Founder only" aria-label={`Manage Spaces team role for ${conversation.person.displayName}`} onClick={() => window.dispatchEvent(new CustomEvent('spaces-founder-team-v813', { detail: { username: conversation.person.username } }))}><Icon name="shield" size={13}/></button>}
         </span>
         <div>
           <button
@@ -1675,16 +1747,24 @@ function DirectThread({
         >
           <strong>{conversation.person.displayName}</strong>
         </button>
-          <span>
+          <span className="spaces-v85-dm-status" title={conversation.person.customStatus || conversation.person.presence}>
             @{conversation.person.username}
             {conversation.person.publicUserId
               ? ` · #${conversation.person.publicUserId}`
               : ''}
+            {conversation.person.customStatus ? ' · ' + conversation.person.customStatus.slice(0,50) : ' · ' + conversation.person.presence}
           </span>
+          {headerProfileV86?.bio && <small className="spaces-v86-header-bio" title={headerProfileV86.bio}>{headerProfileV86.bio.slice(0,110)}</small>}
         </div>
         <PlatformVerifiedBadge role={conversation.person.platformRole} />
         {/* SPACES_V81_2_DM_HEADER */}
         <div className="direct-thread-tools-v63">
+          {sidebarProfileAvailableV904 && <button type="button"
+            className={`direct-thread-tool-v63 dm-profile-header-button-v904 ${sidebarProfileOpenV904 ? 'active' : ''}`}
+            title={sidebarProfileOpenV904 ? 'Hide profile sidebar' : 'Show profile sidebar'}
+            aria-label={sidebarProfileOpenV904 ? 'Hide profile sidebar' : 'Show profile sidebar'}
+            aria-pressed={sidebarProfileOpenV904}
+            onClick={onSidebarProfileToggleV904}><Icon name="user" size={16}/></button>}
           {conversation.status === 'accepted' && !blocked && <><button className="direct-thread-tool-v63" type="button" title="Start voice call" aria-label="Start voice call" onClick={onVoiceCall}><SpacesVoiceIconV81 name="phone" size={17}/></button><button className="direct-thread-tool-v63" type="button" title="Start video call" aria-label="Start video call" onClick={onVideoCall}><SpacesVoiceIconV81 name="video" size={18}/></button></>}
           <button className={`direct-thread-tool-v63 ${pinsOpen ? 'active' : ''}`} title="Pinned messages" onClick={onPinsOpen}><Icon name="pin" size={15}/>{pinnedMessages.length > 0 && <small>{pinnedMessages.length > 9 ? '9+' : pinnedMessages.length}</small>}</button>
           <button className="direct-thread-tool-v63" title="Report" onClick={onReport}><Icon name="shield" size={15}/></button>
@@ -1697,6 +1777,7 @@ function DirectThread({
           </div>
         </aside>}
       </header>
+      <div id="spaces-v86-call-slot" data-conversation-id={conversation.id} aria-label="Current DM call" />
       {incoming ? (
         <div className="direct-request-hero-v23">
           <Icon name="members" size={24} />
@@ -1720,8 +1801,16 @@ function DirectThread({
       ) : (
         <>
           <div className="direct-message-feed-v23 direct-message-feed-v28">
-            {messages.length ? (
-              messages.map(message => {
+            {feedRowsV85.length ? (
+              feedRowsV85.map(entry => {
+                if (entry.type === 'call') {
+                  const e = entry.event
+                  const label = e.kind === 'missed' ? (e.direction === 'incoming' ? 'Missed call' : 'Call unanswered')
+                    : e.kind === 'declined' ? 'Call declined'
+                    : 'Call lasted ' + Math.floor(e.durationSeconds/60) + 'm ' + (e.durationSeconds%60) + 's'
+                  return <div className="spaces-v85-call-event" key={entry.id}><Icon name="phone" size={13}/><span>{label}</span><time>{timeAgo(e.createdAt)}</time></div>
+                }
+                const message = entry.message
                 const own = message.senderUserId === currentUserId
                 return (
                   <div

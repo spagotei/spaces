@@ -1,0 +1,147 @@
+/* SPACES_V92_5_NOTES_STATUS_SEAM — small, late-loaded UI correction. */
+
+/* The workspace/channel header should not draw a bright top seam below the native titlebar.
+   Keep its normal bottom divider to preserve the layout hierarchy. */
+@media (min-width: 761px) {
+  html .spaces-app-shell .channel-sidebar {
+    border-top: 0 !important;
+    outline: 0 !important;
+    box-shadow: none !important;
+  }
+  html .spaces-app-shell .channel-sidebar > .space-header {
+    border-top: 0 !important;
+    outline: 0 !important;
+    box-shadow: none !important;
+  }
+}
+
+/* Notes: let the editor consume the remaining workspace width instead of clipping. */
+.spaces-app-shell .notes-view,
+.spaces-app-shell .notes-view-v70,
+.spaces-app-shell .notes-view-v9,
+.spaces-app-shell .notes-folder-zone-v89,
+.spaces-app-shell .notes-folder-tabs-v89,
+.spaces-app-shell .notes-folder-tools-v89,
+.spaces-app-shell .note-list-panel,
+.spaces-app-shell .note-editor-panel {
+  box-sizing: border-box;
+  min-width: 0 !important;
+  max-width: 100% !important;
+}
+.spaces-app-shell .notes-view-v70,
+.spaces-app-shell .notes-view-v9 {
+  grid-template-columns: minmax(160px, 220px) minmax(0, 1fr) !important;
+  width: 100% !important;
+  overflow: hidden !important;
+}
+.spaces-app-shell .note-editor-panel { overflow-x: hidden !important; }
+.spaces-app-shell .notes-folder-zone-v89 { overflow: hidden; }
+.spaces-app-shell .notes-folder-tabs-v89 {
+  display: flex; flex-wrap: nowrap; gap: 7px;
+  min-width: 0; max-width: 100%; overflow-x: auto; overflow-y: hidden;
+  scrollbar-width: thin; padding-bottom: 3px;
+}
+.spaces-app-shell .notes-folder-tabs-v89 > * { flex-shrink: 0; }
+.spaces-app-shell .notes-folder-tools-v89 {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
+}
+.spaces-app-shell .note-editor-toolbar {
+  box-sizing: border-box; height: auto !important; min-height: 56px;
+  display: flex; flex-wrap: wrap; min-width: 0; width: 100%;
+  gap: 8px; padding: 9px 12px !important;
+}
+.spaces-app-shell .note-editor-toolbar > div,
+.spaces-app-shell .note-editor-actions {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 6px;
+  min-width: 0; max-width: 100%;
+}
+.spaces-app-shell .note-editor-actions button { white-space: nowrap; max-width: 100%; }
+.spaces-app-shell .note-title-input {
+  box-sizing: border-box; width: 100%; min-width: 0; max-width: 100%;
+  font-size: clamp(20px, 2.2vw, 34px) !important;
+  line-height: 1.2; padding: 16px 18px 5px !important;
+  overflow: hidden; text-overflow: ellipsis;
+}
+.spaces-app-shell .note-editor-panel :is(h1,h2,h3,p,[contenteditable="true"],.ProseMirror,.tiptap) {
+  max-width: 100%; min-width: 0;
+  overflow-wrap: anywhere; word-break: break-word;
+}
+.spaces-app-shell .note-editor-panel :is(.ProseMirror,.tiptap,[contenteditable="true"]) {
+  white-space: pre-wrap;
+  box-sizing: border-box;
+  overflow-x: hidden;
+}
+.spaces-app-shell .note-editor-panel :is(h1,.note-title) {
+  font-size: clamp(21px, 2.5vw, 36px) !important;
+  line-height: 1.2 !important;
+}
+.spaces-app-shell .note-body-input {
+  box-sizing: border-box; width: 100%; max-width: 100%; min-width: 0;
+  padding-inline: clamp(12px, 2.2vw, 28px);
+}
+
+/* When Comments opens in a narrow desktop chat area, let it overlay the editor
+   rather than forcing Notes into three unusable columns. */
+@media (min-width: 761px) and (max-width: 1500px) {
+  .spaces-app-shell .notes-view-v70.comments-open-v70 {
+    position: relative;
+    grid-template-columns: minmax(160px, 220px) minmax(0,1fr) !important;
+  }
+  .spaces-app-shell .notes-view-v70.comments-open-v70 > .comments-panel-v70 {
+    position: absolute !important;
+    inset: 0 0 0 auto !important;
+    width: min(350px, 86%) !important;
+    z-index: 30;
+    background: rgba(16,16,23,.98) !important;
+    border-left: 1px solid rgba(255,255,255,.12);
+    box-shadow: -20px 0 35px rgba(0,0,0,.32);
+  }
+}
+@media (min-width: 761px) and (max-width: 1050px) {
+  .spaces-app-shell .notes-view-v70,
+  .spaces-app-shell .notes-view-v9 { grid-template-columns: minmax(135px, 175px) minmax(0,1fr) !important; }
+  .spaces-app-shell .note-editor-toolbar { padding: 7px 9px !important; }
+  .spaces-app-shell .note-editor-panel :is(h1,.note-title) { font-size: clamp(19px,2.5vw,27px) !important; }
+}
+/* Preserve mobile's existing stacked Notes navigation. */
+@media (max-width: 760px) {
+  .spaces-app-shell .notes-view-v70,
+  .spaces-app-shell .notes-view-v9 { display:block !important; overflow-x:hidden !important; overflow-y:auto !important; }
+  .spaces-app-shell .note-list-panel { max-height: 220px; }
+  .spaces-app-shell .note-editor-panel { min-height: 370px; }
+}
+
+/* One consistent avatar + bottom-right presence badge, including DND and Idle. */
+.account-quick-menu .quick-presence-list > button {
+  box-sizing: border-box;
+  display: grid !important;
+  grid-template-columns: 36px minmax(0,1fr) 18px !important;
+  align-items: center !important;
+  min-height: 53px; gap: 10px;
+}
+.account-quick-menu .quick-presence-list > button > div:not(.avatar) { min-width: 0; }
+.account-quick-menu .spaces-v925-presence-avatar {
+  position: relative !important;
+  display: block; flex: 0 0 32px;
+  width: 32px; height: 32px; min-width: 32px;
+}
+.account-quick-menu .spaces-v925-presence-avatar > .avatar {
+  width: 32px !important; height: 32px !important;
+  border-radius: 50% !important;
+  opacity: .88;
+}
+.account-quick-menu .spaces-v925-presence-avatar > .presence-symbol,
+.account-quick-menu .account-quick-avatar.profile-avatar-presence > .presence-symbol {
+  position: absolute !important;
+  top: auto !important;
+  left: auto !important;
+  right: -3px !important;
+  bottom: -3px !important;
+  margin: 0 !important;
+  transform: none !important;
+  z-index: 3 !important;
+  box-shadow: 0 0 0 2px #111017;
+}
+@media (prefers-reduced-motion: reduce) {
+  .spaces-app-shell .notes-view * { scroll-behavior: auto !important; }
+}

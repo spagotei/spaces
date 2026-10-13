@@ -1,0 +1,71 @@
+/* SPACES_V92_1 — app-only UI polish, respecting user reduced-motion and the dark Spaces design. */
+
+/* DM portraits: same visual footprint as the main Space icons, unread only in JSX. */
+.spaces-app-shell .spaces-v881-dm-rail { gap: 7px; margin: 0; padding: 0 3px 10px; max-height: 32vh; overflow-x: hidden; }
+.spaces-app-shell .spaces-v881-dm-avatar {
+  width: 52px; height: 52px; padding: 3px; flex: 0 0 52px;
+  border-radius: 17px; background: rgba(20,21,28,.84);
+  border: 1px solid rgba(255,255,255,.105); box-shadow: none;
+}
+.spaces-app-shell .spaces-v881-dm-avatar > .avatar { width: 46px!important; height: 46px!important; max-width: 46px; max-height: 46px; border-radius: 50%!important; }
+.spaces-app-shell .spaces-v881-dm-count { right:-1px; bottom:-1px; background:#d64f67; color:#fff; border: 2px solid #0a0b10; min-width:19px; height:19px; border-radius:999px; }
+.spaces-app-shell .spaces-v881-dm-avatar:hover { border-radius:14px; background:rgba(40,42,52,.85) }
+
+/* Banner seam prevention: one full-bleed layer, never stacked strips or tiled artwork. */
+.profile-editor-preview .profile-editor-banner,
+.space-header.has-space-banner-v42 { position:relative; isolation:isolate; overflow:hidden; }
+.profile-editor-preview .profile-editor-banner-media-v41,
+.profile-editor-preview .profile-editor-banner-media-v41 > img,
+.space-header .space-header-full-banner-v42,
+.space-header .space-header-full-banner-v42 > img {
+  inset:0!important; width:100%!important; height:100%!important;
+  object-fit:cover!important; object-position:center!important; background-repeat:no-repeat!important;
+  background-size:cover!important; background-position:center!important;
+  transform:none!important; border:0!important; box-shadow:none!important;
+}
+.profile-editor-preview .profile-editor-banner-media-v41 > img,
+.space-header .space-header-full-banner-v42 > img {display:block!important;}
+.profile-editor-preview .profile-editor-banner::before { content:''; pointer-events:none; position:absolute; inset:0; z-index:1; background:linear-gradient(180deg,rgba(5,6,9,.12),rgba(5,6,9,.40)); }
+.profile-editor-preview .profile-editor-banner > .image-upload-button {position:relative; z-index:2; backdrop-filter:blur(12px); background:rgba(19,20,25,.56);}
+
+/* Distinct, consistently dark personal themes; Space-owned wallpaper remains independent. */
+html[data-theme='obsidian'] { --bg-0:#08080a;--bg-1:#101015;--bg-2:#15151b;--bg-3:#1c1b22;--glass:rgba(16,16,21,.72);--glass-strong:rgba(19,19,25,.95); }
+html[data-theme='midnight'] { --bg-0:#060a14;--bg-1:#091121;--bg-2:#101a2c;--bg-3:#172237;--glass:rgba(9,16,32,.76);--glass-strong:rgba(12,18,33,.96); }
+html[data-theme='slate'] { --bg-0:#0b0f13;--bg-1:#14191e;--bg-2:#1d252b;--bg-3:#273039;--glass:rgba(22,28,34,.75);--glass-strong:rgba(25,31,38,.96); }
+html[data-theme='soft'] { --bg-0:#171720;--bg-1:#20202b;--bg-2:#292936;--bg-3:#323341;--glass:rgba(47,46,60,.62);--glass-strong:rgba(40,41,53,.93); }
+html[data-theme] body { background:var(--bg-0)!important; }
+html[data-theme] .spaces-app-shell { background:var(--bg-0)!important; }
+html[data-theme] .channel-sidebar, html[data-theme] .member-rail { background:var(--glass-strong)!important; }
+html[data-theme] .spaces-app-shell:not(.has-space) .main-stage,html[data-theme] .spaces-app-shell:not(.has-space) .view-host {background:color-mix(in srgb,var(--bg-0) 90%,var(--bg-2))!important;}
+/* Shared Space artwork must remain visible behind content, independent of personal themes. */
+html[data-theme] .spaces-app-shell.has-space .main-stage,html[data-theme] .spaces-app-shell.has-space .view-host {background:transparent!important;}
+html[data-theme] .personal-settings-shell,html[data-theme] .modal,
+html[data-theme] .settings-card {background:var(--glass-strong)!important;}
+html[data-theme='midnight'] .spaces-app-shell:not(.has-space)::before { background:radial-gradient(ellipse at 75% 3%,rgba(44,74,122,.25),transparent 45%),var(--bg-0)!important; }
+html[data-theme='slate'] .spaces-app-shell:not(.has-space)::before { background:radial-gradient(ellipse at 70% -8%,rgba(123,143,151,.18),transparent 40%),var(--bg-0)!important; }
+html[data-theme='soft'] .spaces-app-shell:not(.has-space)::before { background:radial-gradient(ellipse at 80% 0%,rgba(156,153,179,.15),transparent 45%),var(--bg-0)!important; }
+html[data-glass='off'] .channel-sidebar,html[data-glass='off'] .member-rail,html[data-glass='off'] .settings-card {backdrop-filter:none!important;}
+
+/* Notes folder chips: click opens, right-click or ellipsis opens settings. */
+.spaces-v921-notes-folders .spaces-v921-folder-chip {display:inline-flex;align-items:center; flex:0 0 auto;min-width:0; border-radius:10px;border:1px solid rgba(255,255,255,.07);background:rgba(255,255,255,.027);}
+.spaces-v921-notes-folders .spaces-v921-folder-chip.active {background:rgba(164,151,185,.14);border-color:rgba(199,186,216,.24)}
+.spaces-v921-notes-folders .spaces-v921-folder-chip .spaces-v921-folder-select {min-width:0;max-width:180px;display:inline-flex;align-items:center;gap:6px;padding-inline:10px 6px;background:transparent;border:0;}
+.spaces-v921-notes-folders .spaces-v921-folder-select span {display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.spaces-v921-notes-folders .spaces-v921-folder-menu {display:grid;place-items:center;flex:0 0 25px;height:29px;background:transparent;border:0;border-radius:8px;color:var(--muted);}
+.spaces-v921-notes-folders .spaces-v921-folder-menu:hover {background:rgba(255,255,255,.1);color:#fff;}
+
+/* Submenus live in a portal so tall role lists won't create horizontal scrollbars. */
+.spaces-context-submenu-v921 {position:fixed!important; width:min(282px,calc(100vw - 24px));max-height:min(470px,calc(100vh - 24px));overflow-y:auto!important;overflow-x:hidden!important;z-index:100001!important;padding:7px;border:1px solid rgba(255,255,255,.14);border-radius:14px;background:rgba(21,22,28,.99);box-shadow:0 22px 48px rgba(0,0,0,.48);backdrop-filter:blur(20px)}
+.spaces-context-submenu-v921 button {width:100%;}
+.spaces-context-submenu-v921::-webkit-scrollbar {width:5px;}
+.spaces-context-submenu-v921::-webkit-scrollbar-thumb {background:rgba(255,255,255,.16);border-radius:5px;}
+
+/* Call overlay configuration stays in one collapsible Settings section. */
+.spaces-v921-settings-accordion {margin:10px 0 18px;padding:0 13px;border:1px solid rgba(255,255,255,.10);border-radius:14px;background:rgba(255,255,255,.022);}
+.spaces-v921-settings-accordion > summary {list-style:none;display:flex;align-items:center;justify-content:space-between;cursor:pointer;min-height:49px;font-size:12px;font-weight:700;color:var(--text);}
+.spaces-v921-settings-accordion > summary::-webkit-details-marker{display:none}
+.spaces-v921-settings-accordion > summary::after {content:'⌄';font-size:18px;color:var(--muted);transition:transform .2s ease;}
+.spaces-v921-settings-accordion[open] > summary::after {transform:rotate(180deg)}
+.spaces-v921-settings-accordion > .settings-footnote {padding:0 0 12px}
+@media(max-width:900px){.spaces-context-submenu-v921{width:min(340px,calc(100vw - 24px))}.spaces-v921-notes-folders .spaces-v921-folder-select{max-width:125px}}
+@media(prefers-reduced-motion:reduce){.spaces-v921-settings-accordion > summary::after{transition:none!important}}

@@ -101,31 +101,46 @@ export function useContextMenu() {
   return { menu, close, bind, open }
 }
 
+// SPACES_V92_1_ROLE_SUBMENU — portal prevents Roles submenu clipping and horizontal scrollbars.
 function ContextActionButton({ action, onClose }: { action: ContextAction; onClose: () => void }) {
   const [open, setOpen] = useState(false)
+  const [position, setPosition] = useState({ left: 12, top: 12 })
+  const trigger = useRef<HTMLButtonElement>(null)
+  const closeTimer = useRef<number | null>(null)
   const hasSubmenu = Boolean(action.submenu?.length)
+  useEffect(() => () => { if (closeTimer.current !== null) window.clearTimeout(closeTimer.current) }, [])
+  const cancelClose = () => { if (closeTimer.current !== null) window.clearTimeout(closeTimer.current); closeTimer.current = null }
+  const scheduleClose = () => { cancelClose(); closeTimer.current = window.setTimeout(() => setOpen(false), 150) }
+  const show = () => {
+    if (!hasSubmenu || action.disabled) return
+    cancelClose()
+    const rect = trigger.current?.getBoundingClientRect()
+    if (rect) {
+      const width = Math.min(282, window.innerWidth - 24)
+      const goLeft = rect.right + width + 8 > window.innerWidth
+      const left = Math.max(12, Math.min(window.innerWidth - width - 12, goLeft ? rect.left - width - 7 : rect.right + 7))
+      const top = Math.max(12, Math.min(rect.top - 5, window.innerHeight - 80))
+      setPosition({ left, top })
+    }
+    setOpen(true)
+  }
   return (
-    <div className={`context-action-wrap-v70 ${action.separatorBefore ? 'separator-v70' : ''}`} onMouseLeave={() => setOpen(false)}>
-      <button
-        role="menuitem"
+    <div className={`context-action-wrap-v70 ${action.separatorBefore ? 'separator-v70' : ''}`} onMouseEnter={cancelClose} onMouseLeave={scheduleClose}>
+      <button ref={trigger} type="button" role="menuitem" aria-haspopup={hasSubmenu ? 'menu' : undefined} aria-expanded={hasSubmenu ? open : undefined}
         className={`${action.danger ? 'danger' : ''} ${action.checked ? 'checked' : ''}`}
         disabled={action.disabled}
-        onMouseEnter={() => hasSubmenu && setOpen(true)}
-        onClick={() => {
-          if (hasSubmenu) { setOpen(value => !value); return }
-          onClose()
-          void action.onSelect?.()
-        }}
-      >
+        onMouseEnter={() => { if (hasSubmenu) show() }}
+        onKeyDown={event => { if (hasSubmenu && event.key === 'ArrowRight') { event.preventDefault(); show() } else if (hasSubmenu && event.key === 'ArrowLeft') { event.preventDefault(); setOpen(false) } }}
+        onClick={event => { if (hasSubmenu) { if (!open) show(); else if ('pointerType' in event.nativeEvent && event.nativeEvent.pointerType === 'touch') setOpen(false); return } onClose(); void action.onSelect?.() }}>
         <span className="context-action-icon">{action.icon ? <Icon name={action.icon} size={15}/> : <span/>}</span>
         <span className="context-action-copy"><strong>{action.label}</strong>{action.note && <small>{action.note}</small>}</span>
         {action.checked && <Icon name="check" size={14}/>}
         {hasSubmenu && <Icon name="chevron" size={12}/>}
       </button>
-      {hasSubmenu && open && (
-        <aside className="spaces-context-submenu-v70" role="menu">
+      {hasSubmenu && open && createPortal(
+        <aside className="spaces-context-submenu-v921" role="menu" style={{ left: position.left, top: position.top }} onMouseEnter={cancelClose} onMouseLeave={scheduleClose}>
           {action.submenu!.map(child => <ContextActionButton key={child.id} action={child} onClose={onClose}/>) }
-        </aside>
+        </aside>, document.body
       )}
     </div>
   )

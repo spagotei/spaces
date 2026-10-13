@@ -1,7 +1,7 @@
 import type { SVGProps } from 'react'
 
 export type IconName =
-  | 'home' | 'hash' | 'chat' | 'notes' | 'members' | 'settings' | 'roles'
+  | 'folder' | 'home' | 'hash' | 'chat' | 'notes' | 'members' | 'settings' | 'roles'
   | 'emoji' | 'plus' | 'search' | 'chevron' | 'send' | 'paperclip' | 'x'
   | 'menu' | 'sparkle' | 'logout' | 'edit' | 'trash' | 'shield' | 'bell'
   | 'activity' | 'command' | 'grid' | 'monitor' | 'tablet' | 'phone'
@@ -9,6 +9,7 @@ export type IconName =
   | 'refresh' | 'rotate' | 'maximize' | 'minimize' | 'copy' | 'upload' | 'pin' | 'message'
 
 const paths: Record<IconName, string[]> = {
+  folder: ['M3 6h6l2 2h10v12H3V6Z'],
   home: ['M3 10.5 12 3l9 7.5', 'M5 9.5V21h14V9.5', 'M9 21v-7h6v7'],
   hash: ['M10 3 8 21', 'M16 3l-2 18', 'M4 9h16', 'M3 15h16'],
   chat: ['M4 5h16v11H8l-4 4V5Z'],

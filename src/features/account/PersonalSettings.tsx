@@ -1,3 +1,5 @@
+import { PersonalEmailPreferencesV924 } from '../support/v77/EmailGovernanceV924' // SPACES_V924_PERSONAL_EMAIL_PREFERENCES
+import { LegalSettingsEntryV80 } from '../legal/v80/LegalSettingsEntryV80' // SPACES_V923_PERSONAL_LEGAL
 import { useEffect, useMemo, useRef, useState, type ChangeEvent, type CSSProperties } from 'react'
 import { Avatar } from '../../components/Avatar'
 import { AnimatedBackdrop } from '../../components/AnimatedImage'
@@ -16,16 +18,18 @@ import { formatPublicUserId } from '../../utils/public-id'
 import { platformRoleLabel } from '../../utils/permissions'
 import { ensureMobileNotificationPermissionV72, isMobileDeviceV72 } from '../../utils/native-notifications'
 
-export type PersonalSettingsTab = 'profile' | 'content' | 'appearance' | 'accessibility' | 'notifications' | 'security' | 'developer'
+export type PersonalSettingsTab = 'profile' | 'content' | 'calls' | 'appearance' | 'accessibility' | 'notifications' | 'security' | 'developer' | 'legal'
 type Tab = PersonalSettingsTab
 
 const tabs: { id: Tab; label: string; icon: IconName }[] = [
   { id: 'profile', label: 'My Profile', icon: 'user' },
   { id: 'content', label: 'Content & Safety', icon: 'shield' },
   { id: 'appearance', label: 'Appearance', icon: 'sparkle' },
+  { id: 'calls', label: 'Calls & Overlays', icon: 'phone' }, // SPACES_V86_SETTINGS
   { id: 'accessibility', label: 'Accessibility', icon: 'monitor' },
   { id: 'notifications', label: 'Notifications', icon: 'bell' },
   { id: 'security', label: 'Security', icon: 'lock' },
+  { id: 'legal', label: 'Legal & Policies', icon: 'notes' },
   { id: 'developer', label: 'Developer Mode', icon: 'command' },
 ]
 
@@ -432,10 +436,37 @@ export function PersonalSettings({ onClose, initialTab = 'profile' }: { onClose:
             </div>
             <ChoiceRow title="Message density" description="Comfortable gives conversations more breathing room." value={preferences.messageDensity} options={[['comfortable', 'Comfortable'], ['compact', 'Compact']]} onChange={value => setPreference('messageDensity', value as MessageDensity)} />
             <ToggleRow title="Glass effects" description="Blurred translucent surfaces and layered depth." checked={preferences.glassEffects} onChange={value => setPreference('glassEffects', value)} />
+            <ChoiceRow title="Smoked glass finish" description="Graphite grey or deeper black translucent panels." value={preferences.glassToneV86} options={[["smoke", "Graphite grey"], ["black", "Smoked black"]]} onChange={value => setPreference('glassToneV86', value as 'smoke' | 'black')} />
+            <ToggleRow title="Profile banners in DMs" description="Show friends' profile banners behind their avatar and glass action buttons." checked={preferences.dmBannersV86} onChange={value => setPreference('dmBannersV86', value)} />
             <ToggleRow title="Reduced motion" description="Cuts boot, panel, hover and message movement." checked={preferences.reducedMotion} onChange={value => setPreference('reducedMotion', value)} />
             <ToggleRow title="Spaces cursor" description="Use the subtle Spaces crosshair cursor on desktop. Touch devices always use native input." checked={preferences.customCursor} onChange={value => setPreference('customCursor', value)} />
             <ToggleRow title="Enter to send" description="Press Enter to send, Shift+Enter for a new line." checked={preferences.enterToSend} onChange={value => setPreference('enterToSend', value)} />
             <button className="secondary-button settings-reset" onClick={() => { setPreference('appTheme', 'obsidian'); setPreference('appAccent', '#8b6ca8'); setPreference('messageDensity', 'comfortable'); setPreference('glassEffects', true); setPreference('reducedMotion', false); setPreference('customCursor', true); setPreference('enterToSend', true) }}>Reset appearance</button>
+          </>}
+
+          {tab === 'calls' && <>
+            <div className="settings-page-heading"><span className="eyebrow">VOICE & VIDEO</span><h2>Calls & Overlays</h2><p>Choose how calls share space with your DMs.</p></div>
+            <ChoiceRow title="Call layout" description="Integrated beneath the DM banner, or a floating glass call panel." value={preferences.callDisplayV86} options={[["integrated", "DM top panel"], ["floating", "Floating overlay"]]} onChange={value => setPreference('callDisplayV86', value as 'integrated' | 'floating')} />
+            <ToggleRow title="Draggable call overlay" description="Drag the floating window from its title bar." checked={preferences.callDraggableV86} onChange={value => setPreference('callDraggableV86', value)} />
+            <ToggleRow title="Show self-preview" description="Show your camera while waiting and beside their active video." checked={preferences.callSelfViewV86} onChange={value => setPreference('callSelfViewV86', value)} />
+            <ToggleRow title="Draggable camera tile" description="Move the smaller self-view within the call." checked={preferences.cameraTileDraggableV86} onChange={value => setPreference('cameraTileDraggableV86', value)} />
+            <details className="spaces-v921-settings-accordion">
+              <summary>Call overlay & pop-out settings</summary> {/* SPACES_V92_1_SETTINGS_ACCORDION */}
+
+            <ChoiceRow title="Floating position" description="Snap a call window to one of nine positions. You can also drag it manually." value={preferences.callOverlayAnchorV88} options={[["top-left","Top left"],["top-center","Top center"],["top-right","Top right"],["middle-left","Middle left"],["center","Center"],["middle-right","Middle right"],["bottom-left","Bottom left"],["bottom-center","Bottom center"],["bottom-right","Bottom right"]]} onChange={value => setPreference('callOverlayAnchorV88', value as typeof preferences.callOverlayAnchorV88)} />
+            <ChoiceRow title="Default call viewer" description="Compact profile card or a larger view for cameras and screen shares." value={preferences.callOverlayViewV88} options={[["avatar","Avatar & name"],["media","Video / streaming"]]} onChange={value => setPreference('callOverlayViewV88',value as typeof preferences.callOverlayViewV88)} />
+            <p className="settings-footnote">Choose Floating overlay under Call layout to use these placements. During a call, choose Pop out for a separate always-on-top viewer in compatible browsers. Native desktop and mobile support varies by platform.</p>
+            </details>
+            <h3 className="spaces-v87-settings-head">Audio volumes</h3>
+            <ToggleRow title="Call sounds" description="Enable the ringing and connected-call cues." checked={preferences.desktopSounds} onChange={value => setPreference('desktopSounds',value)} />
+            <label className="spaces-v87-slider"><span><strong>Ringtone & call sounds</strong><small>Adjust the volume of Spaces' call sounds.</small></span><input type="range" min={0} max={100} step={5} value={preferences.callSoundVolumeV87} onChange={event => setPreference('callSoundVolumeV87',Number(event.target.value))} /><output>{preferences.callSoundVolumeV87}%</output></label>
+            <label className="spaces-v87-slider"><span><strong>Voice output</strong><small>Volume of other people you hear in calls.</small></span><input type="range" min={0} max={100} step={5} value={preferences.voiceOutputVolumeV87} onChange={event => setPreference('voiceOutputVolumeV87',Number(event.target.value))} /><output>{preferences.voiceOutputVolumeV87}%</output></label>
+            <p className="settings-footnote">Right-click the other participant's avatar in an active call or open their profile to adjust only that person's volume. These controls never change anyone's microphone gain.</p>
+            <p className="settings-footnote">A voice call requests the microphone only. TURN relay requires separate Cloudflare setup and is not enabled by these display settings.</p>
+          </>}
+          {tab === 'legal' && <>
+            <div className="settings-page-heading"><span className="eyebrow">SPACES POLICIES</span><h2>Legal & Policies</h2><p>Terms, privacy and program information for your Spaces account, not an individual Space.</p></div>
+            <LegalSettingsEntryV80 />
           </>}
 
           {tab === 'accessibility' && <>
@@ -455,6 +486,7 @@ export function PersonalSettings({ onClose, initialTab = 'profile' }: { onClose:
           </>}
 
           {tab === 'notifications' && <>
+            <PersonalEmailPreferencesV924/>
             <div className="settings-page-heading"><span className="eyebrow">ATTENTION</span><h2>Notifications</h2><p>Spaces-drawn alerts and ping controls for this device. No browser hostname notifications.</p></div>
             <ChoiceRow title="Message notifications" description="Choose the base notification level for conversations." value={preferences.notificationLevel} options={[['all', 'All messages'], ['mentions', 'Mentions only'], ['none', 'Nothing']]} onChange={value => setPreference('notificationLevel', value as NotificationLevel)} />
             <section className="settings-card settings-card-stack notification-ping-grid-v36">

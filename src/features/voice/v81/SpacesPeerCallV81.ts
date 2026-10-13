@@ -210,11 +210,11 @@ export class SpacesPeerCallV81 {
       void this.sounds.play('camera_on')
     } catch (error) { track.stop(); throw error }
   }
-  async startScreenShare(): Promise<void> {
+  async startScreenShare(preferred: 'monitor' | 'window' | 'browser' = 'monitor'): Promise<void> {
     if (!this.pc || this.state !== 'connected') throw new Error('Join a call before sharing your screen')
     if (!navigator.mediaDevices?.getDisplayMedia) throw new Error('Screen capture is unavailable on this platform')
     if (this.screenTrack) return
-    const stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: false })
+    const stream = await navigator.mediaDevices.getDisplayMedia({ video: { displaySurface: preferred } as MediaTrackConstraints, audio: false }) /* SPACES_V87_SHARE_SOURCE */
     const track = stream.getVideoTracks()[0]
     if (!track) throw new Error('No screen track returned')
     try {

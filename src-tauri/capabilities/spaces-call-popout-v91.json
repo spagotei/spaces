@@ -1,0 +1,12 @@
+{
+  "identifier": "spaces-call-popout-v91",
+  "description": "Minimum privileges for standalone Spaces mini call viewer",
+  "windows": [
+    "spaces-call-popout-v91"
+  ],
+  "permissions": [
+    "core:default",
+    "core:window:allow-close",
+    "core:window:allow-start-dragging"
+  ]
+}

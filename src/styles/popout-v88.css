@@ -1,0 +1,79 @@
+/* Spaces V88 — pinned/floating call overlays and the browser's separate Document PiP viewer.
+   Respect glass/reduced-motion options; never hide audio track or call hang-up. */
+.spaces-v88-call-panel .spaces-voice-top-v812 {gap:10px; min-height:44px;}
+.spaces-v88-call-panel .spaces-v88-layout-tools {
+  display:flex!important;flex:none!important;gap:5px;align-items:center;position:relative;z-index:5;
+}
+.spaces-v88-layout-tools button {
+  display:grid;place-items:center;width:33px;height:33px;flex:none;border-radius:10px;
+  border:1px solid rgba(255,255,255,.18);color:#f1f1f5;
+  background:rgba(48,51,58,.75);backdrop-filter:blur(10px);
+  cursor:pointer;transition:background .17s ease,transform .17s ease,border-color .17s ease;
+}
+.spaces-v88-layout-tools button:hover:not(:disabled) {background:rgba(96,100,111,.8);border-color:#ffffff5c;transform:translateY(-1px)}
+.spaces-v88-layout-tools button:focus-visible {outline:2px solid #bdb1eb;outline-offset:2px}
+.spaces-v88-layout-tools button:disabled{cursor:not-allowed;opacity:.34}
+.spaces-v88-layout-tools button.active {background:rgba(134,125,152,.58);border-color:rgba(223,208,255,.52)}
+.spaces-v88-layout-tools button span[aria-hidden]{font-size:21px;line-height:10px}
+/* Keep the call's connection status compact even with narrow monitors. */
+.spaces-v88-call-panel.spaces-v86-floating {width:min(405px,calc(100vw - 28px));max-height:min(80dvh,740px);transition:box-shadow .2s ease,border-color .2s ease}
+.spaces-v88-call-panel.spaces-v86-floating[data-v88-view='avatar'] {width:min(340px,calc(100vw - 28px));max-height:80dvh}
+.spaces-v88-call-panel.spaces-v86-floating[data-v88-view='avatar'] .spaces-voice-stage-v85,
+.spaces-v88-call-panel.spaces-v88-external[data-v88-view='avatar'] .spaces-voice-stage-v85 {display:none!important}
+.spaces-v88-call-panel.spaces-v86-floating[data-v88-view='avatar'] .spaces-voice-top-v812,
+.spaces-v88-call-panel.spaces-v88-external[data-v88-view='avatar'] .spaces-voice-top-v812 {margin-bottom:5px}
+.spaces-v88-call-panel.spaces-v86-floating[data-v88-view='avatar'] .spaces-voice-pfp-v813,
+.spaces-v88-call-panel.spaces-v88-external[data-v88-view='avatar'] .spaces-voice-pfp-v813 {transform-origin:center;filter:drop-shadow(0 3px 9px #0007)}
+.spaces-v88-call-panel.spaces-v86-floating[data-v88-view='avatar'] .spaces-voice-actions-v812 {gap:7px}
+.spaces-v88-call-panel.spaces-v86-floating[data-v88-view='avatar'] .spaces-voice-actions-v812>button {min-height:38px;min-width:42px}
+.spaces-v88-call-panel.spaces-v86-floating[data-v88-view='media'] .spaces-voice-stage-v85 {max-height:260px;min-height:190px;aspect-ratio:16/10}
+/* Nine saved anchor positions. Inline drag coordinates deliberately win until the next snap selection. */
+.spaces-v88-call-panel.spaces-v86-floating[data-v88-anchor^='top-'] {top:14px;bottom:auto;}
+.spaces-v88-call-panel.spaces-v86-floating[data-v88-anchor^='middle-'] {top:50%;bottom:auto;transform:translateY(-50%)}
+.spaces-v88-call-panel.spaces-v86-floating[data-v88-anchor^='bottom-'] {bottom:14px;top:auto}
+.spaces-v88-call-panel.spaces-v86-floating[data-v88-anchor$='-left'] {left:14px;right:auto}
+.spaces-v88-call-panel.spaces-v86-floating[data-v88-anchor$='-right'] {right:14px;left:auto}
+.spaces-v88-call-panel.spaces-v86-floating[data-v88-anchor$='-center'] {left:50%;right:auto;transform:translateX(-50%)}
+.spaces-v88-call-panel.spaces-v86-floating[data-v88-anchor='center'] {top:50%;left:50%;right:auto;bottom:auto;transform:translate(-50%,-50%)}
+.spaces-v88-call-panel.spaces-v86-floating[data-v88-anchor='middle-left'] {left:14px;right:auto}
+.spaces-v88-call-panel.spaces-v86-floating[data-v88-anchor='middle-right'] {right:14px;left:auto}
+.spaces-v88-call-panel.spaces-v86-floating[data-v88-anchor='top-left'] {left:14px;right:auto}
+.spaces-v88-call-panel.spaces-v86-floating[data-v88-anchor='top-right'] {right:14px;left:auto}
+.spaces-v88-call-panel.spaces-v86-floating[data-v88-anchor='bottom-left'] {left:14px;right:auto}
+.spaces-v88-call-panel.spaces-v86-floating[data-v88-anchor='bottom-right'] {right:14px;left:auto}
+.spaces-v88-call-panel.spaces-v86-floating[data-v88-anchor='top-center'] {top:14px;bottom:auto}
+.spaces-v88-call-panel.spaces-v86-floating[data-v88-anchor='bottom-center'] {bottom:14px;top:auto}
+/* Center-anchored manual drag sets top+left inline; do not keep anchor transform. */
+.spaces-v88-call-panel.spaces-v86-floating[style*='left:'] {transform:none!important;}
+/* When Document PiP is supported, the original DOM/MediaStreams are portaled into its document;
+   native browser manages always-on-top, sizing, task switching, and close affordance. */
+.spaces-v88-call-panel.spaces-v88-external {
+  position:relative!important;inset:auto!important;width:100%!important;max-width:none!important;
+  max-height:none!important;min-height:0;overflow:visible!important;margin:0!important;border-radius:16px;
+}
+.spaces-v88-call-panel.spaces-v88-external[data-v88-view='media'] .spaces-voice-stage-v85 {min-height:180px;max-height:50vh;aspect-ratio:16/10}
+.spaces-v88-call-panel.spaces-v88-external .spaces-voice-top-v812 {cursor:default;touch-action:auto}
+.spaces-v88-call-panel.spaces-v88-external .spaces-voice-actions-v812>button {min-width:40px}
+.spaces-v88-settings-title {font-size:13px;letter-spacing:.01em;font-weight:680;color:#e3e5eb;margin:16px 0 5px}
+/* Compact landscape and touch targets; no unintentional off-screen panel on mobile. */
+@media(max-width:650px) {
+  .spaces-v88-call-panel.spaces-v86-floating {left:12px!important;right:12px!important;bottom:max(12px,env(safe-area-inset-bottom))!important;top:auto!important;transform:none!important;width:auto!important;max-height:72dvh;}
+  .spaces-v88-call-panel .spaces-v88-layout-tools{gap:3px}
+  .spaces-v88-layout-tools button{width:34px;height:36px}
+  .spaces-v88-call-panel .spaces-v86-call-layout-toggle{width:34px}
+  .spaces-v88-call-panel.spaces-v86-floating[data-v88-view='media'] .spaces-voice-stage-v85{min-height:135px;}
+}
+@media(prefers-reduced-motion:reduce) {
+  .spaces-v88-layout-tools button,.spaces-v88-call-panel{transition:none!important;animation:none!important}
+}
+html[data-motion='reduced'] .spaces-v88-layout-tools button,
+html[data-motion='reduced'] .spaces-v88-call-panel{transition:none!important;animation:none!important}
+
+/* Unread direct/group inbox, always above the list of Spaces. */
+.server-rail .spaces-v88-dm-rail-entry{position:relative;display:grid;place-items:center;min-width:46px;min-height:49px;margin:4px auto 6px;padding:0;border:0;border-radius:15px;background:transparent;cursor:pointer;color:#eeecf2}
+.server-rail .spaces-v88-dm-rail-icon{display:grid;place-items:center;width:43px;height:43px;background:rgba(69,71,79,.62);border:1px solid rgba(255,255,255,.18);backdrop-filter:blur(12px);border-radius:14px;transition:background .17s ease,transform .17s ease}
+.server-rail .spaces-v88-dm-rail-entry:hover .spaces-v88-dm-rail-icon,.server-rail .spaces-v88-dm-rail-entry.active .spaces-v88-dm-rail-icon{background:rgba(107,101,129,.77);transform:translateY(-2px)}
+.server-rail .spaces-v88-dm-rail-entry:focus-visible{outline:2px solid #c5baf3;outline-offset:2px}
+.server-rail .spaces-v88-dm-rail-count{position:absolute;z-index:2;top:-6px;right:-6px;display:grid;place-items:center;min-width:21px;height:21px;padding:0 5px;border-radius:100px;background:#cb4d6c;border:2px solid #18171d;color:#fff;font:800 11px/1 system-ui;box-shadow:0 3px 10px #0008}
+@media(prefers-reduced-motion:reduce){.server-rail .spaces-v88-dm-rail-icon{transition:none!important;transform:none!important}}
+html[data-motion='reduced'] .server-rail .spaces-v88-dm-rail-icon{transition:none!important;transform:none!important}

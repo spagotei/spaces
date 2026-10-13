@@ -1,0 +1,7 @@
+/* SPACES_V92_5_3_SEAM_COVER — desktop only; replaces v9252 -2px overlap. */
+@supports selector(body:has(.desktop-titlebar)) {
+  html body:has(.desktop-titlebar) .spaces-app-shell {
+    top: -3px;
+    min-height: calc(100% + 3px);
+  }
+}

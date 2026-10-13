@@ -1,0 +1,44 @@
+/* Spaces V91.3 — full-width Staff Email Hub, dark glass surface */
+.spaces-v913-email{height:100%;width:100%;min-width:0;min-height:0;overflow:auto;color:#edeef5;padding:clamp(15px,2vw,30px);background:radial-gradient(ellipse at 75% -10%,rgba(115,112,140,.15),transparent 58%),#0c0d12;scrollbar-gutter:stable}
+.spaces-v913-email *{box-sizing:border-box}
+.spaces-v913-email h2,.spaces-v913-email h3,.spaces-v913-email p{margin:0}
+.v913-email-header{display:flex;justify-content:space-between;align-items:center;gap:18px;margin-bottom:22px;flex-wrap:wrap}
+.v913-email-header h2{font-size:clamp(23px,2.2vw,34px);font-weight:760;letter-spacing:-.045em;margin:5px 0 3px}
+.v913-email-header p,.v913-email-mode small,.spaces-v913-email small,.v913-preview-disclaimer{color:#a2a4b3;font-size:12px;line-height:1.55}
+.v913-email-header>div:last-child{display:flex;align-items:center;gap:12px}
+.v913-email-status{font-size:11px;padding:9px 13px;border-radius:999px;background:rgba(185,169,177,.09);border:1px solid rgba(255,255,255,.07);color:#c4babc}
+.v913-email-status.ready{color:#a1d7c5;background:rgba(85,153,133,.13)}
+.spaces-v913-email button,.spaces-v913-email select,.spaces-v913-email input,.spaces-v913-email textarea{font:inherit;color:#f4f4f8}
+.spaces-v913-email button{cursor:pointer;border:1px solid rgba(255,255,255,.12);border-radius:12px;background:rgba(255,255,255,.065);padding:10px 13px;font-weight:600;transition:background .16s ease,transform .16s ease,border-color .16s ease}
+.spaces-v913-email button:not(:disabled):hover{background:rgba(255,255,255,.13);border-color:rgba(255,255,255,.2);transform:translateY(-1px)}
+.spaces-v913-email button:disabled{opacity:.44;cursor:not-allowed}
+.v913-email-mode{display:grid;grid-template-columns:110px minmax(200px,340px) 1fr;align-items:center;gap:14px;padding:14px 17px;margin-bottom:20px;border:1px solid rgba(255,255,255,.085);border-radius:18px;background:rgba(84,88,105,.11);backdrop-filter:blur(18px)}
+.v913-email-mode>label{font-size:12px;font-weight:750}
+.v913-email-grid{display:grid;grid-template-columns:minmax(380px,1.03fr) minmax(350px,1fr);gap:18px;align-items:start}
+.v913-glass{min-width:0;padding:21px;border-radius:21px;background:linear-gradient(140deg,rgba(79,82,97,.18),rgba(28,30,38,.75));border:1px solid rgba(255,255,255,.09);box-shadow:0 18px 46px rgba(0,0,0,.16);backdrop-filter:blur(22px)}
+.v913-glass h3{font-size:17px;margin-bottom:16px}
+.v913-composer{display:grid;gap:15px}.v913-fields-two{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.spaces-v913-email label{display:flex;flex-direction:column;gap:7px;font-size:12px;font-weight:700}
+.spaces-v913-email select,.spaces-v913-email input,.spaces-v913-email textarea{background:rgba(4,5,9,.53);border:1px solid rgba(255,255,255,.095);border-radius:10px;width:100%;padding:12px;min-width:0;outline:0}
+.spaces-v913-email select:focus,.spaces-v913-email input:focus,.spaces-v913-email textarea:focus{border-color:rgba(190,175,234,.66);box-shadow:0 0 0 3px rgba(170,144,223,.1)}
+.spaces-v913-email select option{background:#16171e;color:#fff}
+.spaces-v913-email textarea{min-height:205px;resize:vertical;line-height:1.6;font-size:13px}
+.v913-composer details{font-size:12px;color:#b7b5c2;border-top:1px solid rgba(255,255,255,.07);padding-top:10px}
+.v913-composer summary{cursor:pointer}.v913-composer details p{padding:10px 0}
+.v913-email-actions{display:flex;flex-wrap:wrap;gap:9px;align-items:center;position:sticky;bottom:-21px;background:linear-gradient(0deg,#161720 75%,rgba(22,23,32,.45));padding:13px 0 8px;z-index:1}
+.spaces-v913-email .v913-send{background:#8b70c6;color:#fff;border-color:#a58cde}
+.v913-email-reviewed,.v913-email-message{display:grid;gap:5px;color:#c4dbd4;padding:10px 13px;font-size:12px;background:rgba(87,159,129,.085);border-radius:11px}
+.v913-email-message{color:#e1d0bb;background:rgba(175,132,74,.1)}
+.v913-preview{position:sticky;top:0;min-height:530px;display:flex;flex-direction:column;gap:15px}
+.v913-preview-head{display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap}
+.v913-preview-head h3{margin-bottom:3px}.v913-preview-head>div:last-child{display:flex;gap:3px;padding:3px;border-radius:12px;background:rgba(0,0,0,.25)}
+.v913-preview-head button{font-size:11px;padding:8px 11px;border:0;background:transparent}.v913-preview-head button.selected{background:rgba(158,153,174,.24)}
+.v913-preview iframe{display:block;width:100%;height:580px;max-height:65vh;border:1px solid rgba(255,255,255,.095);background:#101116;border-radius:12px}
+.v913-preview-empty{display:grid;gap:13px;min-height:370px;place-content:center;justify-items:center;text-align:center;color:#a7a2b4}.v913-preview-empty span{font-size:44px}
+.v913-preview-disclaimer{font-size:11px;line-height:1.5}
+.v913-history{display:grid;gap:10px}.v913-history article{display:grid;gap:5px;padding:12px;border:1px solid rgba(255,255,255,.09);border-radius:12px;background:rgba(255,255,255,.025);font-size:12px}.v913-history article>span{color:#c0bbcc}
+/* Retire the legacy popover when the unified email panel is present. */
+body:has(.support-console-v77) .v80-email-fab{display:none!important}
+@media(max-width:1200px){.v913-email-grid{grid-template-columns:1fr}.v913-preview{position:static}}
+@media(max-width:680px){.spaces-v913-email{padding:12px}.v913-email-mode{grid-template-columns:1fr;gap:8px}.v913-fields-two{grid-template-columns:1fr}.v913-glass{padding:14px}.v913-email-header>div:last-child{width:100%;justify-content:space-between}.v913-preview iframe{height:460px}}
+@media(prefers-reduced-motion:reduce){.spaces-v913-email button{transition:none!important;transform:none!important}}

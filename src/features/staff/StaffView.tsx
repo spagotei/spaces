@@ -69,7 +69,7 @@ export function StaffView() {
       <div className="staff-roster-list-v31">
         {staffMembers.map(member => {
           const memberRoles = roles.filter(role => member.customRoleIds.includes(role.id))
-          const baseLabel = data?.workspace.id ? workspaceRoleDisplayName(data.workspace.id, member.role) : member.role
+          const baseLabel = member.platformRole === 'founder' ? 'Founder' : (data?.workspace.id ? workspaceRoleDisplayName(data.workspace.id, member.role) : member.role) // SPACES_V84_2_FOUNDER_STAFF_ROLE
           const staffRoles = memberRoles.filter(role => role.permissions.some(permission => staffPermissionKeys.has(permission)))
           return <article className="staff-roster-row-v31" key={member.id}>
             <Avatar name={member.displayName} initials={member.initials} src={member.avatarUrl} size={38} accent={staffRoles[0]?.color ?? member.profileAccent}/>
